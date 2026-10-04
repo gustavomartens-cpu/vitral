@@ -1,0 +1,81 @@
+<style>
+  .fam { display:flex; flex-direction:column; gap:16px; }
+  .fm { background:var(--bg-secondary); border:1px solid var(--border); border-radius:14px; padding:14px; cursor:pointer; transition:border-color .15s; }
+  .fm:hover { border-color:var(--accent); }
+  .fm.selected { border-color:var(--success); box-shadow:0 0 0 2px var(--success) inset; }
+  .fm .hd { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 12px; margin-bottom:10px; }
+  .fm .hd h3 { margin:0; font-size:1.05rem; }
+  .fm .hd .by { font-size:.78rem; color:var(--text-secondary); }
+  .fm .hd .ck { margin-left:auto; color:var(--success); font-weight:600; font-size:.85rem; display:none; }
+  .fm.selected .hd .ck { display:inline; }
+  .fm .tg { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:10px; }
+  .fm .tg span { font-size:.7rem; padding:1px 8px; border-radius:999px; border:1px solid var(--border); color:var(--text-secondary); }
+  .fm .tg .ok { border-color:var(--success); color:var(--success); }
+  .fm .tg .wn { border-color:var(--warning); color:var(--warning); }
+  .fm .tb { background:#0d0d0f; border-radius:8px; overflow:hidden; max-height:150px; display:flex; align-items:center; justify-content:center; margin-bottom:8px; position:relative; }
+  .fm .tb img { width:100%; max-height:150px; object-fit:contain; display:block; }
+  .fm .row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  @media (max-width:640px){ .fm .row { grid-template-columns:1fr; } }
+  .fm .cell { background:#0d0d0f; border-radius:8px; overflow:hidden; aspect-ratio:4/3; position:relative; display:flex; align-items:center; justify-content:center; }
+  .fm .cell img { width:100%; height:100%; object-fit:contain; display:block; }
+  .fm .lb { position:absolute; left:6px; top:6px; font-size:.68rem; background:rgba(0,0,0,.65); color:#fff; padding:2px 7px; border-radius:6px; }
+  .fm .mk { position:absolute; right:6px; top:6px; font-size:.66rem; background:var(--success); color:#04210d; padding:2px 7px; border-radius:6px; font-weight:600; }
+  .fm .sg { position:absolute; right:6px; top:6px; font-size:.66rem; background:var(--warning); color:#2a1700; padding:2px 7px; border-radius:6px; font-weight:600; }
+  .fm .none { color:#8a8a8e; font-size:.78rem; text-align:center; padding:1rem; }
+  .fm p.nt { font-size:.8rem; color:var(--text-secondary); margin:.6rem 0 0; line-height:1.45; }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; font-size:.78rem; color:var(--text-secondary); margin:-.5rem 0 1rem; }
+  .legend b { display:inline-block; padding:1px 7px; border-radius:6px; font-size:.68rem; margin-right:4px; }
+</style>
+
+<h2>Conjuntos: o que combina com o quê</h2>
+<p class="subtitle">Vários temas que você marcou fazem parte de conjuntos do mesmo autor, desenhados para combinar: barra, Iniciar, Explorer e central. Dá para misturar peças de conjuntos diferentes (cada parte é independente), mas dentro do conjunto as cores e as transparências batem. <b>Quais conjuntos você gostaria de ter como perfil?</b> Pode marcar mais de um: cada um viraria um perfil que você troca com um clique.</p>
+<div class="legend"><span><b style="background:var(--success);color:#04210d">você marcou</b> peça que você escolheu</span><span><b style="background:var(--warning);color:#2a1700">sugestão</b> o conjunto não tem essa peça, então sugiro uma que combina</span></div>
+
+<div class="fam" id="fam"></div>
+
+<script>
+(function(){
+  const enc = p => p.split('/').map(encodeURIComponent).join('/');
+  const B = r => 'https://raw.githubusercontent.com/ramensoftware/windows-11-' + r + '-styling-guide/main/Themes/';
+  const TB = B('taskbar'), SM = B('start-menu'), FE = B('file-explorer'), NC = B('notification-center');
+  // [rótulo, url, estado: 'mk' marcado | 'sg' sugestão | '' ]
+  const F = [
+    { id:'windowglass', name:'WindowGlass', by:'Nathaniel4JC', tags:[['conjunto completo, mesmo autor','ok'],['vidro compacto e flutuante','']],
+      tb:[TB+'WindowGlass/screenshot.png',''], cells:[['Iniciar',SM+'WindowGlass/screenshot-small.png',''],['Explorer',FE+'WindowGlass/screenshot-small.png','mk'],['Central',NC+'WindowGlass/screenshot-small.png','mk']],
+      note:'É o único conjunto que cobre as 4 áreas com o mesmo autor. Você já marcou o Explorer e a central dele.' },
+    { id:'layermica', name:'LayerMicaUI', by:'Nimai-HK', tags:[['feito para o 25H2','ok'],['Mica em camadas','']],
+      tb:[TB+'LayerMicaUI/screenshot.png','mk'], cells:[['Iniciar',SM+'LayerMicaUI/screenshot-small.png',''],['Explorer',FE+'MicaTabless/screenshot-small.png','sg'],['Central',NC+'LayerMicaUI/screenshot-small.png','mk']],
+      note:'O mais "nativo" de todos: parece um Windows 11 refinado. Não tem Explorer próprio, então sugiro o MicaTabless, que você marcou.' },
+    { id:'os26', name:'OS26 Liquid Glass', by:'WasiXGamer', tags:[['vidro líquido, cara de macOS/iOS 26','']],
+      tb:[TB+enc('OS26 Liquid Glass')+'/screenshot.png','mk'], cells:[['Iniciar',SM+'LiquidGlass2/screenshot-small.png','sg'],['Explorer',FE+enc('OS26 Liquid Glass')+'/screenshot-small.png','mk'],['Central',NC+enc('OS26 Tahoe Glass')+'/screenshot-small.png','']],
+      note:'O mais chamativo. A central "OS26 Tahoe Glass" é do mesmo autor. Ele não tem Iniciar, então sugiro o LiquidGlass2, que segue a mesma ideia.' },
+    { id:'liquid', name:'LiquidGlass', by:'mohsinhasanpc / PhantomNimbi', tags:[['só modo escuro','wn'],['vidro líquido','']],
+      tb:[TB+'LiquidGlass2/screenshot.png','mk'], cells:[['Iniciar',SM+'LiquidGlass2/screenshot-small.png',''],['Explorer',FE+'LiquidGlass/screenshot-small.png',''],['Central',NC+'LiquidGlass/screenshot-small.png','']],
+      note:'Barra e Iniciar do mesmo autor; Explorer e central são da versão original, de outro autor. Feito para o modo escuro, que é o seu.' },
+    { id:'frosty', name:'FrostyGlass', by:'Guido Lamanna', tags:[['vidro fosco','']],
+      tb:[TB+'FrostyGlass/screenshot.png','mk'], cells:[['Iniciar',SM+'FrostyGlass/screenshot-small.png',''],['Explorer',FE+'MicaTabless/screenshot-small.png','sg'],['Central',NC+'FrostyGlass/screenshot-small.png','']],
+      note:'Mais discreto que o OS26: vidro fosco, menos brilho. Não tem Explorer próprio, então sugiro o MicaTabless.' },
+    { id:'matter', name:'Matter', by:'ZoraizLajwer', tags:[['desenhado no 23H2: pode precisar de ajuste','wn'],['pede 2 fontes','wn']],
+      tb:[TB+'Matter/screenshot.png','mk'], cells:[['Iniciar',SM+'RosePine/screenshot-small.png','sg'],['Explorer',FE+'Matter/screenshot-small.png',''],['Central',NC+'Matter/screenshot-small.png','mk']],
+      note:'Estilo Material, sem vidro. Não tem Iniciar, então sugiro o RosePine, que você marcou e é minimalista.' }
+  ];
+  const root = document.getElementById('fam');
+  const pick = new Set();
+  const badge = s => s==='mk' ? '<span class="mk">você marcou</span>' : s==='sg' ? '<span class="sg">sugestão</span>' : '';
+  root.innerHTML = F.map(f => (
+    '<div class="fm" data-choice="conjunto:'+f.id+'">' +
+      '<div class="hd"><h3>'+f.name+'</h3><span class="by">por '+f.by+'</span><span class="ck">✓ quero este perfil</span></div>' +
+      '<div class="tg">'+f.tags.map(t=>'<span class="'+t[1]+'">'+t[0]+'</span>').join('')+'</div>' +
+      '<div class="tb"><span class="lb">Barra de tarefas</span>'+badge(f.tb[1])+'<img loading="lazy" referrerpolicy="no-referrer" src="'+f.tb[0]+'"></div>' +
+      '<div class="row">'+f.cells.map(c => '<div class="cell"><span class="lb">'+c[0]+'</span>'+badge(c[2])+(c[1]?'<img loading="lazy" referrerpolicy="no-referrer" src="'+c[1]+'">':'<span class="none">não existe</span>')+'</div>').join('')+'</div>' +
+      '<p class="nt">'+f.note+'</p>' +
+    '</div>')).join('') +
+    '<div class="fm" data-choice="conjunto:misturar"><div class="hd"><h3>Prefiro montar o meu, misturando peças</h3><span class="ck">✓ anotado</span></div><p class="nt" style="margin:0">O app teria um editor em que você escolhe a barra, o Iniciar, o Explorer e a central separadamente e salva a combinação como perfil.</p></div>';
+  root.addEventListener('click', e => {
+    const c = e.target.closest('.fm'); if (!c) return;
+    const k = c.dataset.choice;
+    if (pick.has(k)) { pick.delete(k); c.classList.remove('selected'); } else { pick.add(k); c.classList.add('selected'); }
+    window.brainstorm && brainstorm.choice('conjuntos', {escolhidos: Array.from(pick)});
+  });
+})();
+</script>

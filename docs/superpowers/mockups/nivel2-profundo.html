@@ -1,0 +1,236 @@
+<style>
+  .lv2 .callout { background:var(--bg-secondary); border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:10px; padding:14px 16px; margin-bottom:1.25rem; font-size:.88rem; line-height:1.55; }
+  .lv2 .callout h3 { margin-bottom:.4rem; }
+  .lv2 .callout ul { margin:.4rem 0 0 1.1rem; }
+  .lv2 .callout li { margin-bottom:.25rem; }
+  .lv2 .how { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin:0 0 1.25rem; }
+  .lv2 .how div { background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:.8rem; line-height:1.45; color:var(--text-secondary); }
+  .lv2 .how b { color:var(--text-primary); display:block; margin-bottom:2px; font-size:.84rem; }
+  .lv2 .tabs { display:flex; flex-wrap:wrap; gap:6px; position:sticky; top:0; z-index:5; background:var(--bg-primary); padding:8px 0 10px; margin-bottom:.5rem; }
+  .lv2 .tabs button { border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); border-radius:999px; padding:6px 14px; font-size:.82rem; cursor:pointer; }
+  .lv2 .tabs button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .lv2 .tabs .cnt { margin-left:auto; font-size:.8rem; color:var(--text-secondary); align-self:center; }
+  .lv2 .intro { font-size:.84rem; color:var(--text-secondary); margin:.25rem 0 1rem; line-height:1.5; }
+  .lv2 .gal { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+  .lv2 .gal.wide { grid-template-columns:1fr; }
+  .lv2 .g { background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; overflow:hidden; cursor:pointer; transition:border-color .15s, transform .15s; display:flex; flex-direction:column; }
+  .lv2 .gal.wide .g { flex-direction:row; align-items:stretch; }
+  .lv2 .g:hover { border-color:var(--accent); transform:translateY(-1px); }
+  .lv2 .g.selected { border-color:var(--success); box-shadow:0 0 0 2px var(--success) inset; }
+  .lv2 .g .im { background:#0d0d0f; display:flex; align-items:center; justify-content:center; aspect-ratio:16/10; overflow:hidden; }
+  .lv2 .gal.wide .g .im { aspect-ratio:auto; flex:1 1 68%; min-height:70px; max-height:190px; }
+  .lv2 .g .im img { width:100%; height:100%; object-fit:contain; display:block; }
+  .lv2 .g .im.txt { color:#8a8a8e; font-size:.8rem; padding:1rem; text-align:center; }
+  .lv2 .g .bd { padding:10px 12px 12px; display:flex; flex-direction:column; gap:4px; }
+  .lv2 .gal.wide .g .bd { flex:0 0 32%; justify-content:center; }
+  .lv2 .g h4 { font-size:.92rem; margin:0; display:flex; justify-content:space-between; gap:8px; }
+  .lv2 .g h4 .ck { color:var(--success); font-size:.8rem; display:none; white-space:nowrap; }
+  .lv2 .g.selected h4 .ck { display:inline; }
+  .lv2 .g p { font-size:.8rem; color:var(--text-secondary); margin:0; line-height:1.45; }
+  .lv2 .tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+  .lv2 .tags span { font-size:.68rem; padding:1px 7px; border-radius:999px; border:1px solid var(--border); color:var(--text-secondary); }
+  .lv2 .tags .t-trans { border-color:#0a84ff; color:#0a84ff; }
+  .lv2 .tags .t-25 { border-color:var(--success); color:var(--success); }
+  .lv2 .tags .t-warn { border-color:var(--warning); color:var(--warning); }
+  .lv2 .tags .t-risk { border-color:var(--error); color:var(--error); }
+  @media (max-width:760px){ .lv2 .gal.wide .g { flex-direction:column; } .lv2 .gal.wide .g .bd { flex:auto; } }
+</style>
+
+<div class="lv2">
+<h2>Nível 2: interface profunda</h2>
+<p class="subtitle">São fotos reais tiradas dos repositórios oficiais. Clique nos que você gostar para marcar (eles ficam com borda verde); pode marcar quantos quiser, em todas as abas. Isso me diz em que direção ir.</p>
+
+<div class="callout">
+  <h3>A sua barra transparente de hoje</h3>
+  Você usa o <b>TranslucentTB 2026.2</b> (da Microsoft Store), com a barra totalmente transparente na área de trabalho e o Iniciar e o Task View voltando ao normal quando abertos. Há dois jeitos de o app fazer isso:
+  <ul>
+    <li><b>Controlar o próprio TranslucentTB.</b> A configuração dele é um arquivo de texto simples, e o app pode ler e gravar esse arquivo, trocando entre transparente, acrílico, cor sólida, regras por janela maximizada etc. Funciona com o que você já tem instalado.</li>
+    <li><b>Usar o tema "SimplyTransparent" do Windhawk</b> (primeiro card da aba Barra de tarefas). Faz o mesmo e combina com os outros temas de barra abaixo.</li>
+  </ul>
+</div>
+
+<div class="how">
+  <div><b>Como isto funciona: Windhawk</b>Programa gratuito e de código aberto que aplica "mods" no Windows. Quase tudo abaixo são temas de 4 mods dele: Taskbar Styler, Start Menu Styler, File Explorer Styler e Notification Center Styler.</div>
+  <div><b>O lado bom</b>Liga e desliga na hora, sem mexer em arquivos do sistema. Um tema é só uma configuração, então dá para salvar e levar para o notebook.</div>
+  <div><b>O lado ruim</b>Ele injeta código no Explorer. Uma atualização do Windows pode quebrar um tema por alguns dias, até o autor corrigir. Alguns antivírus estranham.</div>
+</div>
+
+<div class="tabs" id="tabs"><span class="cnt" id="cnt">0 marcados</span></div>
+<p class="intro" id="intro"></p>
+<div class="gal" id="gal"></div>
+</div>
+
+<script>
+(function(){
+  const enc = p => p.split('/').map(encodeURIComponent).join('/');
+  const RS = r => 'https://raw.githubusercontent.com/ramensoftware/windows-11-' + r + '-styling-guide/main/Themes/';
+  const T = {trans:['transparente','t-trans'], vidro:['vidro/acrílico','t-trans'], dock:['dock',''], min:['minimalista',''], retro:['retrô',''], dark:['só modo escuro','t-warn'], h25:['feito p/ 25H2','t-25'], novo:['novo Iniciar (25H2)','t-25'], classico:['só Iniciar antigo','t-warn'], ep:['exige ExplorerPatcher','t-warn'], acc:['usa cor de destaque',''], fun:['diversão',''], pago:['pago','t-warn'], dwm:['mexe no DWM: risco maior','t-risk'], subst:['substitui peças do Windows','t-warn'], cfg:['combina com outros mods','']};
+
+  const TABS = [
+    { id:'taskbar', label:'Barra de tarefas', wide:true, base:RS('taskbar'), mod:'Taskbar Styler',
+      intro:'Mod "Windows 11 Taskbar Styler" do Windhawk. Cada tema é um "visual pronto" da barra. Dá para combinar com o mod "Taskbar height and icon size" (altura e tamanho dos ícones).',
+      items:[
+        ['SimplyTransparent','SimplyTransparent/screenshot.png','Só deixa o fundo da barra transparente, sem mudar mais nada. É o equivalente ao que você faz hoje com o TranslucentTB.',['trans','min']],
+        ['TranslucentTaskbar','TranslucentTaskbar/screenshot.png','Barra translúcida, com o acrílico (desfoque) aparecendo bem.',['trans','vidro']],
+        ['FrostedAcrylic','FrostedAcrylic/screenshot.png','Barra e bandeja unificadas num vidro fosco semitransparente, com ícones limpos.',['vidro']],
+        ['FrostyGlass','FrostyGlass/screenshot.png','Vidro fosco em formato de dock.',['vidro','dock']],
+        ['FluentGlass','FluentGlass/screenshot.png','Dock flutuante de vidro, com transparência, desfoque e profundidade. Tem cara de nativo do Windows 11.',['vidro','dock']],
+        ['LiquidGlass2','LiquidGlass2/screenshot.png','Vidro líquido com fundo de vidro em cada app.',['vidro','dark']],
+        ['OS26 Liquid Glass','OS26 Liquid Glass/screenshot.png','Dock de "vidro líquido" inspirado no macOS e iOS 26. Também muda os pop-ups de volume e brilho.',['vidro','dock']],
+        ['WindowGlass','WindowGlass/screenshot.png','Vidro moderno, compacto e flutuante.',['vidro','dock']],
+        ['TintedGlass','TintedGlass/screenshot.png','Vidro tingido. Fica completo combinado com outros mods.',['vidro','dark','cfg']],
+        ['LayerMicaUI','LayerMicaUI/screenshot.png','Visual limpo em camadas de Mica, desenhado especificamente para o 25H2.',['h25','vidro']],
+        ['Luminosity','Luminosity/screenshot.png','Acrílico nativo com luminosidade máxima, para usar junto com Mica.',['vidro']],
+        ['UltraWideFriendly','UltraWideFriendly/screenshot.png','Duas "ilhas" flutuantes (apps e bandeja) sobre uma barra quase invisível. Ótimo em monitor largo.',['trans','dock']],
+        ['DockLike','DockLike/screenshot.png','Dock centralizado estilo macOS, simples e que funciona bem sem ajustes.',['dock']],
+        ['Command Center','Command Center/screenshot.png','Fundo 100% transparente, com elementos que parecem widgets flutuantes.',['trans']],
+        ['Bubbles','Bubbles/screenshot.png','Cada ícone vira uma bolha arredondada separada.',['dock']],
+        ['Squircle','Squircle/screenshot.png','Ícones em quadrados de cantos bem arredondados.',[]],
+        ['Pills','Pills/screenshot.png','Apps em "pílulas", com versões clara e escura.',[]],
+        ['Blob','Blob/screenshot.png','Formas orgânicas arredondadas, claro e escuro.',[]],
+        ['Matter','Matter/screenshot.png','Estilo Material, com cantos arredondados. Combina com os temas Matter do Explorer e da central.',[]],
+        ['Lucent','Lucent/screenshot.png','Escuro, com gradientes e brilhos coloridos na sua cor de destaque.',['acc','dark']],
+        ['CleanSlate','CleanSlate/screenshot.png','Limpo, alinhado à esquerda, acompanha a cor de destaque.',['acc','min']],
+        ['Oversimplified & Accentuated','Oversimplified&Accentuated/screenshot.png','Remove o que não é essencial e integra melhor a cor de destaque.',['acc','min','dark']],
+        ['Borderless','Borderless/screenshot.png','Estilo dock, sem bordas nem sombras nos pop-ups.',['dock','min']],
+        ['BottomDensy','BottomDensy/screenshot.png','Barra densa, sem espaços sobrando.',['min']],
+        ['Aeris','Aeris/screenshot.png','Muda de cor sozinha com o tema claro ou escuro. Aceita qualquer altura e até barra vertical.',[]],
+        ['xdark','xdark/screenshot.png','Escuro com detalhes dourados.',['dark','cfg']],
+        ['RosePine','RosePine/screenshot.png','Paleta de cores Rosé Pine, minimalista.',['min']],
+        ['TaskbarXII','TaskbarXII/screenshot.png','Ícones centralizados num visual tipo TaskbarX.',[]],
+        ['One UI 8.5','One UI 8.5/screenshot.png','Dock no estilo da One UI da Samsung, com ícones próprios.',['dock']],
+        ['Surface','Surface/screenshot.png','Pensado para usar junto com uma barra de status separada no topo.',['cfg']],
+        ['Fluid','Fluid/screenshot.png','Bordas 3D sutis. Combina com o tema Fluid do Iniciar.',[]],
+        ['SunValley','SunValley/screenshot.png','Como seria a barra do Windows 10 no design do 11: bandeja do 10 e acrílico com cor de destaque.',['retro','acc']],
+        ['WinXP','WinXP/screenshot.png','Recria a barra do Windows XP.',['retro','fun']],
+        ['WinVista','WinVista/screenshot.png','Barra estilo Windows Vista, pensada para barra fina.',['retro']],
+        ['Windows7','Windows7/screenshot.png','Barra estilo Windows 7. É uma prova de conceito, não fica idêntica.',['retro']],
+        ['Plasma','Plasma/screenshot.png','Recria o painel do KDE Plasma, do Linux.',['retro']],
+        ['TaskbarToStatusbar','TaskbarToStatusbar/screenshot.png','A barra vira uma linha fina de status, estilo celular.',['min']],
+        ['Minecraft Hotbar','Minecraft Hotbar/screenshot.png','A barra vira a hotbar do Minecraft.',['fun']]
+      ]},
+    { id:'start', label:'Menu Iniciar', base:RS('start-menu'), mod:'Start Menu Styler',
+      intro:'Mod "Windows 11 Start Menu Styler". O 25H2 está recebendo um Iniciar redesenhado, e alguns temas só funcionam no antigo ou só no novo; quando o autor avisa, a etiqueta mostra.',
+      items:[
+        ['TranslucentStartMenu','TranslucentStartMenu/screenshot-small.png','Deixa bem visível o fundo acrílico (translúcido) do Iniciar.',['trans','vidro']],
+        ['NoRecommendedSection','NoRecommendedSection/screenshot-small.png','Só remove a seção "Recomendado".',['min']],
+        ['SideBySide','SideBySide/screenshot-small.png','Fixados e lista de apps lado a lado.',[]],
+        ['SideBySide2','SideBySide2/screenshot-small.png','Outra variação do lado a lado.',[]],
+        ['SideBySideMinimal','SideBySideMinimal/screenshot-small.png','Lado a lado, versão enxuta.',['min']],
+        ['LiquidGlass','LiquidGlass/screenshot-small.png','Vidro líquido.',['vidro','novo']],
+        ['LiquidGlass2','LiquidGlass2/screenshot-small.png','Outra leitura do vidro líquido.',['vidro','novo']],
+        ['FrostyGlass','FrostyGlass/screenshot-small.png','Vidro fosco no Iniciar e na tela de bloqueio.',['vidro','novo']],
+        ['LayerMicaUI','LayerMicaUI/screenshot-small.png','Layouts adaptáveis em Mica para o novo Iniciar.',['h25','novo','vidro']],
+        ['WindowGlass','WindowGlass/screenshot-small.png','Vidro moderno, layout compacto.',['vidro']],
+        ['TintedGlass','TintedGlass/screenshot-small.png','Vidro tingido.',['vidro','dark','cfg']],
+        ['Command Center','Command Center/screenshot-small.png','Fundo transparente, blocos flutuantes tipo widgets.',['trans']],
+        ['Fluent2Inspired','Fluent2Inspired/screenshot-small.png','Inspirado em conceitos do Fluent 2.',[]],
+        ['Fluid','Fluid/screenshot-small.png','Leva o Fluent mais a sério: bordas 3D e transições suaves.',[]],
+        ['Borderless','Borderless/screenshot-small.png','Sem bordas, sem sombra e sem o tom acinzentado do modo escuro.',['min']],
+        ['OnlySearch','OnlySearch/screenshot-small.png','Só a busca e os botões de navegação. Limpo ao extremo.',['min']],
+        ['FullScreen','FullScreen/screenshot-small.png','Iniciar em tela cheia.',[]],
+        ['Windows10','Windows10/screenshot-small.png','Layout do Iniciar do Windows 10.',['retro']],
+        ['Windows11_Metro10','Windows11_Metro10/screenshot-small.png','Inspirado nos blocos (Metro) do Windows 10.',['retro']],
+        ['Metro10 Minimal','Windows11_Metro10Minimal/screenshot-small.png','Versão mínima do anterior.',['retro','min']],
+        ['LegacyFluent','LegacyFluent/screenshot-small.png','Segue o Fluent antigo do Windows 10.',['retro']],
+        ['SunValley','SunValley/screenshot-small.png','Recria o Iniciar e a busca dos primeiros Windows 11.',['retro']],
+        ['Windows10X','Windows10X/screenshot-small.png','Recria o design do Windows 10X, que nunca foi lançado.',['retro']],
+        ['Down Aero','Down Aero/screenshot-small.png','Visual inspirado no Aero.',['retro']],
+        ['UniMenu','UniMenu/screenshot-small.png','Layout alternativo do Iniciar.',[]],
+        ['Hybrid','Hybrid/screenshot-small.png','Layout híbrido. O autor avisa de um travamento com clique direito num ponto vazio.',['dark']],
+        ['Everblush','Everblush/screenshot-small.png','Só a paleta Everblush, sem mudar o layout.',[]],
+        ['RosePine','RosePine/screenshot-small.png','Paleta Rosé Pine, minimalista.',['min']],
+        ['Oversimplified & Accentuated','Oversimplified&Accentuated/screenshot-small.png','Mais limpo e com cor de destaque.',['acc','classico']],
+        ['ModernStartMenu','ModernStartMenu/screenshot-small.png','Iniciar Fluent montado em cima do Iniciar do Windows 10.',['ep']]
+      ]},
+    { id:'explorer', label:'Explorador de Arquivos', base:RS('file-explorer'), mod:'File Explorer Styler',
+      intro:'Mod "Windows 11 File Explorer Styler". Para transparência de verdade no Explorer, ele costuma ser combinado com o mod "Translucent Windows".',
+      items:[
+        ['Translucent Explorer11','Translucent Explorer11/screenshot-small.png','Explorer com fundo translúcido.',['trans','cfg']],
+        ['MicaTabless','MicaTabless/screenshot-small.png','Escolhe o fundo da janela inteira (Mica ou acrílico) e esconde as abas.',['vidro']],
+        ['MicaBar','MicaBar/screenshot-small.png','Coloca Mica na barra de comandos.',['vidro','min']],
+        ['Float','Float/screenshot-small.png','Barra de endereço e abas flutuantes.',[]],
+        ['WindowGlass','WindowGlass/screenshot-small.png','Vidro moderno, layout compacto.',['vidro']],
+        ['OS26 Liquid Glass','OS26 Liquid Glass/screenshot-small.png','Vidro líquido estilo OS26, com layout padrão ou compacto.',['vidro']],
+        ['LiquidGlass','LiquidGlass/screenshot-small.png','Vidro líquido.',['vidro','cfg']],
+        ['TintedGlass','TintedGlass/screenshot-small.png','Vidro tingido.',['vidro','dark','cfg']],
+        ['ZEUSosX_044','ZEUSosX_044/screenshot-small.png','Uma linha só, elegante, sem bordas sobrando. Corrige bugs de layout do 24H2 e do 25H2.',['h25','min']],
+        ['Compact Explorer11','Compact Explorer11/screenshot-small.png','Bem mais compacto na vertical.',['dark']],
+        ['Minimal Explorer11','Minimal Explorer11/screenshot-small.png','Minimalista.',['min']],
+        ['AddressSearchOnly','AddressSearchOnly/screenshot-small.png','Mostra só a barra de endereço e a busca.',['min']],
+        ['NoCommandBar','NoCommandBar/screenshot-small.png','Remove a barra de comandos.',['min']],
+        ['Tabless','Tabless/screenshot-small.png','Volta a barra de comandos de antes das abas.',['retro']],
+        ['Matter','Matter/screenshot-small.png','Estilo Material. Combina com o Matter da barra.',[]]
+      ]},
+    { id:'notif', label:'Central e notificações', base:RS('notification-center'), mod:'Notification Center Styler',
+      intro:'Mod "Windows 11 Notification Center Styler": central de notificações, calendário, configurações rápidas (Wi-Fi, volume...) e listas de atalhos.',
+      items:[
+        ['FrostyGlass','FrostyGlass/screenshot-small.png','Vidro fosco na central, no calendário e nos controles.',['vidro']],
+        ['LayerMicaUI','LayerMicaUI/screenshot-small.png','Otimizado para o 25H2, nos modos claro e escuro.',['h25','vidro']],
+        ['WindowGlass','WindowGlass/screenshot-small.png','Vidro moderno, semicompacto.',['vidro']],
+        ['TranslucentShell','TranslucentShell/screenshot-small.png','Central translúcida.',['trans']],
+        ['LiquidGlass','LiquidGlass/screenshot-small.png','Vidro líquido.',['vidro']],
+        ['TintedGlass','TintedGlass/screenshot-small.png','Vidro tingido.',['vidro','cfg']],
+        ['OS26 Tahoe Glass','OS26 Tahoe Glass/screenshot-small.png','Deixa a central parecida com a do macOS Tahoe.',['vidro']],
+        ['BetterControl11','BetterControl11/screenshot-small.png','Inspirado na Central de Controle do macOS e na Central de Ações do Windows 10.',[]],
+        ['Unified','Unified/screenshot-small.png','Painel unificado.',[]],
+        ['Matter','Matter/screenshot-small.png','Estilo Material, claro e escuro. Pede duas fontes extras.',[]],
+        ['Oversimplified & Accentuated','Oversimplified&Accentuated/screenshot-small.png','Mais limpo, com cor de destaque.',['acc','dark']],
+        ['Fluid','Fluid/screenshot-small.png','Combina com o Fluid do Iniciar e da barra.',[]],
+        ['Densy','Densy/screenshot-small.png','Denso, sem espaços nem elementos inúteis.',['min']],
+        ['Borderless','Borderless/screenshot-small.png','Sem bordas nem sombras. Central alinhada no topo, boa para barra em dock.',['min']],
+        ['10JumpLists','10JumpLists/screenshot-small.png','Listas de atalhos (botão direito na barra) no estilo do Windows 10.',['retro']]
+      ]},
+    { id:'janelas', label:'Janelas e bordas', base:'', mod:'',
+      intro:'Efeitos nas janelas em geral (barra de título, bordas, fundo). Aqui já não é Windhawk Styler: são ferramentas separadas, e algumas mexem no DWM, o "motor" que desenha as janelas. É mais bonito e mais arriscado.',
+      items:[
+        ['DWMBlurGlass: Aero','https://raw.githubusercontent.com/Maplespe/DWMBlurGlass/master/Screenshot/aero.png','Barras de título de vidro estilo Windows 7 (Aero) em todas as janelas.',['vidro','retro','dwm']],
+        ['DWMBlurGlass: Acrílico','https://raw.githubusercontent.com/Maplespe/DWMBlurGlass/master/Screenshot/acrylic.png','Barras de título em acrílico.',['vidro','dwm']],
+        ['DWMBlurGlass: Mica','https://raw.githubusercontent.com/Maplespe/DWMBlurGlass/master/Screenshot/mica.png','Barras de título em Mica.',['vidro','dwm']],
+        ['DWMBlurGlass: Desfoque','https://raw.githubusercontent.com/Maplespe/DWMBlurGlass/master/Screenshot/blur.png','Desfoque simples atrás da barra de título.',['vidro','dwm']],
+        ['ExplorerBlurMica (1)','https://raw.githubusercontent.com/Maplespe/ExplorerBlurMica/main/screenshot/012949.png','Fundo do Explorer com desfoque ou Mica.',['vidro']],
+        ['ExplorerBlurMica (2)','https://raw.githubusercontent.com/Maplespe/ExplorerBlurMica/main/screenshot/152834.png','Outra combinação do mesmo efeito.',['vidro']],
+        ['Translucent Windows (Windhawk)','','Mod do Windhawk que aplica transparência e desfoque nas janelas de apps modernos. É a base de vários temas do Explorer. Não há foto oficial.',['vidro','cfg']]
+      ]},
+    { id:'outros', label:'Outras abordagens', base:'', mod:'',
+      intro:'Ferramentas que trocam peças inteiras do Windows por outras. Cada uma é um "mundo" próprio. O app poderia instalar ou configurar algumas, mas não costumam conviver bem entre si.',
+      items:[
+        ['Seelen UI','https://raw.githubusercontent.com/eythaann/Seelen-UI/master/documentation/images/preview.png','Troca a área de trabalho inteira: barra no topo, dock, lançador de apps e organização automática de janelas.',['subst']],
+        ['YASB','https://raw.githubusercontent.com/amnweb/yasb/main/docs/assets/readme/demo-dark.jpg','Barra de status no topo, altamente configurável (relógio, mídia, clima, CPU...).',['cfg']],
+        ['Nilesoft Shell: acrílico','https://raw.githubusercontent.com/moudey/Shell/main/screenshots/acrylic.png','Menu do botão direito totalmente redesenhado e configurável.',['vidro']],
+        ['Nilesoft Shell: gradiente','https://raw.githubusercontent.com/moudey/Shell/main/screenshots/gradient.png','O mesmo menu, com outro estilo.',[]],
+        ['Open-Shell','https://raw.githubusercontent.com/Open-Shell/Open-Shell-Menu/master/Src/Localization/Chinese/images/style1.png','Menu Iniciar clássico (estilo 7 ou XP), substituindo o do Windows 11.',['retro','subst']],
+        ['WindowBlinds 11','https://archive.stardock.com/products/windowblinds/windowblinds11/images/screenshots/release/wb11_rel_01.png','Skins completas para janelas, botões e menus, da Stardock.',['pago','subst']],
+        ['Lively Wallpaper','https://raw.githubusercontent.com/rocksdanister/lively/core-separation/resources/main_preview.gif','Papel de parede animado grátis. É uma alternativa ao Wallpaper Engine, que você já tem.',[]],
+        ['ExplorerPatcher','','Traz de volta a barra e o Iniciar do Windows 10 no 11, entre outras coisas. Quebra com frequência em atualizações grandes do Windows.',['retro','subst']],
+        ['StartAllBack','','Barra, Iniciar e Explorer estilo Windows 7 ou 10, muito polido.',['retro','pago','subst']]
+      ]}
+  ];
+
+  const tabs = document.getElementById('tabs'), gal = document.getElementById('gal'), intro = document.getElementById('intro'), cnt = document.getElementById('cnt');
+  const picked = new Set();
+  function tagHtml(ts){ return ts.map(t => '<span class="'+T[t][1]+'">'+T[t][0]+'</span>').join(''); }
+  function show(id){
+    const tab = TABS.find(t => t.id===id);
+    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.t===id));
+    intro.textContent = tab.intro;
+    gal.className = 'gal' + (tab.wide ? ' wide' : '');
+    gal.innerHTML = tab.items.map(it => {
+      const [name, img, desc, tags] = it;
+      const key = id + ':' + name;
+      const src = img ? (img.startsWith('http') ? img : tab.base + enc(img)) : '';
+      const im = src ? '<div class="im"><img loading="lazy" referrerpolicy="no-referrer" src="'+src+'" alt="'+name+'"></div>' : '<div class="im txt">sem foto oficial</div>';
+      return '<div class="g'+(picked.has(key)?' selected':'')+'" data-choice="'+key+'">'+im+'<div class="bd"><h4><span>'+name+'</span><span class="ck">✓ gostei</span></h4><p>'+desc+'</p><div class="tags">'+tagHtml(tags)+'</div></div></div>';
+    }).join('');
+  }
+  TABS.forEach(t => { const b=document.createElement('button'); b.dataset.t=t.id; b.textContent=t.label+' ('+t.items.length+')'; b.onclick=()=>show(t.id); tabs.insertBefore(b, cnt); });
+  gal.addEventListener('click', e => {
+    const g = e.target.closest('.g'); if(!g) return;
+    const k = g.dataset.choice;
+    if (picked.has(k)) { picked.delete(k); g.classList.remove('selected'); } else { picked.add(k); g.classList.add('selected'); }
+    cnt.textContent = picked.size + (picked.size===1?' marcado':' marcados');
+    window.brainstorm && brainstorm.choice('nivel2-favoritos', {favoritos: Array.from(picked)});
+  });
+  show('taskbar');
+})();
+</script>

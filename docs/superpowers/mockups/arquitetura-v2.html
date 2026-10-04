@@ -1,0 +1,63 @@
+<style>
+  .arq { display:flex; flex-direction:column; gap:10px; max-width:1000px; }
+  .lay { border:1px solid var(--border); border-radius:14px; padding:12px 14px; background:var(--bg-secondary); }
+  .lay > .t { font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-secondary); margin-bottom:8px; font-weight:600; }
+  .row { display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
+  .bx { border-radius:10px; padding:10px 12px; background:var(--bg-primary); border:1px solid var(--border); font-size:.82rem; line-height:1.45; }
+  .bx b { display:block; font-size:.9rem; margin-bottom:2px; }
+  .bx span { color:var(--text-secondary); }
+  .cs .bx { border-color:#0a84ff88; }
+  .cpp .bx { border-color:#bf5af288; }
+  .win .bx { border-color:#ff9f0a88; }
+  .arrow { text-align:center; color:var(--text-secondary); font-size:.8rem; line-height:1.3; }
+  .ph { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; }
+  .ph .bx { position:relative; padding-top:26px; }
+  .ph .n { position:absolute; top:6px; left:12px; font-size:.68rem; font-weight:700; letter-spacing:.05em; color:var(--accent); }
+  .ph .sz { display:inline-block; margin-top:6px; font-size:.7rem; padding:1px 8px; border-radius:999px; border:1px solid var(--border); color:var(--text-secondary); }
+  .ph .zero { border-color:var(--warning); }
+  .ph .zero .n { color:var(--warning); }
+  .tag { font-size:.66rem; padding:1px 7px; border-radius:999px; margin-left:6px; vertical-align:middle; }
+  .tag.c { background:#0a84ff22; color:#0a84ff; } .tag.p { background:#bf5af222; color:#bf5af2; }
+</style>
+
+<h2>Arquitetura nova: o app substitui as ferramentas</h2>
+<p class="subtitle">Duas peças: o <b>app em C#</b> (janela, bandeja, perfis, barra do topo, tiling) e um <b>componente pequeno em C++</b> que roda dentro do Explorer e repinta a barra (mais tarde também o Iniciar e a central). O Wallpaper Engine fica de fora, e o app não toca no papel de parede.</p>
+
+<div class="arq">
+  <div class="lay cs"><div class="t">App Vitral <span class="tag c">C# · .NET 10 · WPF</span></div>
+    <div class="row">
+      <div class="bx"><b>Janela + bandeja</b><span>Perfis, editor por área com prévias, "testar e voltar", troca rápida pela bandeja.</span></div>
+      <div class="bx"><b>Motor de perfis</b><span>Perfil = pasta com perfil.json e temas. Retrato antes de aplicar e reversão. Exporta .zip para o notebook.</span></div>
+      <div class="bx"><b>Ajustes nativos</b><span>Modo escuro, cor de destaque, transparência, destaque na barra e nos títulos, alinhamento e posição da barra.</span></div>
+      <div class="bx"><b>Supervisor</b><span>Carrega o componente no Explorer, recarrega se o Explorer reiniciar ou o Windows atualizar, e desfaz tudo se algo der errado.</span></div>
+      <div class="bx"><b>Barra do topo</b><span>Janela própria com vidro, que reserva espaço no alto da tela. <i>Fase 3</i></span></div>
+      <div class="bx"><b>Tiling</b><span>Organiza as janelas por mouse e botões na barra do topo. <i>Fase 4</i></span></div>
+    </div>
+  </div>
+  <div class="arrow">↓ carrega e conversa por um canal privado ↓</div>
+  <div class="lay cpp"><div class="t">Componente de estilo <span class="tag p">C++ · DLL pequena</span></div>
+    <div class="row">
+      <div class="bx"><b>Dentro do Explorer</b><span>Usa o "modo diagnóstico" da interface do Windows (a mesma porta usada pelo TranslucentTB e pelo Windhawk) para achar a barra e trocar fundo, cores, cantos e espaçamentos.</span></div>
+      <div class="bx"><b>Motor de estilos</b><span>Lê temas no formato "alvo → propriedades", o mesmo dos temas que você escolheu. Vidro feito por um pincel de desfoque próprio.</span></div>
+      <div class="bx"><b>Volta sozinho</b><span>Se o app fechar ou travar, o componente devolve a barra ao normal.</span></div>
+    </div>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="lay win"><div class="t">No Windows</div>
+    <div class="row">
+      <div class="bx"><b>explorer.exe</b><span>Barra de tarefas (fases 1 e 2).</span></div>
+      <div class="bx"><b>Iniciar / Central</b><span>Processos próprios do Windows, mais fechados. Fase 2, a confirmar no teste.</span></div>
+      <div class="bx"><b>Registro do usuário</b><span>Ajustes nativos, sem admin.</span></div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:1.5rem">Fases</h3>
+<div class="ph">
+  <div class="bx zero"><span class="n">FASE 0 · TESTE</span><b>Prova de viabilidade</b><span>1 a 2 dias, descartável. Ferramentas no G:, componente mínimo que pinta a barra de transparente aqui no 25H2. Testa também se entra no Iniciar.</span><span class="sz">decide se segue</span></div>
+  <div class="bx"><span class="n">FASE 1</span><b>Nativo + barra própria</b><span>Ajustes nativos, perfis, bandeja e barra transparente/vidro no lugar do TranslucentTB, com motor de estilos para a barra.</span><span class="sz">~3 a 6 semanas</span></div>
+  <div class="bx"><span class="n">FASE 2</span><b>Iniciar, central e Explorer</b><span>Mesmo motor em outros processos. O Explorer é o mais difícil e fica por último.</span><span class="sz">~6 a 10 semanas</span></div>
+  <div class="bx"><span class="n">FASE 3</span><b>Barra do topo</b><span>Relógio, mídia, volume, bateria e rede, com vidro.</span><span class="sz">~2 semanas (MVP)</span></div>
+  <div class="bx"><span class="n">FASE 4</span><b>Tiling</b><span>Primeiro "encaixar em zonas" e depois organização automática.</span><span class="sz">~1 a 3 semanas (MVP)</span></div>
+</div>
+<p class="subtitle" style="margin-top:.75rem;font-size:.8rem">Estimativas dos pesquisadores para uma pessoa em tempo integral, contando com aproveitar código aberto como referência. São ordens de grandeza, não prazos.</p>

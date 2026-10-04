@@ -1,0 +1,149 @@
+<style>
+  .vt { --b:#202020; --b2:#2b2b2b; --b3:#323232; --ln:#3a3a3a; --fg:#fff; --mut:#a8a8a8; --ac:#4c8bf5;
+        font-family:"Segoe UI Variable","Segoe UI",system-ui,sans-serif; color:var(--fg); }
+  .vt * { box-sizing:border-box; }
+  .win { background:var(--b); border:1px solid var(--ln); border-radius:10px; overflow:hidden; box-shadow:0 14px 40px rgba(0,0,0,.4); max-width:1040px; }
+  .tb { height:34px; display:flex; align-items:center; padding-left:12px; gap:8px; font-size:12px; background:#1c1c1c; }
+  .tb .ctl { margin-left:auto; display:flex; } .tb .ctl span { width:44px; text-align:center; opacity:.8; }
+  .body { display:grid; grid-template-columns:210px minmax(0,1fr); min-height:520px; }
+  @media (max-width:760px){ .body { grid-template-columns:1fr; } .side { display:none; } }
+  .side { background:#1b1b1b; border-right:1px solid var(--ln); padding:12px 8px; display:flex; flex-direction:column; gap:4px; font-size:13px; }
+  .side h5 { margin:6px 8px 4px; font-size:11px; color:var(--mut); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+  .pf { padding:7px 10px; border-radius:6px; display:flex; align-items:center; gap:8px; position:relative; }
+  .pf.sel { background:#2d2d2d; } .pf.sel::before { content:""; position:absolute; left:0; top:25%; height:50%; width:3px; border-radius:2px; background:var(--ac); }
+  .pf .dot { width:8px; height:8px; border-radius:50%; background:#3ddc84; } .pf .dot.off { background:transparent; border:1px solid #666; }
+  .pf small { margin-left:auto; color:var(--mut); font-size:11px; }
+  .side .new { margin-top:6px; padding:7px 10px; border:1px dashed #555; border-radius:6px; color:var(--mut); }
+  .side .bottom { margin-top:auto; font-size:11.5px; color:var(--mut); padding:8px; border-top:1px solid var(--ln); line-height:1.6; }
+  .side .bottom b { color:#3ddc84; font-weight:600; }
+  .main { display:flex; flex-direction:column; min-width:0; }
+  .hd { padding:14px 18px 0; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .hd h3 { margin:0; font-size:20px; font-weight:600; } .hd span { color:var(--mut); font-size:12px; }
+  .tabs { display:flex; gap:2px; padding:10px 14px 0; border-bottom:1px solid var(--ln); overflow-x:auto; }
+  .tabs div { padding:8px 12px; font-size:13px; color:var(--mut); border-bottom:2px solid transparent; white-space:nowrap; }
+  .tabs .on { color:var(--fg); border-bottom-color:var(--ac); }
+  .tabs .fut { opacity:.45; } .tabs .fut i { font-style:normal; font-size:10px; margin-left:4px; }
+  .ct { padding:14px 18px; display:grid; grid-template-columns:minmax(0,1fr) 250px; gap:16px; flex:1; }
+  @media (max-width:900px){ .ct { grid-template-columns:1fr; } }
+  .lbl { font-size:12px; color:var(--mut); margin:0 0 8px; }
+  .gal { display:grid; grid-template-columns:1fr; gap:8px; }
+  .th { background:var(--b2); border:1px solid var(--ln); border-radius:8px; padding:6px; display:grid; grid-template-columns:minmax(0,1fr) 110px; gap:8px; align-items:center; }
+  .th.sel { border-color:var(--ac); box-shadow:0 0 0 1px var(--ac) inset; }
+  .th .im { background:#0d0d0f; border-radius:5px; height:46px; overflow:hidden; display:flex; align-items:center; }
+  .th img { width:100%; height:100%; object-fit:cover; object-position:center bottom; }
+  .th .nm { font-size:12.5px; } .th .nm small { display:block; color:var(--mut); font-size:10.5px; }
+  .simple { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+  .simple span { font-size:12px; padding:5px 10px; border-radius:6px; background:var(--b2); border:1px solid var(--ln); }
+  .simple .on { border-color:var(--ac); }
+  .pn { background:var(--b2); border:1px solid var(--ln); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:10px; font-size:12.5px; }
+  .pn h6 { margin:0; font-size:12px; font-weight:600; }
+  .st { display:grid; grid-template-columns:1fr auto; gap:6px 8px; align-items:center; }
+  .st span:nth-child(even) { background:var(--b3); border:1px solid var(--ln); border-radius:5px; padding:3px 8px; font-size:11.5px; }
+  .sl { display:flex; align-items:center; gap:8px; } .sl .bar { flex:1; height:4px; border-radius:2px; background:linear-gradient(90deg,var(--ac) 35%,#555 35%); }
+  .ft { border-top:1px solid var(--ln); padding:10px 18px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; background:#1c1c1c; }
+  .bt { padding:7px 16px; border-radius:6px; font-size:13px; background:var(--b3); border:1px solid var(--ln); }
+  .bt.pri { background:var(--ac); border-color:var(--ac); color:#fff; font-weight:600; }
+  .ft .sp { margin-left:auto; }
+  .row2 { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:22px; align-items:start; }
+  @media (max-width:980px){ .row2 { grid-template-columns:1fr; } }
+  .tray { background:rgba(40,40,40,.92); border:1px solid #444; border-radius:8px; padding:6px; width:270px; font-size:13px; box-shadow:0 12px 30px rgba(0,0,0,.45); }
+  .tray .it { padding:7px 10px; border-radius:5px; display:flex; gap:10px; align-items:center; }
+  .tray .it.h { background:#3a3a3a; }
+  .tray .ck { width:14px; color:var(--ac); }
+  .tray .sep { height:1px; background:#444; margin:5px 4px; }
+  .tray .cap { font-size:11px; color:var(--mut); padding:4px 10px; }
+  .tray .warn { color:#ffb340; }
+  .toast { margin-top:14px; background:rgba(40,40,40,.95); border:1px solid #444; border-radius:8px; padding:12px 14px; width:300px; font-size:12.5px; box-shadow:0 12px 30px rgba(0,0,0,.45); }
+  .toast b { display:block; margin-bottom:4px; font-size:13px; }
+  .toast .bts { display:flex; gap:6px; margin-top:10px; } .toast .bts span { flex:1; text-align:center; padding:6px; border-radius:5px; background:#3a3a3a; }
+  .toast .bts .pri { background:var(--ac); }
+  .toast .prog { height:3px; background:#444; border-radius:2px; margin-top:8px; overflow:hidden; } .toast .prog div { width:60%; height:100%; background:var(--ac); }
+  .notes { font-size:.82rem; color:var(--text-secondary); line-height:1.55; margin-top:1rem; }
+  .notes li { margin-bottom:.3rem; }
+</style>
+
+<h2>Parte 3: a janela e a bandeja (esboço)</h2>
+<p class="subtitle">É um esboço de estrutura, não o visual final. A janela real usa o estilo Fluent do Windows 11, com fundo Mica e modo escuro automático.</p>
+
+<div class="row2 vt">
+  <div class="win">
+    <div class="tb">◆ Vitral<div class="ctl"><span>—</span><span>☐</span><span>✕</span></div></div>
+    <div class="body">
+      <div class="side">
+        <h5>Perfis</h5>
+        <div class="pf sel"><span class="dot"></span>Vidro escuro<small>ativo</small></div>
+        <div class="pf"><span class="dot off"></span>Barra limpa</div>
+        <div class="pf"><span class="dot off"></span>Matter</div>
+        <div class="new">+ Novo perfil</div>
+        <h5 style="margin-top:14px">Mais</h5>
+        <div class="pf">Importar / Exportar</div>
+        <div class="pf">Histórico de retratos</div>
+        <div class="pf">Configurações</div>
+        <div class="bottom">Componente da barra: <b>ativo</b><br>Windows 25H2 · 26200.9550<br>Retrato original: guardado</div>
+      </div>
+      <div class="main">
+        <div class="hd"><h3>Vidro escuro</h3><span>editado agora · não aplicado</span></div>
+        <div class="tabs">
+          <div>Cores e tema</div><div class="on">Barra de tarefas</div>
+          <div class="fut">Iniciar<i>fase 2</i></div><div class="fut">Central<i>fase 2</i></div><div class="fut">Explorer<i>fase 2</i></div>
+          <div class="fut">Barra do topo<i>fase 3</i></div><div class="fut">Janelas<i>fase 4</i></div>
+        </div>
+        <div class="ct">
+          <div>
+            <p class="lbl">Estilo base</p>
+            <div class="simple"><span>Normal do Windows</span><span>Transparente</span><span>Acrílico</span><span class="on">Tema</span></div>
+            <p class="lbl">Tema (fotos dos guias de estilo, baixadas na hora)</p>
+            <div class="gal">
+              <div class="th sel"><div class="im"><img referrerpolicy="no-referrer" src="https://raw.githubusercontent.com/ramensoftware/windows-11-taskbar-styling-guide/main/Themes/FrostyGlass/screenshot.png"></div><div class="nm">FrostyGlass<small>só motor ✓</small></div></div>
+              <div class="th"><div class="im"><img referrerpolicy="no-referrer" src="https://raw.githubusercontent.com/ramensoftware/windows-11-taskbar-styling-guide/main/Themes/LayerMicaUI/screenshot.png"></div><div class="nm">LayerMicaUI<small>só motor ✓ · ícones à esquerda</small></div></div>
+              <div class="th"><div class="im"><img referrerpolicy="no-referrer" src="https://raw.githubusercontent.com/ramensoftware/windows-11-taskbar-styling-guide/main/Themes/xdark/screenshot.png"></div><div class="nm">xdark<small>só motor ✓</small></div></div>
+              <div class="th"><div class="im"><img referrerpolicy="no-referrer" src="https://raw.githubusercontent.com/ramensoftware/windows-11-taskbar-styling-guide/main/Themes/LiquidGlass2/screenshot.png"></div><div class="nm">LiquidGlass2<small>parcial: faltam peças</small></div></div>
+            </div>
+          </div>
+          <div class="pn">
+            <h6>Ajustes do tema</h6>
+            <div class="sl">Opacidade <div class="bar"></div> 35%</div>
+            <div class="sl">Cor do vidro <span style="width:18px;height:18px;border-radius:4px;background:#21375E;display:inline-block;border:1px solid #555"></span> da cor de destaque</div>
+            <h6 style="margin-top:6px">Quando…</h6>
+            <div class="st">
+              <span>Área de trabalho</span><span>tema</span>
+              <span>Janela maximizada</span><span>acrílico</span>
+              <span>Iniciar aberto</span><span>normal</span>
+              <span>Task View aberto</span><span>normal</span>
+              <span>Economia de bateria</span><span>opaco</span>
+            </div>
+          </div>
+        </div>
+        <div class="ft"><span class="bt">Exportar perfil</span><span class="sp"></span><span class="bt">Descartar</span><span class="bt">Testar (20 s)</span><span class="bt pri">Aplicar</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="label" style="color:var(--text-secondary)">Clique no ícone da bandeja</p>
+    <div class="tray">
+      <div class="cap">Perfis</div>
+      <div class="it"><span class="ck">✓</span>Vidro escuro</div>
+      <div class="it h"><span class="ck"></span>Barra limpa</div>
+      <div class="it"><span class="ck"></span>Matter</div>
+      <div class="sep"></div>
+      <div class="it"><span class="ck">↶</span>Desfazer última mudança</div>
+      <div class="it warn"><span class="ck">⟲</span>Voltar ao Windows original</div>
+      <div class="sep"></div>
+      <div class="it"><span class="ck"></span>Abrir Vitral</div>
+      <div class="it"><span class="ck"></span>Sair</div>
+    </div>
+    <p class="label" style="color:var(--text-secondary);margin-top:18px">Depois de "Testar" ou de trocar pela bandeja</p>
+    <div class="toast"><b>Manter este visual?</b>"Barra limpa" foi aplicado. Volta ao anterior em 12 s.
+      <div class="prog"><div></div></div>
+      <div class="bts"><span class="pri">Manter</span><span>Voltar</span></div>
+    </div>
+  </div>
+</div>
+
+<ul class="notes">
+  <li><b>Barra lateral:</b> perfis (o ponto verde é o ativo), importar e exportar, histórico de retratos e o estado do componente.</li>
+  <li><b>Abas por área:</b> as das próximas fases aparecem apagadas até existirem. Cada aba tem um estilo base simples (normal, transparente, acrílico) ou um tema da galeria, com uma etiqueta dizendo se o tema funciona inteiro só com o nosso motor.</li>
+  <li><b>"Quando…":</b> o comportamento por situação, como no seu TranslucentTB de hoje.</li>
+  <li><b>Pela bandeja:</b> a troca de perfil também mostra o aviso "Manter?", para você não ficar preso num visual quebrado.</li>
+</ul>
