@@ -4,3 +4,5 @@ obj/
 artifacts/
 *.user
 
+spike/tap/generated/
+spike/out/
