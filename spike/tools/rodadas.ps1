@@ -19,12 +19,15 @@ for ($i = 1; $i -le $N; $i++) {
     do { Start-Sleep -Milliseconds 500 } until (Get-Process explorer -ErrorAction SilentlyContinue)
     Start-Sleep -Seconds 6   # deixa a barra terminar de montar
 
+    # Com sucesso, o injector mostra o resultado e espera Enter; ao sair, o componente restaura a barra.
     & $injector --rota $Rota --alvo explorer --modo transparente
     $codigo = $LASTEXITCODE
-    # O injector espera Enter; depois disso a barra deve voltar ao normal.
-    $viu      = Read-Host 'As 3 barras ficaram transparentes? (s/n)'
-    Start-Sleep -Seconds 2
-    $voltou   = Read-Host 'Depois do Enter, as barras voltaram ao normal? (s/n)'
+    $viu    = Read-Host 'Antes de você apertar Enter, as barras de tarefas ficaram transparentes? (s/n)'
+    $voltou = '-'
+    if ($viu -eq 's') {
+        Start-Sleep -Seconds 2
+        $voltou = Read-Host 'E agora, depois do Enter, as barras voltaram ao normal? (s/n)'
+    }
     "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss');$Rota;$i;codigo=$codigo;transparente=$viu;restaurou=$voltou" | Add-Content $visual
 }
 Write-Host "`nFim da rota $Rota. Resultados em $spike\resultados\" -ForegroundColor Green

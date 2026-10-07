@@ -254,14 +254,16 @@ public:
             winrt::check_hresult(diag->QueryInterface(__uuidof(IVisualTreeService3), servico.put_void()));
             auto* watcher = new VisualTreeWatcher(diag, cfg);
 
-            // AdviseVisualTreeChange chamado de outra thread (padrão TranslucentTB/Windhawk: evita travar)
-            HRESULT hr = E_FAIL;
-            std::thread([&] { hr = servico->AdviseVisualTreeChange(watcher); }).join();
-            watcher->Release();
-            Log(L"ADVISE|hr=" + std::to_wstring(static_cast<uint32_t>(hr)));
-
-            std::wstring eventoNome = L"Local\\VitralTapReady-" + std::to_wstring(GetCurrentProcessId());
-            if (HANDLE ev = CreateEventW(nullptr, TRUE, FALSE, eventoNome.c_str())) { SetEvent(ev); CloseHandle(ev); }
+            // AdviseVisualTreeChange chamado de outra thread SEM esperar (padrão TranslucentTB/Windhawk).
+            // Esperar (join) trava: o Advise precisa da thread de UI, que é a que chamou SetSite.
+            Log(L"ADVISE_INICIADO");
+            std::thread([servico, watcher] {
+                HRESULT hr = servico->AdviseVisualTreeChange(watcher);
+                watcher->Release();
+                Log(L"ADVISE|hr=" + std::to_wstring(static_cast<uint32_t>(hr)));
+                std::wstring eventoNome = L"Local\\VitralTapReady-" + std::to_wstring(GetCurrentProcessId());
+                if (HANDLE ev = CreateEventW(nullptr, TRUE, FALSE, eventoNome.c_str())) { SetEvent(ev); CloseHandle(ev); }
+            }).detach();
         }
         catch (...)
         {
