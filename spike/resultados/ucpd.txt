@@ -1,0 +1,6 @@
+Sonda do UCPD — 2026-10-06, build 26200.9550, exe próprio não assinado (UcpdProbe.exe via dotnet run)
+Valores antes e depois idênticos: TaskbarDa=0 TaskbarAl=1 SearchboxTaskbarMode=1
+HKCU\...\Explorer\Advanced\TaskbarDa;0;BLOQUEADO(UnauthorizedAccessException)
+HKCU\...\Search\SearchboxTaskbarMode;1;OK
+HKCU\...\Explorer\Advanced\TaskbarAl;1;OK (controle)
+Conclusão: o UCPD bloqueia TaskbarDa para qualquer processo não assinado pela Microsoft, não só para reg/powershell.
