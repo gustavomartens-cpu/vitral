@@ -1,0 +1,5 @@
+LIBRARY VitralTapSpike
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE
+    VitralHookProc
