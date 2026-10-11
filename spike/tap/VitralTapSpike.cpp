@@ -324,12 +324,23 @@ static void IniciarDeDentro()
     if (!init) { Log(L"INTERNA|sem InitializeXamlDiagnosticsEx"); return; }
     std::wstring dll = CaminhoDaDll();
     std::wstring dados = LerArquivoInit();
-    for (int n = 1; n <= 60; ++n)
+    // O sufixo de "VisualDiagConnection<n>" é um contador interno do processo: como o Windhawk,
+    // percorre n = 1..10000 enquanto a resposta for ERROR_NOT_FOUND. Repete a varredura até 60 vezes
+    // (meio segundo entre elas) caso a barra ainda não exista.
+    const HRESULT naoEncontrado = HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+    for (int tentativa = 1; tentativa <= 60; ++tentativa)
     {
-        HRESULT hr = E_FAIL;
-        std::wstring endpoint = L"VisualDiagConnection" + std::to_wstring(n);
-        std::thread([&] { hr = init(endpoint.c_str(), GetCurrentProcessId(), nullptr, dll.c_str(), CLSID_TapSite, dados.c_str()); }).join();
-        Log(L"INTERNA|tentativa=" + std::to_wstring(n) + L"|hr=" + std::to_wstring(static_cast<uint32_t>(hr)));
+        HRESULT hr = naoEncontrado;
+        int n = 0;
+        std::thread([&] {
+            for (n = 1; n <= 10000 && hr == naoEncontrado; ++n)
+            {
+                std::wstring endpoint = L"VisualDiagConnection" + std::to_wstring(n);
+                hr = init(endpoint.c_str(), GetCurrentProcessId(), L"", dll.c_str(), CLSID_TapSite, dados.c_str());
+            }
+        }).join();
+        Log(L"INTERNA|tentativa=" + std::to_wstring(tentativa) + L"|conexao=" + std::to_wstring(n - 1) +
+            L"|hr=" + std::to_wstring(static_cast<uint32_t>(hr)));
         if (SUCCEEDED(hr)) return;
         Sleep(500);
     }

@@ -10,16 +10,17 @@ internal static class XamlDiag
         string endPointName, uint pid, string? wszDllXamlDiagnostics,
         string wszTAPDllName, Guid tapClsid, string? wszInitializationData);
 
-    /// Tenta VisualDiagConnection1..10 até S_OK. Devolve o último HRESULT.
+    private const int ErroNaoEncontrado = unchecked((int)0x80070490); // HRESULT_FROM_WIN32(ERROR_NOT_FOUND)
+
+    /// O sufixo de "VisualDiagConnection<n>" é um contador interno do processo alvo e não dá para saber qual é.
+    /// Como o Windhawk: tenta n = 1..10000 enquanto a resposta for ERROR_NOT_FOUND. Devolve o último HRESULT.
     public static int Carregar(uint pid, string dll, Guid clsid, string dados)
     {
-        int hr = -1;
-        for (int n = 1; n <= 10; n++)
-        {
-            hr = InitializeXamlDiagnosticsEx($"VisualDiagConnection{n}", pid, null, dll, clsid, dados);
-            Console.WriteLine($"  externa: VisualDiagConnection{n} → 0x{hr:X8}");
-            if (hr == 0) break;
-        }
+        int hr = ErroNaoEncontrado;
+        int n = 1;
+        for (; n <= 10000 && hr == ErroNaoEncontrado; n++)
+            hr = InitializeXamlDiagnosticsEx($"VisualDiagConnection{n}", pid, "", dll, clsid, dados);
+        Console.WriteLine($"  externa: parou em VisualDiagConnection{n - 1} → 0x{hr:X8}");
         return hr;
     }
 }
