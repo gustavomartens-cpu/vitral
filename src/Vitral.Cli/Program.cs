@@ -34,9 +34,7 @@ try
             var resultado = aplicador.Aplicar(perfis.Carregar(t.Nome));
             int codigo = Relatar(resultado);
             Console.Write($"Manter este visual? (s/n) Volta ao anterior em {t.Segundos} s: ");
-            var leitura = Task.Run(Console.ReadLine);
-            bool manter = leitura.Wait(TimeSpan.FromSeconds(t.Segundos)) &&
-                          leitura.Result?.Trim().Equals("s", StringComparison.OrdinalIgnoreCase) == true;
+            bool manter = Confirmacao.Esperar(Console.ReadLine, TimeSpan.FromSeconds(t.Segundos));
             if (manter) { Console.WriteLine("Mantido."); return codigo; }
             aplicador.Reverter(resultado.RetratoAnterior);
             Console.WriteLine();
