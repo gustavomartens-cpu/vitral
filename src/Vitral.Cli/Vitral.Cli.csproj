@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Vitral.Core\Vitral.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>vitral</AssemblyName>
+    <RootNamespace>Vitral.Cli</RootNamespace>
+  </PropertyGroup>
+
+</Project>

@@ -66,6 +66,29 @@ public static class AjustesNativos
         return valores;
     }
 
+    /// O inverso de <see cref="Calcular"/>: monta os ajustes a partir do registro atual. Valor ausente vira nulo.
+    public static AjustesNativosPerfil LerAtual(IRegistro r)
+    {
+        uint? Ler(string chave, string nome) => r.Ler(chave, nome, TipoValor.Dword).Dado as uint?;
+        static bool? Bool(uint? v) => v is null ? null : v != 0;
+
+        uint? claroSistema = Ler(Personalize, "SystemUsesLightTheme");
+        uint? claroApps = Ler(Personalize, "AppsUseLightTheme");
+        uint? auto = Ler(Desktop, "AutoColorization");
+        uint? accent = Ler(Dwm, "AccentColor");
+        uint? alinhamento = Ler(Advanced, "TaskbarAl");
+
+        return new AjustesNativosPerfil(
+            ModoSistema: claroSistema is null ? null : claroSistema != 0 ? Modo.Claro : Modo.Escuro,
+            ModoApps: claroApps is null ? null : claroApps != 0 ? Modo.Claro : Modo.Escuro,
+            CorDestaque: auto is 1 || accent is null ? null : Cor.DeAbgr(accent.Value).ParaHex(),
+            CorDestaqueAutomatica: Bool(auto),
+            Transparencia: Bool(Ler(Personalize, "EnableTransparency")),
+            DestaqueNaBarraEIniciar: Bool(Ler(Personalize, "ColorPrevalence")),
+            DestaqueNosTitulos: Bool(Ler(Dwm, "ColorPrevalence")),
+            AlinhamentoBarra: alinhamento is null ? null : alinhamento == 0 ? Alinhamento.Esquerda : Alinhamento.Centro);
+    }
+
     /// 8 tons de 4 bytes (R,G,B,0xFF): 3 mais claros, a base (tom 4), 3 mais escuros e um último fixo.
     /// A gradação exata do Windows não é documentada; esta é uma aproximação.
     public static byte[] Paleta(Cor baseCor)

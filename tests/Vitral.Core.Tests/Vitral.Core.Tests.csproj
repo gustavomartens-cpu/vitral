@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Vitral.Core\Vitral.Core.csproj" />
+    <ProjectReference Include="..\..\src\Vitral.Cli\Vitral.Cli.csproj" />
   </ItemGroup>
 
 </Project>
