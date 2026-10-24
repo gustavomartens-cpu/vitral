@@ -1,46 +1,50 @@
 # Fase 0: resultados e decisão
 
-Datas dos testes: 2026-10-06 · Máquina: Windows 11 Home 25H2, build 26200.9550, 3 monitores · Branch: `fase-0`
+Testes: 2026-10-06 (1ª rodada) e 2026-10-24 (investigação e 2ª rodada) · Máquina: Windows 11 Home 25H2, build 26200.9550 · Branch: `fase-0`
 Plano: `docs/superpowers/plans/2026-10-06-fase0-prova-de-viabilidade.md` · Spec: `docs/superpowers/specs/2026-10-03-vitral-design.md`
 
 ## Decisão
 
-**A fase 0 não passou no critério combinado** (alguma rota com pelo menos 9 de 10 rodadas). **O projeto fica pausado** na decisão "caminho 1": registrar e retomar depois. Nada da fase 1 foi iniciado.
+**Segue.** A rota **externa** deixou a barra transparente em **10 de 10** rodadas (critério: ≥ 9/10), com restauração automática em 10 de 10 e sem nenhuma queda do Explorer. **Rota padrão da fase 1: externa.** O componente também entrou no **Iniciar redesenhado** (processo em contêiner de app) pela mesma rota, o que reduz o risco da fase 2.
 
-## O que foi comprovado
+> Histórico: em 2026-10-06 a fase foi dada como "não passou" (4/11 externa, 1/10 interna) e pausada. A investigação de 2026-10-24 encontrou a causa raiz (abaixo); com a correção, o critério foi cumprido.
+
+## Causa raiz das falhas de 2026-10-06
+
+O Windows registra a porta de diagnóstico de cada núcleo de interface XAML (`VisualDiagConnection<n>`, com `n` crescente por processo) **só quando a barra termina de montar a interface** (código público da Microsoft: `DXamlCore::RegisterVisualDiagnosticsPort`). O roteiro tentava a conexão 6 s depois de reiniciar o Explorer. Quando a barra ainda não estava pronta, não havia **nenhuma** porta, e todas as tentativas respondiam `0x80070490` (não encontrado). Na rota interna havia um segundo erro: cada tentativa usava um número diferente, e o número certo (1) só era tentado uma vez, cedo demais.
+
+Teste controlado (modo só-registro): espera de 6 s, 2 de 3 conectaram; espera de 60 s, 3 de 3. Correção (commit `fa96e8f`): a rota externa **repete a varredura a cada 2 s até a porta existir** (limite de 90 s). Os logs da 2ª rodada mostram o padrão: cerca de 6 s de "não encontrado" e depois a conexão na porta 1.
+
+## Resultados
 
 | Pergunta | Resultado |
 |---|---|
-| As ferramentas cabem no G: sem admin e sem Visual Studio? | **Sim.** .NET 10.0.401, llvm-mingw 20260922 (clang 23.1.2) e C++/WinRT 2.0.250303.1 em `G:\dev`. A instalação usou 1 MB do C:. |
-| O componente nativo compila sem depender de runtime externo? | **Sim.** Só importa DLLs do sistema. CFG ligado. Exporta `DllGetClassObject`, `DllCanUnloadNow` e `VitralHookProc`. Precisou de `#undef GetCurrentTime` (macro do `winbase.h` colide com o C++/WinRT). |
-| Um componente nosso consegue deixar a barra transparente sem o TranslucentTB? | **Sim, quando entra.** Encontrou as 3 barras (`frames=3`) e trocou o fundo das três (`fills=3`) em ~5,7 s. O Gustavo confirmou visualmente. |
-| A restauração automática funciona? | **Sim.** Ao encerrar o injector, as barras voltaram ao normal em todas as rodadas que tinham funcionado (`RESTAURADO=6`). |
-| O executável próprio passa pelo UCPD? | **Parcialmente.** `TaskbarDa` (botão de Widgets) fica **bloqueado** (`UnauthorizedAccessException`). `SearchboxTaskbarMode` e `TaskbarAl` passaram. Nenhum valor mudou. Ver `spike/resultados/ucpd.txt`. |
-| O componente entra no Iniciar? | **Não testado.** Pausado antes desse passo. |
+| Ferramentas no G: sem admin e sem Visual Studio | **Sim.** .NET 10.0.401, llvm-mingw 20260922 (clang 23.1.2), C++/WinRT 2.0.250303.1. A instalação usou 1 MB do C:. |
+| Componente sem runtime externo | **Sim.** Só importa DLLs do sistema; CFG ligado. Precisou de `#undef GetCurrentTime`. |
+| Barra transparente sem o TranslucentTB, rota externa | **10/10** (Gustavo confirmou visualmente), restauração **10/10**, tempo de 2,5 a 7,9 s |
+| Rota interna | conexão 10/10; visual 9/10, restauração 8/9 (ver "pendências") |
+| Segunda conexão no mesmo Explorer | **Recusada** (código 2), como esperado |
+| TranslucentTB aberto | Injector **recusa** (código 3) sem tocar em nada |
+| Explorer reiniciado com o componente carregado | Sobe limpo. Isso aconteceu em cada uma das ~40 rodadas, sem queda |
+| Iniciar redesenhado (StartMenuExperienceHost) | **Conecta** pela rota externa; o componente registrou 1.583 elementos (`StartMenu.StartBlendedFlexFrame`, `AcrylicBorder`, `StartFrame`...) |
+| UCPD | `TaskbarDa` (Widgets) **bloqueado** até para o nosso exe; `SearchboxTaskbarMode` e `TaskbarAl` passam (`spike/resultados/ucpd.txt`) |
+| Monitores | Em 2026-10-24 a opção "barra em todos os monitores" estava desligada (`MMTaskbarEnabled=0`): 1 barra, `frames=1`. Em 2026-10-06, com 3 barras, o componente viu `frames=3`. |
 
-## Confiabilidade da entrada (o critério que falhou)
+Dados brutos: `spike/resultados/rotas.csv`, `visual.csv`; logs em `spike/out/logs` (fora do git).
 
-Fonte: `spike/resultados/rotas.csv` e `visual.csv`.
+## Pendências para a fase 1
 
-| Rodadas | Rota | Sucessos | Observação |
-|---|---|---|---|
-| 2 iniciais | externa | 0/2 | versão com defeito: o componente travava esperando a si mesmo (corrigido, commit `f8ec0e6`) |
-| 1 autoteste + 10 | externa | 4/11 | sucesso no autoteste e nas rodadas 1 a 3; da 4 em diante, todas falharam |
-| 10 | interna | 1/10 | a DLL entrava no Explorer, mas o pedido de conexão respondia `0x80070490` (não encontrado) |
-| 5 autoteste | externa, varrendo conexões de 1 a 10.000 (como o Windhawk) | 0/5 | todas responderam `0x80070490` |
+1. **O Windows repinta o fundo da barra** (hipótese, não testada): em 2 rodadas da rota interna, o registro diz que a transparência foi aplicada/restaurada, mas o Gustavo viu o contrário. O TranslucentTB trata isso vigiando a troca do `Fill` (`RegisterPropertyChangedCallback`) e reaplicando. Implementar e testar na fase 1.
+2. **Esperar a barra ficar pronta** em todo carregamento: no login, após reinício do Explorer e após troca de monitores.
+3. Ao conectar num processo, carregar o componente uma vez só e soltá-lo ao sair (no teste do Iniciar ele ficou preso no processo até eu reiniciá-lo).
+4. Botão de Widgets fora do alcance do app (UCPD).
 
-Nas falhas da rota externa, o componente nem chegava a ser carregado (não há log daquele Explorer). A causa da resposta "não encontrado" **não foi identificada**. A queda ao longo da sessão (funcionava no começo e depois parou de vez) sugere algo que se acumula ou muda no sistema, mas isso é hipótese, não conclusão.
+## Erros meus durante a fase (corrigidos)
 
-## O que ficou de aprendizado para quando retomar
+- O componente esperava o próprio aviso terminar, e travava (deadlock na thread de interface). Corrigido no commit `f8ec0e6`.
+- A conexão era tentada cedo demais e, na rota interna, com um número de porta por tentativa (acima).
+- O injector quebrava ao ler o registro enquanto o componente escrevia (agora lê em modo compartilhado).
 
-1. A técnica funciona na prática neste build. O obstáculo é a **confiabilidade da conexão**, não a pintura da barra.
-2. Investigar a causa do "não encontrado" **com o Gustavo acompanhando e aprovando cada passo**, antes de qualquer outra mudança.
-3. O alternativo, já desenhado na conversa: o Vitral faz a parte nativa, a barra do topo e o tiling (que não precisam entrar no Explorer) e usa o TranslucentTB ou o Windhawk para a barra de baixo.
-4. O Vitral não vai conseguir alterar o botão de Widgets (bloqueio do UCPD).
+## Estado da máquina
 
-## Estado da máquina ao pausar
-
-- O Explorer foi reiniciado no fim dos testes: barra normal, sem nada do Vitral carregado.
-- O TranslucentTB foi **fechado** para os testes. Para a barra transparente de volta, basta abri-lo pelo Menu Iniciar (a configuração dele não foi alterada).
-- Ferramentas mantidas em `G:\dev\dotnet`, `G:\dev\toolchains` e `G:\dev\nuget` (para remover: apagar essas pastas).
-- Logs do componente em `spike/out/logs` (ignorados pelo git).
+Explorer e Iniciar limpos (sem o componente). **TranslucentTB aberto**, como antes dos testes. As ferramentas continuam em `G:\dev\dotnet`, `G:\dev\toolchains` e `G:\dev\nuget`.
