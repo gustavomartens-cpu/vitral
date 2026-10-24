@@ -18,7 +18,13 @@ public sealed class RegistroEmMemoria : IRegistro
         _valores[(valor.Chave, valor.Nome)] = valor;
     }
 
-    public void Apagar(string chave, string nome) => _valores.Remove((chave, nome));
+    public void Apagar(string chave, string nome)
+    {
+        // Como o registro real: apagar valor protegido também é negado.
+        if (Bloqueados.Contains((chave, nome)))
+            throw new EscritaBloqueadaException(new ValorRegistro(chave, nome, TipoValor.Dword, null));
+        _valores.Remove((chave, nome));
+    }
 
     private sealed class ComparadorPar : IEqualityComparer<(string, string)>
     {

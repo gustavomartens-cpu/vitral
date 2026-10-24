@@ -20,6 +20,21 @@ public static class PerfilJson
 
     public static Perfil Ler(string json)
     {
+        // O esquema é conferido antes do resto: um perfil de versão futura pode ter campos que esta versão não entende.
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                doc.RootElement.TryGetProperty("esquema", out var e) && e.TryGetInt32(out int esquema) &&
+                esquema > EsquemaSuportado)
+                throw new PerfilInvalidoException(
+                    $"Este perfil usa o esquema {esquema}, mas esta versão do Vitral entende até o esquema {EsquemaSuportado}.");
+        }
+        catch (JsonException e)
+        {
+            throw new PerfilInvalidoException($"perfil.json inválido: {e.Message}", e);
+        }
+
         Perfil? p;
         try
         {

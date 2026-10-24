@@ -29,11 +29,19 @@ public static class Pacote
             Escrever(zip, $"perfis/{RepositorioPerfis.NomeDePasta(p.Nome)}/perfil.json", PerfilJson.Escrever(p));
     }
 
-    /// Valida tudo antes de gravar qualquer coisa no destino.
-    public static IReadOnlyList<Perfil> Importar(string origemZip, RepositorioPerfis destino)
+    /// Valida tudo antes de gravar qualquer coisa no destino. Perfil com o mesmo nome de um local
+    /// só é sobrescrito com <paramref name="substituir"/>.
+    public static IReadOnlyList<Perfil> Importar(string origemZip, RepositorioPerfis destino, bool substituir = false)
     {
         List<Perfil> perfis;
-        using (var zip = ZipFile.OpenRead(origemZip))
+        ZipArchive zip;
+        try { zip = ZipFile.OpenRead(origemZip); }
+        catch (InvalidDataException e)
+        {
+            throw new PerfilInvalidoException($"\"{Path.GetFileName(origemZip)}\" não é um arquivo .vitral válido.", e);
+        }
+
+        using (zip)
         {
             var entradaManifest = zip.GetEntry("manifest.json")
                 ?? throw new PerfilInvalidoException("Arquivo .vitral sem manifest.json.");
@@ -52,6 +60,16 @@ public static class Pacote
                     ?? throw new PerfilInvalidoException($"O manifest cita o perfil \"{nome}\", mas ele não está no arquivo.");
                 return PerfilJson.Ler(Ler(entrada));
             }).ToList();
+        }
+
+        if (!substituir)
+        {
+            var existentes = destino.Nomes().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var conflitos = perfis.Where(p => existentes.Contains(p.Nome)).Select(p => p.Nome).ToList();
+            if (conflitos.Count > 0)
+                throw new PerfilInvalidoException(
+                    $"O perfil {string.Join(", ", conflitos.Select(n => $"\"{n}\""))} já existe neste computador. " +
+                    "Nada foi importado. Use --substituir para sobrescrever.");
         }
 
         foreach (var p in perfis) destino.Salvar(p);

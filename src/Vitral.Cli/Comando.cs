@@ -15,7 +15,10 @@ public abstract record Comando
         public bool Equals(Exportar? o) => o is not null && Arquivo == o.Arquivo && Nomes.SequenceEqual(o.Nomes);
         public override int GetHashCode() => Arquivo.GetHashCode();
     }
-    public sealed record Importar(string Arquivo) : Comando;
+    public sealed record Importar(string Arquivo, bool Substituir) : Comando;
+
+    /// Teto do "testar": acima disso a espera não faz sentido (e o Task.Wait não aceita prazos muito longos).
+    public const int SegundosMaximos = 600;
 
     public const string TextoDeUso = """
         Uso: vitral <comando>
@@ -26,7 +29,7 @@ public abstract record Comando
           desfazer                        volta ao estado antes da última mudança
           original                        volta ao Windows como estava antes do primeiro uso do Vitral
           exportar <arquivo.vitral> <nome...>
-          importar <arquivo.vitral>
+          importar <arquivo.vitral> [--substituir]
         """;
 
     public static Comando Interpretar(IReadOnlyList<string> a)
@@ -39,10 +42,11 @@ public abstract record Comando
             ("original", 1) => new Original(),
             ("salvar-atual", 2) => new SalvarAtual(a[1]),
             ("aplicar", 2) => new Aplicar(a[1]),
-            ("importar", 2) => new Importar(a[1]),
+            ("importar", 2) => new Importar(a[1], false),
+            ("importar", 3) when a[2] == "--substituir" => new Importar(a[1], true),
             ("exportar", >= 3) => new Exportar(a[1], a.Skip(2).ToList()),
             ("testar", 2) => new Testar(a[1], 20),
-            ("testar", 4) when a[2] == "--segundos" && int.TryParse(a[3], out int s) && s > 0 => new Testar(a[1], s),
+            ("testar", 4) when a[2] == "--segundos" && int.TryParse(a[3], out int s) && s is > 0 and <= SegundosMaximos => new Testar(a[1], s),
             _ => new Uso(),
         };
     }

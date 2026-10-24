@@ -46,8 +46,10 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
     }
 
     /// Volta ao estado do retrato: valores ausentes são apagados, os outros regravados.
-    public void Reverter(Retrato r)
+    /// Devolve o que o Windows não deixou voltar (spec §6: nunca relatar sucesso parcial como total).
+    public IReadOnlyList<(ValorRegistro Valor, string Motivo)> Reverter(Retrato r)
     {
+        var naoVoltou = new List<(ValorRegistro, string)>();
         foreach (var v in r.Valores)
         {
             try
@@ -55,12 +57,21 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
                 if (v.Ausente) registro.Apagar(v.Chave, v.Nome);
                 else registro.Gravar(v);
             }
-            catch (EscritaBloqueadaException)
+            catch (EscritaBloqueadaException e)
             {
-                // Se não conseguimos gravar, também não conseguimos ter mudado: nada a desfazer.
+                naoVoltou.Add((v, e.Message));
             }
         }
         Avisar(mudouBarra: r.Valores.Any(EhAlinhamento));
+        return naoVoltou;
+    }
+
+    /// Volta a um retrato guardando antes o estado atual, para que a própria volta possa ser desfeita
+    /// (usado por "desfazer" e "original").
+    public IReadOnlyList<(ValorRegistro Valor, string Motivo)> Restaurar(Retrato alvo, string rotulo)
+    {
+        retratos.Salvar(retratos.Tirar(rotulo));
+        return Reverter(alvo);
     }
 
     private void Avisar(bool mudouBarra)

@@ -31,30 +31,40 @@ try
 
         case Comando.Testar t:
         {
-            var resultado = aplicador.Aplicar(perfis.Carregar(t.Nome));
-            int codigo = Relatar(resultado);
-            Console.Write($"Manter este visual? (s/n) Volta ao anterior em {t.Segundos} s: ");
-            bool manter = Confirmacao.Esperar(Console.ReadLine, TimeSpan.FromSeconds(t.Segundos));
-            if (manter) { Console.WriteLine("Mantido."); return codigo; }
-            aplicador.Reverter(resultado.RetratoAnterior);
-            Console.WriteLine();
-            Console.WriteLine("Revertido ao estado anterior.");
-            return 0;
+            var perfil = perfis.Carregar(t.Nome);
+            using var cancelar = new CancellationTokenSource();
+            ConsoleCancelEventHandler aoCancelar = (_, e) => { e.Cancel = true; cancelar.Cancel(); }; // Ctrl+C = "não manter"
+            Console.CancelKeyPress += aoCancelar;
+            try
+            {
+                var resultado = aplicador.Aplicar(perfil);
+                int codigo = Relatar(resultado);
+                Console.Write($"Manter este visual? (s/n, Ctrl+C = não) Volta ao anterior em {t.Segundos} s: ");
+                if (Confirmacao.Esperar(Console.ReadLine, TimeSpan.FromSeconds(t.Segundos), cancelar.Token))
+                {
+                    Console.WriteLine("Mantido. Para voltar depois: vitral desfazer");
+                    return codigo;
+                }
+                Console.WriteLine();
+                return RelatarVolta(aplicador.Reverter(resultado.RetratoAnterior), "Revertido ao estado anterior.");
+            }
+            finally
+            {
+                Console.CancelKeyPress -= aoCancelar;
+            }
         }
 
         case Comando.Desfazer:
         {
             var ultimo = retratos.Ultimo();
             if (ultimo is null) { Console.WriteLine("Não há mudança para desfazer."); return 0; }
-            aplicador.Reverter(ultimo);
-            Console.WriteLine($"Desfeito: voltou ao estado de {ultimo.Quando:dd/MM HH:mm:ss}.");
-            return 0;
+            return RelatarVolta(aplicador.Restaurar(ultimo, "(antes de desfazer)"),
+                $"Desfeito: voltou ao estado de {ultimo.Quando:dd/MM HH:mm:ss}. Rode de novo para refazer.");
         }
 
         case Comando.Original:
-            aplicador.Reverter(retratos.GarantirOriginal());
-            Console.WriteLine("Voltou ao Windows original (como estava antes do primeiro uso do Vitral).");
-            return 0;
+            return RelatarVolta(aplicador.Restaurar(retratos.GarantirOriginal(), "(antes de original)"),
+                "Voltou ao Windows original (como estava antes do primeiro uso do Vitral). Para voltar: vitral desfazer");
 
         case Comando.Exportar e:
             Pacote.Exportar(perfis, e.Nomes, e.Arquivo, versao, Environment.OSVersion.Version.ToString());
@@ -62,7 +72,7 @@ try
             return 0;
 
         case Comando.Importar i:
-            foreach (var p in Pacote.Importar(i.Arquivo, perfis)) Console.WriteLine($"Importado: {p.Nome}");
+            foreach (var p in Pacote.Importar(i.Arquivo, perfis, i.Substituir)) Console.WriteLine($"Importado: {p.Nome}");
             return 0;
 
         default:
@@ -70,10 +80,30 @@ try
             return 1;
     }
 }
-catch (Exception ex) when (ex is PerfilInvalidoException or FileNotFoundException)
+catch (Exception ex) when (ex is PerfilInvalidoException or FileNotFoundException or DirectoryNotFoundException)
 {
     Console.Error.WriteLine(ex.Message);
     return 1;
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine($"Erro: {ex.Message}");
+    Console.Error.WriteLine($"Detalhes técnicos em {Pastas.Logs}.");
+    try
+    {
+        Directory.CreateDirectory(Pastas.Logs);
+        File.AppendAllText(Path.Combine(Pastas.Logs, "cli-erros.log"), $"{DateTimeOffset.Now:O} {ex}{Environment.NewLine}");
+    }
+    catch { /* sem log, a mensagem acima já foi mostrada */ }
+    return 1;
+}
+
+static int RelatarVolta(IReadOnlyList<(Vitral.Core.Registro.ValorRegistro Valor, string Motivo)> naoVoltou, string mensagemOk)
+{
+    if (naoVoltou.Count == 0) { Console.WriteLine(mensagemOk); return 0; }
+    Console.WriteLine("Voltou em parte. O Windows não deixou restaurar:");
+    foreach (var (v, motivo) in naoVoltou) Console.WriteLine($"  {v.Nome} ({motivo})");
+    return 2;
 }
 
 static int Relatar(Resultado r)
