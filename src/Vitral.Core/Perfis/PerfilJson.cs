@@ -1,0 +1,48 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Vitral.Core.Cores;
+
+namespace Vitral.Core.Perfis;
+
+/// Lê e grava o perfil.json (camelCase, enums em texto minúsculo). Seções de fases futuras
+/// (por exemplo "barra") são ignoradas na leitura.
+public static class PerfilJson
+{
+    public const int EsquemaSuportado = 1;
+
+    private static readonly JsonSerializerOptions Opcoes = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) },
+    };
+
+    public static Perfil Ler(string json)
+    {
+        Perfil? p;
+        try
+        {
+            p = JsonSerializer.Deserialize<Perfil>(json, Opcoes);
+        }
+        catch (JsonException e)
+        {
+            throw new PerfilInvalidoException($"perfil.json inválido: {e.Message}", e);
+        }
+
+        if (p is null) throw new PerfilInvalidoException("perfil.json vazio.");
+        if (p.Esquema < 1 || p.Esquema > EsquemaSuportado)
+            throw new PerfilInvalidoException(
+                $"Este perfil usa o esquema {p.Esquema}, mas esta versão do Vitral entende até o esquema {EsquemaSuportado}.");
+        if (string.IsNullOrWhiteSpace(p.Nome)) throw new PerfilInvalidoException("O perfil precisa de um nome.");
+
+        if (p.Nativo?.CorDestaque is { } cor)
+        {
+            try { Cor.DeHex(cor); }
+            catch (FormatException e) { throw new PerfilInvalidoException($"corDestaque: {e.Message}", e); }
+        }
+        return p;
+    }
+
+    public static string Escrever(Perfil p) => JsonSerializer.Serialize(p, Opcoes);
+}
