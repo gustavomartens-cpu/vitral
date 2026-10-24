@@ -22,7 +22,7 @@ for ($i = 1; $i -le $N; $i++) {
     # Com sucesso, o injector mostra o resultado e espera Enter; ao sair, o componente restaura a barra.
     & $injector --rota $Rota --alvo explorer --modo transparente
     $codigo = $LASTEXITCODE
-    $viu    = Read-Host 'Antes de você apertar Enter, as barras de tarefas ficaram transparentes? (s/n)'
+    $viu    = Read-Host 'Antes de você apertar Enter, a(s) barra(s) de tarefas ficaram transparentes? (s/n)'
     $voltou = '-'
     if ($viu -eq 's') {
         Start-Sleep -Seconds 2

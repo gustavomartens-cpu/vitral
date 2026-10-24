@@ -23,4 +23,20 @@ internal static class XamlDiag
         Console.WriteLine($"  externa: parou em VisualDiagConnection{n - 1} → 0x{hr:X8}");
         return hr;
     }
+
+    /// A porta de diagnóstico só existe depois que a barra termina de montar a interface.
+    /// Espera por essa condição: repete a varredura a cada 2 s enquanto nenhuma porta existir, até 90 s.
+    public static int CarregarQuandoPronto(uint pid, string dll, Guid clsid, string dados)
+    {
+        var limite = DateTime.UtcNow.AddSeconds(90);
+        int tentativa = 1;
+        while (true)
+        {
+            Console.WriteLine($"  externa: varredura {tentativa}");
+            int hr = Carregar(pid, dll, clsid, dados);
+            if (hr != ErroNaoEncontrado || DateTime.UtcNow >= limite) return hr;
+            Thread.Sleep(2000);
+            tentativa++;
+        }
+    }
 }

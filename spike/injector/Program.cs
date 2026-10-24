@@ -65,7 +65,7 @@ IntPtr hook = IntPtr.Zero;
 
 if (rota == "externa")
 {
-    int hr = XamlDiag.Carregar(pid, dll, clsid, dados);
+    int hr = XamlDiag.CarregarQuandoPronto(pid, dll, clsid, dados);
     if (hr != 0) Console.WriteLine($"InitializeXamlDiagnosticsEx falhou: 0x{hr:X8}");
 }
 else
@@ -73,14 +73,14 @@ else
     hook = RotaInterna.Instalar(dll, janela, thread);
 }
 
-bool ok = pronto.WaitOne(TimeSpan.FromSeconds(35));
+bool ok = pronto.WaitOne(TimeSpan.FromSeconds(rota == "interna" ? 35 : 15));
 long ms = relogio.ElapsedMilliseconds;
 RotaInterna.Remover(hook);
 
 // Processos AppContainer (Iniciar) não enxergam o evento Local\ do injector: confere pelo log.
 string log = Path.Combine(logs, $"tap-{pid}.log");
 Thread.Sleep(2000);
-string conteudo = File.Exists(log) ? File.ReadAllText(log) : "";
+string conteudo = LerCompartilhado(log); // o componente pode estar escrevendo no log agora
 if (!ok && conteudo.Contains("ADVISE|hr=0")) ok = true;
 
 int fills = Contar(conteudo, "FILL_APLICADO|");
@@ -98,6 +98,14 @@ return ok ? 0 : 4;
 
 void Registrar(string res, long tempo) =>
     File.AppendAllText(csv, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss};{rota};{alvo};{pid};{res};{tempo}{Environment.NewLine}");
+
+static string LerCompartilhado(string caminho)
+{
+    if (!File.Exists(caminho)) return "";
+    using var fs = new FileStream(caminho, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+    using var leitor = new StreamReader(fs);
+    return leitor.ReadToEnd();
+}
 
 static int Contar(string texto, string trecho)
 {
