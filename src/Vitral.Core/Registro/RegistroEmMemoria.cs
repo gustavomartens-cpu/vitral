@@ -1,0 +1,31 @@
+namespace Vitral.Core.Registro;
+
+/// Registro falso para testes. <see cref="Bloqueados"/> simula chaves protegidas (UCPD).
+public sealed class RegistroEmMemoria : IRegistro
+{
+    private static readonly StringComparer Comparador = StringComparer.OrdinalIgnoreCase;
+    private readonly Dictionary<(string, string), ValorRegistro> _valores = new(new ComparadorPar());
+
+    public HashSet<(string Chave, string Nome)> Bloqueados { get; } = new(new ComparadorPar());
+
+    public ValorRegistro Ler(string chave, string nome, TipoValor tipoEsperado) =>
+        _valores.TryGetValue((chave, nome), out var v) ? v : new ValorRegistro(chave, nome, tipoEsperado, null);
+
+    public void Gravar(ValorRegistro valor)
+    {
+        if (Bloqueados.Contains((valor.Chave, valor.Nome))) throw new EscritaBloqueadaException(valor);
+        if (valor.Ausente) { Apagar(valor.Chave, valor.Nome); return; }
+        _valores[(valor.Chave, valor.Nome)] = valor;
+    }
+
+    public void Apagar(string chave, string nome) => _valores.Remove((chave, nome));
+
+    private sealed class ComparadorPar : IEqualityComparer<(string, string)>
+    {
+        public bool Equals((string, string) a, (string, string) b) =>
+            Comparador.Equals(a.Item1, b.Item1) && Comparador.Equals(a.Item2, b.Item2);
+
+        public int GetHashCode((string, string) p) =>
+            HashCode.Combine(Comparador.GetHashCode(p.Item1), Comparador.GetHashCode(p.Item2));
+    }
+}

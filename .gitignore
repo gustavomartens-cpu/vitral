@@ -6,3 +6,5 @@ artifacts/
 
 spike/tap/generated/
 spike/out/
+bin/
+obj/
