@@ -1,3 +1,5 @@
+using Vitral.Core.Doca;
+
 namespace Vitral.Ui.Doca;
 
 // Fontes da doca (spec da doca §5 e §6). O App implementa (ManagedShell, COM); os testes usam falsas.
@@ -5,9 +7,6 @@ namespace Vitral.Ui.Doca;
 
 /// Uma janela que entra na doca. Icone é do WPF (ImageSource), opaco aqui.
 public sealed record JanelaApp(IntPtr Handle, string Titulo, string? AppId, string Executavel, bool Minimizada, bool PedindoAtencao, object? Icone);
-
-/// Um app fixado: o atalho (ou executável), o AppUserModelID se houver, o nome e o executável alvo do atalho.
-public sealed record Fixado(string Caminho, string? AppId, string Nome, string? Alvo = null);
 
 public interface IFonteJanelas
 {
@@ -23,6 +22,8 @@ public interface IFonteFixados
 {
     IReadOnlyList<Fixado> Lista { get; }
     bool Existe(Fixado fixado);
+    /// Ícone do atalho, para o fixado sem janela aberta (ImageSource no App, opaco aqui).
+    object? Icone(Fixado fixado);
     void Salvar(IReadOnlyList<Fixado> lista);
 }
 
@@ -39,5 +40,6 @@ public sealed class FixadosVazios : IFonteFixados
 {
     public IReadOnlyList<Fixado> Lista => [];
     public bool Existe(Fixado fixado) => true;
+    public object? Icone(Fixado fixado) => null;
     public void Salvar(IReadOnlyList<Fixado> lista) { }
 }

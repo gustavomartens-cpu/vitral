@@ -1,3 +1,4 @@
+using Vitral.Core.Doca;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -59,7 +60,7 @@ public sealed partial class DocaViewModel : ObservableObject, IDisposable
             else if (existente != i) Botoes.Move(existente, i);
             var b = Botoes[i];
             b.Nome = g.Nome;
-            b.Icone = g.Janelas.FirstOrDefault(j => j.Icone is not null)?.Icone ?? b.Icone;
+            b.Icone = g.Janelas.FirstOrDefault(j => j.Icone is not null)?.Icone ?? b.Icone ?? (g.Fixado is null ? null : _fixados.Icone(g.Fixado));
             b.Aberto = g.Janelas.Count > 0;
             b.Ativo = g.Janelas.Any(j => j.Handle == ativa);
             b.PedindoAtencao = g.Janelas.Any(j => j.PedindoAtencao);
@@ -88,6 +89,44 @@ public sealed partial class DocaViewModel : ObservableObject, IDisposable
             case TipoAcao.Minimizar: _janelas.Minimizar(acao.Janela); break;
             case TipoAcao.Escolher: PediuEscolha?.Invoke(botao); break;
         }
+    }
+
+    /// Fixa um app aberto: pelo executável; app da loja (sem executável próprio) pelo AppId no shell:AppsFolder.
+    [RelayCommand]
+    private void Fixar(BotaoAppViewModel? botao)
+    {
+        if (botao is null || botao.Fixado is not null || botao.Janelas.Count == 0) return;
+        var j = botao.Janelas[0];
+        bool daLoja = j.AppId is { } id && !id.StartsWith("janela:", StringComparison.Ordinal)
+            && (j.Executavel.Length == 0 || j.Executavel.EndsWith("ApplicationFrameHost.exe", StringComparison.OrdinalIgnoreCase));
+        var novo = daLoja
+            ? new Fixado($@"shell:AppsFolder\{j.AppId}", j.AppId, botao.Nome)
+            : new Fixado(j.Executavel, j.AppId?.StartsWith("janela:", StringComparison.Ordinal) == true ? null : j.AppId, botao.Nome, j.Executavel);
+        Salvar([.. _fixados.Lista, novo]);
+    }
+
+    [RelayCommand]
+    private void Desafixar(BotaoAppViewModel? botao)
+    {
+        if (botao?.Fixado is not { } f) return;
+        Salvar(_fixados.Lista.Where(x => x != f).ToList());
+    }
+
+    /// Arrastar na doca: só entre fixados (os abertos não fixados seguem a ordem de chegada).
+    public void Mover(int de, int para)
+    {
+        var lista = _fixados.Lista.ToList();
+        if (de == para || de < 0 || para < 0 || de >= lista.Count || para >= lista.Count) return;
+        var f = lista[de];
+        lista.RemoveAt(de);
+        lista.Insert(para, f);
+        Salvar(lista);
+    }
+
+    private void Salvar(IReadOnlyList<Fixado> lista)
+    {
+        _fixados.Salvar(lista);
+        Atualizar();
     }
 
     public void Dispose() => _janelas.Mudou -= Atualizar;

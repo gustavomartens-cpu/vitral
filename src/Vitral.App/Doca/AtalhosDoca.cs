@@ -1,3 +1,4 @@
+using Vitral.Core.Doca;
 using System.Diagnostics;
 using Vitral.App.Barra;
 using Vitral.Ui.Doca;

@@ -37,7 +37,9 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Grid Width="40" Height="44" ToolTip="{Binding Nome}" Background="Transparent">
+                    <Grid Width="40" Height="44" ToolTip="{Binding Nome}" Background="Transparent" AllowDrop="True"
+                          PreviewMouseLeftButtonDown="Botao_Apertou" PreviewMouseMove="Botao_Moveu" Drop="Botao_Soltou"
+                          MouseRightButtonUp="Botao_Direito">
                         <Button Style="{StaticResource BotaoDoca}" VerticalAlignment="Top" Margin="0,2,0,0"
                                 Command="{Binding DataContext.ClicarCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                 CommandParameter="{Binding}">

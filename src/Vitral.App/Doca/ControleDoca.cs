@@ -2,7 +2,9 @@ using System.Windows;
 using System.Windows.Controls;
 using Vitral.App.Barra;
 using Vitral.Core.Barra;
+using Vitral.Core.Doca;
 using Vitral.Core.Perfis;
+using Vitral.Core.Windows;
 using Vitral.Ui.Barra;
 using Vitral.Ui.Doca;
 
@@ -50,9 +52,9 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja ban
         bandeja.Ligar(); // o Vitral assume a bandeja enquanto a barra do Windows está escondida
         if (_vm is null)
         {
-            // As janelas vêm do mesmo ShellManager da bandeja; os fixados chegam na Task 5.
+            // As janelas vêm do mesmo ShellManager da bandeja; os fixados, do fixados.json (importado do Windows na 1ª vez).
             _fonteJanelas = new FonteJanelas(bandeja, _janela.Dispatcher);
-            _vm = new DocaViewModel(_fonteJanelas, new FixadosVazios(), new AtalhosDoca(), new DialogosWpf());
+            _vm = new DocaViewModel(_fonteJanelas, new FonteFixados(new RepositorioFixados(System.IO.Path.Combine(Pastas.Raiz, "fixados.json"))), new AtalhosDoca(), new DialogosWpf());
             ((FrameworkElement)_janela.Conteudo!).DataContext = _vm;
         }
         if (!_telaCheia) _janela.Show();

@@ -1,3 +1,4 @@
+using Vitral.Core.Doca;
 namespace Vitral.Ui.Doca;
 
 /// Um botão da doca: um app (fixado, aberto ou os dois) e as suas janelas.
