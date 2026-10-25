@@ -53,6 +53,12 @@ public partial class App : Application
         bool peloWindows = e.Args.Contains(Vitral.Core.Configuracao.Inicializacao.Argumento);
         var estado = Servico.AoIniciar(peloWindows);
         _barra.Aplicar(Servico.BarraAtual()); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
+        // Monitores, resolução ou escala mudaram, ou o PC voltou da suspensão: reposiciona e relê a barra.
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(() => _barra.Reajustar());
+        Microsoft.Win32.SystemEvents.PowerModeChanged += (_, p) =>
+        {
+            if (p.Mode == Microsoft.Win32.PowerModes.Resume) Dispatcher.BeginInvoke(() => _barra.Reajustar());
+        };
 
         Principal = new PrincipalViewModel(Servico, perfis, new DialogosWpf(), new RelogioWpf());
         Principal.PropertyChanged += AoMudarPrincipal;
