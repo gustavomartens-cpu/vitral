@@ -23,7 +23,7 @@ public sealed class IdentidadeTests : IDisposable
         _amb.Perfis.Salvar(Novo("Sem cor"));
         var vm = Criar();
         Assert.Contains(new ItemPerfil("Vermelho", "#E81123", false), vm.ItensPerfis);
-        Assert.Contains(new ItemPerfil("Sem cor", "#21375E", false), vm.ItensPerfis);
+        Assert.Contains(new ItemPerfil("Sem cor", "#4C7DF0", false), vm.ItensPerfis);
     }
 
     [Fact]
