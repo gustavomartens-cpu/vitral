@@ -30,6 +30,8 @@ public sealed partial class PrincipalViewModel : ObservableObject
 
     public EditorNativoViewModel Editor { get; } = new();
 
+    public EditorBarraViewModel EditorBarra { get; } = new();
+
     [ObservableProperty] private string? _selecionado;
     [ObservableProperty] private string? _perfilAtivo;
     [ObservableProperty] private string? _mensagem;
@@ -97,7 +99,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
         if (Selecionado is null) { _dialogos.Avisar("Escolha um perfil primeiro."); return; }
         try
         {
-            Editor.Carregar(_perfis.Carregar(Selecionado).Nativo);
+            CarregarEditores(_perfis.Carregar(Selecionado));
             Mensagem = "Alterações descartadas.";
         }
         catch (Exception e) when (e is not OutOfMemoryException)
@@ -106,13 +108,19 @@ public sealed partial class PrincipalViewModel : ObservableObject
         }
     }
 
+    private void CarregarEditores(Perfil? p)
+    {
+        Editor.Carregar(p?.Nativo);
+        EditorBarra.Carregar(p?.BarraTopo);
+    }
+
     /// Perfis para o menu da bandeja, sem tocar na lista nem no editor da janela.
     public IReadOnlyList<string> NomesParaMenu() => _perfis.Nomes();
 
     partial void OnSelecionadoChanged(string? value)
     {
-        if (value is null) { Editor.Carregar(null); return; }
-        try { Editor.Carregar(_perfis.Carregar(value).Nativo); }
+        if (value is null) { CarregarEditores(null); return; }
+        try { CarregarEditores(_perfis.Carregar(value)); }
         catch (Exception e) when (e is not OutOfMemoryException) { Mensagem = e.Message; }
     }
 
@@ -134,13 +142,14 @@ public sealed partial class PrincipalViewModel : ObservableObject
     {
         if (Selecionado is null) { _dialogos.Avisar("Escolha ou crie um perfil primeiro."); return false; }
         var ajustes = Editor.ParaPerfil();
+        var barra = EditorBarra.ParaPerfil();
         if (ajustes.CorDestaque is { } cor)
         {
             try { Cor.DeHex(cor); }
             catch (FormatException e) { _dialogos.Avisar(e.Message); return false; }
         }
         string nome = Selecionado;
-        bool ok = Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, Environment.OSVersion.Version.ToString(), ajustes)); return true; });
+        bool ok = Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, Environment.OSVersion.Version.ToString(), ajustes, barra)); return true; });
         if (ok) SincronizarItens(); // a gema acompanha a cor salva
         return ok;
     }

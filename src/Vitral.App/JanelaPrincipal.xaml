@@ -124,7 +124,36 @@
                 </TabItem>
                 <TabItem Header="Barra de tarefas" Style="{StaticResource AbaVitral}" IsEnabled="False" />
                 <TabItem Header="Iniciar" Style="{StaticResource AbaVitral}" IsEnabled="False" />
-                <TabItem Header="Barra do topo" Style="{StaticResource AbaVitral}" IsEnabled="False" />
+                <TabItem Header="Barra do topo" Style="{StaticResource AbaVitral}">
+                    <StackPanel DataContext="{Binding EditorBarra}"
+                                IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger></Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <Border Style="{StaticResource CartaoVidro}">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="Barra do topo" VerticalAlignment="Center" />
+                                    <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Ligada}" SelectedValue="{Binding Barra}" />
+                                </Grid>
+                                <TextBlock Text="Três ilhas de vidro no topo do monitor principal, com espaço reservado para as janelas não ficarem embaixo."
+                                           FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource CartaoVidro}" IsEnabled="{Binding IlhasHabilitadas}">
+                            <StackPanel>
+                                <TextBlock Text="Ilhas" Margin="0,0,0,8" />
+                                <CheckBox Content="Mídia tocando" IsChecked="{Binding Midia}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
+                                <CheckBox Content="Relógio" IsChecked="{Binding Relogio}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
+                                <CheckBox Content="Status (rede, volume, bateria)" IsChecked="{Binding Status}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
+                                <CheckBox Content="CPU e memória" IsChecked="{Binding Desempenho}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </TabItem>
                 <TabItem Header="Janelas" Style="{StaticResource AbaVitral}" IsEnabled="False" />
             </TabControl>
 
