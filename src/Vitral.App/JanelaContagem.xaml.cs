@@ -9,6 +9,7 @@ public partial class JanelaContagem : Window
     public JanelaContagem(ContagemViewModel vm)
     {
         InitializeComponent();
+        Vidro.Aplicar(this);
         DataContext = vm;
         Loaded += (_, _) =>
         {

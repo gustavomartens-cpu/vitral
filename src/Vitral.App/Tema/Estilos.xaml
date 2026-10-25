@@ -1,0 +1,264 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:Vitral.App">
+
+    <local:CorParaPincel x:Key="CorParaPincel" />
+    <local:TemValor x:Key="TemValor" />
+    <BooleanToVisibilityConverter x:Key="BoolParaVisivel" />
+
+    <!-- Foco de teclado sempre visível: contorno azul de 2 px -->
+    <Style x:Key="FocoVitral">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle Margin="-3" RadiusX="10" RadiusY="10" Stroke="{StaticResource Azul}" StrokeThickness="2" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="TituloSecao" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource FonteCorpo}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{StaticResource TextoSecundario}" />
+        <Setter Property="Margin" Value="0,0,0,6" />
+    </Style>
+
+    <Style x:Key="Rotulo" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource TextoSecundario}" />
+        <Setter Property="Margin" Value="6,10,0,6" />
+    </Style>
+
+    <!-- Botões -->
+    <Style x:Key="BotaoBase" TargetType="Button">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
+        <Setter Property="FontFamily" Value="{StaticResource FonteCorpo}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="16,7" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="BotaoPrimario" TargetType="Button" BasedOn="{StaticResource BotaoBase}">
+        <Setter Property="Foreground" Value="{StaticResource TextoSobreAmbar}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{StaticResource AmbarGradiente}" Padding="{TemplateBinding Padding}">
+                        <Border.Effect>
+                            <DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="18" ShadowDepth="0" Opacity="0.45" />
+                        </Border.Effect>
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Opacity" Value="0.92" /></Trigger>
+                        <Trigger Property="IsPressed" Value="True"><Setter TargetName="Fundo" Property="Opacity" Value="0.8" /></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Fundo" Property="Opacity" Value="0.4" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="BotaoVidro" TargetType="Button" BasedOn="{StaticResource BotaoBase}">
+        <Setter Property="Foreground" Value="{StaticResource Texto}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{StaticResource Superficie}"
+                            BorderBrush="{StaticResource BordaVidro}" BorderThickness="1" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{StaticResource SuperficieHover}" /></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Fundo" Property="Opacity" Value="0.4" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Abas: sublinhado âmbar com brilho na ativa -->
+    <Style x:Key="AbasVitral" TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0,12,0,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" BorderBrush="{StaticResource Linha}" BorderThickness="0,0,0,1">
+                            <TabPanel IsItemsHost="True" />
+                        </Border>
+                        <ContentPresenter ContentSource="SelectedContent" Margin="{TemplateBinding Padding}" />
+                    </DockPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AbaVitral" TargetType="TabItem">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
+        <Setter Property="Foreground" Value="{StaticResource Texto}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <!-- Cor só no cabeçalho: o conteúdo da aba herda o Foreground do TabItem -->
+                    <Grid Margin="0,0,20,0" Background="Transparent">
+                        <ContentPresenter x:Name="Cabecalho" ContentSource="Header" Margin="0,4,0,9" TextElement.Foreground="{StaticResource TextoSecundario}" />
+                        <Border x:Name="Sublinhado" Height="2" VerticalAlignment="Bottom" CornerRadius="1" Background="{StaticResource Ambar}" Visibility="Hidden">
+                            <Border.Effect><DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="8" ShadowDepth="0" Opacity="0.6" /></Border.Effect>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Sublinhado" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="Cabecalho" Property="TextElement.Foreground" Value="{StaticResource Ambar}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.6" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Lista de perfis: gema, barra âmbar no selecionado, etiqueta "ativo" -->
+    <Style x:Key="ListaPerfis" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    </Style>
+
+    <Style x:Key="ItemListaPerfil" TargetType="ListBoxItem">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
+        <Setter Property="Foreground" Value="{StaticResource Texto}" />
+        <Setter Property="Margin" Value="0,1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Grid>
+                        <Border x:Name="Fundo" CornerRadius="8" Background="Transparent" Padding="10,7">
+                            <DockPanel>
+                                <Rectangle DockPanel.Dock="Left" Width="9" Height="9" RadiusX="2" RadiusY="2" Margin="0,0,10,0"
+                                           Fill="{Binding CorGema, Converter={StaticResource CorParaPincel}}" RenderTransformOrigin="0.5,0.5">
+                                    <Rectangle.RenderTransform><RotateTransform Angle="45" /></Rectangle.RenderTransform>
+                                </Rectangle>
+                                <TextBlock DockPanel.Dock="Right" Text="ativo" FontSize="10" Foreground="{StaticResource Ambar}" VerticalAlignment="Center"
+                                           Visibility="{Binding Ativo, Converter={StaticResource BoolParaVisivel}}" />
+                                <TextBlock Text="{Binding Nome}" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            </DockPanel>
+                        </Border>
+                        <Border x:Name="Barra" Width="3" HorizontalAlignment="Left" Margin="-2,8" CornerRadius="2" Background="{StaticResource Ambar}" Visibility="Hidden">
+                            <Border.Effect><DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="10" ShadowDepth="0" Opacity="0.7" /></Border.Effect>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{StaticResource Superficie}" /></Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Fundo" Property="Background" Value="{StaticResource Selecao}" />
+                            <Setter TargetName="Barra" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Cartão de vidro -->
+    <Style x:Key="CartaoVidro" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Superficie}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BordaVidro}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}" />
+        <Setter Property="Padding" Value="16,14" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+
+    <!-- Seletor em pílula (ListBox horizontal, setas trocam a opção) -->
+    <Style x:Key="SeletorPilula" TargetType="ListBox">
+        <Setter Property="SelectedValuePath" Value="Valor" />
+        <Setter Property="DisplayMemberPath" Value="Rotulo" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBox">
+                    <Border CornerRadius="{StaticResource RaioPilula}" BorderBrush="{StaticResource Linha}" BorderThickness="1" Background="{StaticResource Superficie}" Padding="2">
+                        <ItemsPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ItemsPanel">
+            <Setter.Value><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></Setter.Value>
+        </Setter>
+        <Setter Property="ItemContainerStyle">
+            <Setter.Value>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
+                    <Setter Property="Foreground" Value="{StaticResource TextoSecundario}" />
+                    <Setter Property="FontSize" Value="12" />
+                    <Setter Property="Cursor" Value="Hand" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Border x:Name="Pilula" CornerRadius="{StaticResource RaioPilula}" Padding="12,4" Background="Transparent">
+                                    <ContentPresenter />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Pilula" Property="Background" Value="{StaticResource SuperficieHover}" /></Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="Pilula" Property="Background" Value="{StaticResource Ambar}" />
+                                        <Setter Property="Foreground" Value="{StaticResource TextoSobreAmbar}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Caixa de texto de vidro (cor livre) -->
+    <Style x:Key="CaixaVidro" TargetType="TextBox">
+        <Setter Property="Foreground" Value="{StaticResource Texto}" />
+        <Setter Property="CaretBrush" Value="{StaticResource Ambar}" />
+        <Setter Property="FontFamily" Value="Cascadia Mono, Consolas" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Fundo" CornerRadius="8" Background="{StaticResource Superficie}" BorderBrush="{StaticResource Linha}" BorderThickness="1" Padding="8,5">
+                        <ScrollViewer x:Name="PART_ContentHost" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Fundo" Property="BorderBrush" Value="{StaticResource Azul}" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Quadrado de cor da paleta -->
+    <Style x:Key="BotaoCor" TargetType="Button">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Margin" Value="0,0,6,6" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Q" CornerRadius="6" Background="{Binding Converter={StaticResource CorParaPincel}}" BorderBrush="{StaticResource Linha}" BorderThickness="1" />
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Q" Property="BorderBrush" Value="{StaticResource Texto}" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

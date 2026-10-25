@@ -3,16 +3,27 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Vitral" Icon="Recursos/vitral.ico"
         Width="340" SizeToContent="Height" ResizeMode="NoResize"
-        Topmost="True" ShowInTaskbar="False" WindowStyle="ToolWindow">
-    <StackPanel Margin="16">
-        <TextBlock Text="Manter este visual?" FontSize="16" FontWeight="SemiBold" />
-        <TextBlock Margin="0,6,0,10" TextWrapping="Wrap">
-            <Run Text="Volta ao anterior em " /><Run Text="{Binding Restantes, Mode=OneWay}" /><Run Text=" s." />
-        </TextBlock>
-        <ProgressBar Height="4" Maximum="{Binding Total, Mode=OneWay}" Value="{Binding Restantes, Mode=OneWay}" />
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
-            <Button Content="Voltar" Command="{Binding VoltarCommand}" Margin="0,0,8,0" MinWidth="90" />
-            <Button Content="Manter" Command="{Binding ManterCommand}" MinWidth="90" Style="{DynamicResource AccentButtonStyle}" />
+        Topmost="True" ShowInTaskbar="False" WindowStyle="None"
+        Foreground="{StaticResource Texto}" FontFamily="{StaticResource FonteCorpo}"
+        Background="{StaticResource Noite}">
+    <!-- Sem barra de título: sem "X" que deixasse o teste correndo sem o botão Manter (revisão 1d, menor 9) -->
+    <Border BorderBrush="{StaticResource BordaVidro}" BorderThickness="1" Padding="18,16">
+        <StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <Image Source="{StaticResource Logo}" Width="18" Height="18" Margin="0,0,8,0" />
+                <TextBlock Text="Manter este visual?" FontFamily="{StaticResource FonteTitulo}" FontSize="16" FontWeight="SemiBold" />
+            </StackPanel>
+            <TextBlock Margin="0,6,0,10" Foreground="{StaticResource TextoSecundario}">
+                <Run Text="Volta ao anterior em " /><Run Text="{Binding Restantes, Mode=OneWay}" /><Run Text=" s." />
+            </TextBlock>
+            <ProgressBar Height="4" Maximum="{Binding Total, Mode=OneWay}" Value="{Binding Restantes, Mode=OneWay}"
+                         Foreground="{StaticResource Ambar}" Background="{StaticResource Linha}" BorderThickness="0">
+                <ProgressBar.Effect><DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="8" ShadowDepth="0" Opacity="0.6" /></ProgressBar.Effect>
+            </ProgressBar>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                <Button Content="Voltar" Command="{Binding VoltarCommand}" Style="{StaticResource BotaoVidro}" Margin="0,0,8,0" MinWidth="90" />
+                <Button Content="Manter" Command="{Binding ManterCommand}" Style="{StaticResource BotaoPrimario}" MinWidth="90" />
+            </StackPanel>
         </StackPanel>
-    </StackPanel>
+    </Border>
 </Window>

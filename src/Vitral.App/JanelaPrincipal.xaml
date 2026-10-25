@@ -3,141 +3,139 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="clr-namespace:Vitral.Ui;assembly=Vitral.Ui"
         Title="Vitral" Icon="Recursos/vitral.ico"
-        Width="1000" Height="680" MinWidth="820" MinHeight="560"
-        WindowStartupLocation="CenterScreen">
+        Width="1040" Height="720" MinWidth="860" MinHeight="580"
+        WindowStartupLocation="CenterScreen"
+        Foreground="{StaticResource Texto}" FontFamily="{StaticResource FonteCorpo}"
+        Background="{StaticResource Noite}">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="230" />
+            <ColumnDefinition Width="248" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <!-- Barra lateral -->
-        <DockPanel Grid.Column="0" Margin="12" LastChildFill="True">
-            <StackPanel DockPanel.Dock="Bottom" Margin="4,12,4,0">
-                <CheckBox x:Name="IniciarComWindows" Content="Iniciar com o Windows"
-                          Checked="IniciarComWindows_Mudou" Unchecked="IniciarComWindows_Mudou" />
-                <TextBlock Margin="0,10,0,0" Opacity="0.7" FontSize="11" TextWrapping="Wrap">
-                    <Run Text="Ativo: " /><Run Text="{Binding PerfilAtivo, TargetNullValue='nenhum', Mode=OneWay}" />
-                </TextBlock>
-                <TextBlock x:Name="TextoBuild" Opacity="0.7" FontSize="11" />
-            </StackPanel>
-            <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-                <Button Content="Desfazer última mudança" Command="{Binding DesfazerCommand}" HorizontalAlignment="Stretch" Margin="0,2" />
-                <Button Content="Voltar ao Windows original" Command="{Binding OriginalCommand}" HorizontalAlignment="Stretch" Margin="0,2" />
-            </StackPanel>
-            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,8,0,0">
-                <Button Content="Importar" Command="{Binding ImportarCommand}" Margin="0,0,6,0" />
-                <Button Content="Exportar" Command="{Binding ExportarCommand}" />
-            </StackPanel>
-            <TextBlock DockPanel.Dock="Top" Text="PERFIS" Style="{StaticResource TituloSecao}" Margin="4,0,0,6" />
-            <Button DockPanel.Dock="Bottom" Content="+ Novo perfil" Command="{Binding NovoCommand}" HorizontalAlignment="Stretch" Margin="0,8,0,0" />
-            <ListBox ItemsSource="{Binding Perfis}" SelectedItem="{Binding Selecionado}" />
-        </DockPanel>
+        <Border Grid.Column="0" Background="{StaticResource NoiteLateral}" BorderBrush="{StaticResource Linha}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="14,10,14,14" LastChildFill="True">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4,0,0,8">
+                    <Image Source="{StaticResource Logo}" Width="24" Height="24" />
+                    <TextBlock Text="Vitral" FontFamily="{StaticResource FonteTitulo}" FontSize="17" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom" Margin="4,10,4,0">
+                    <CheckBox x:Name="IniciarComWindows" Content="Iniciar com o Windows" Foreground="{StaticResource Texto}"
+                              FocusVisualStyle="{StaticResource FocoVitral}"
+                              Checked="IniciarComWindows_Mudou" Unchecked="IniciarComWindows_Mudou" />
+                    <TextBlock x:Name="TextoBuild" Margin="0,8,0,0" FontSize="11" Foreground="{StaticResource TextoSecundario}" />
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+                    <Button Content="Desfazer última mudança" Command="{Binding DesfazerCommand}" Style="{StaticResource BotaoVidro}" HorizontalContentAlignment="Left" Margin="0,3" />
+                    <Button Content="Voltar ao Windows original" Command="{Binding OriginalCommand}" Style="{StaticResource BotaoVidro}" HorizontalContentAlignment="Left" Margin="0,3" />
+                </StackPanel>
+                <UniformGrid DockPanel.Dock="Bottom" Columns="2" Margin="0,10,0,0">
+                    <Button Content="Importar" Command="{Binding ImportarCommand}" Style="{StaticResource BotaoVidro}" Margin="0,0,3,0" />
+                    <Button Content="Exportar" Command="{Binding ExportarCommand}" Style="{StaticResource BotaoVidro}" Margin="3,0,0,0" />
+                </UniformGrid>
+                <Button DockPanel.Dock="Bottom" Content="+ Novo perfil" Command="{Binding NovoCommand}" Style="{StaticResource BotaoVidro}" Margin="0,8,0,0" />
+
+                <TextBlock DockPanel.Dock="Top" Text="PERFIS" Style="{StaticResource Rotulo}" />
+                <ListBox ItemsSource="{Binding ItensPerfis}" SelectedValuePath="Nome" SelectedValue="{Binding Selecionado}"
+                         Style="{StaticResource ListaPerfis}" ItemContainerStyle="{StaticResource ItemListaPerfil}" />
+            </DockPanel>
+        </Border>
 
         <!-- Conteúdo -->
-        <Grid Grid.Column="1" Margin="0,12,12,12">
+        <Grid Grid.Column="1" Margin="28,14,28,18">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" FontSize="24" FontWeight="SemiBold" Margin="4,0,0,8"
+            <TextBlock Grid.Row="0" FontFamily="{StaticResource FonteTitulo}" FontSize="26" FontWeight="SemiBold" Margin="0,0,0,10"
                        Text="{Binding Selecionado, TargetNullValue='Escolha ou crie um perfil'}" />
 
-            <TabControl Grid.Row="1">
-                <TabItem Header="Cores e tema">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="16,4,16,16" DataContext="{Binding Editor}" IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
-                            <TextBlock Text="Modo do Windows (barra e Iniciar)" Style="{StaticResource TituloSecao}" />
-                            <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding ModoSistema}" Width="220" HorizontalAlignment="Left">
-                                <ComboBoxItem Content="Não mexer" Tag="{x:Static ui:ModoOpcional.NaoMexer}" />
-                                <ComboBoxItem Content="Claro" Tag="{x:Static ui:ModoOpcional.Claro}" />
-                                <ComboBoxItem Content="Escuro" Tag="{x:Static ui:ModoOpcional.Escuro}" />
-                            </ComboBox>
+            <TabControl Grid.Row="1" Style="{StaticResource AbasVitral}">
+                <TabItem Header="Cores e tema" Style="{StaticResource AbaVitral}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                        <StackPanel DataContext="{Binding Editor}"
+                                    IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
+                            <!-- Sem perfil escolhido, o editor todo fica apagado (pílulas e cores não têm estado desabilitado próprio) -->
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger></Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
 
-                            <TextBlock Text="Modo dos aplicativos (janelas)" Style="{StaticResource TituloSecao}" />
-                            <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding ModoApps}" Width="220" HorizontalAlignment="Left">
-                                <ComboBoxItem Content="Não mexer" Tag="{x:Static ui:ModoOpcional.NaoMexer}" />
-                                <ComboBoxItem Content="Claro" Tag="{x:Static ui:ModoOpcional.Claro}" />
-                                <ComboBoxItem Content="Escuro" Tag="{x:Static ui:ModoOpcional.Escuro}" />
-                            </ComboBox>
+                            <Border Style="{StaticResource CartaoVidro}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                    <TextBlock Text="Modo do Windows (barra e Iniciar)" VerticalAlignment="Center" />
+                                    <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Modos}" SelectedValue="{Binding ModoSistema}" />
+                                    <TextBlock Grid.Row="1" Text="Modo dos aplicativos" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="1" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Modos}" SelectedValue="{Binding ModoApps}" />
+                                    <TextBlock Grid.Row="2" Text="Efeitos de transparência" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="2" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Ligada}" SelectedValue="{Binding Transparencia}" />
+                                </Grid>
+                            </Border>
 
-                            <TextBlock Text="Cor de destaque" Style="{StaticResource TituloSecao}" />
-                            <ItemsControl ItemsSource="{Binding CoresSugeridas}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate><WrapPanel MaxWidth="520" HorizontalAlignment="Left" /></ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Width="28" Height="28" Margin="0,0,6,6" Padding="0" ToolTip="{Binding}"
-                                                Command="{Binding DataContext.EscolherCorCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                                CommandParameter="{Binding}">
-                                            <Border Background="{Binding}" CornerRadius="4" Width="22" Height="22" />
-                                        </Button>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                <Border Width="28" Height="28" CornerRadius="4" BorderThickness="1" BorderBrush="#808080"
-                                        Background="{Binding CorDestaque, Converter={StaticResource CorParaPincel}}" />
-                                <TextBox Text="{Binding CorDestaque, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}" Width="110" Margin="8,0" VerticalContentAlignment="Center" ToolTip="Cor livre no formato #RRGGBB" />
-                                <Button Content="Não mexer" Command="{Binding EscolherCorCommand}" CommandParameter="{x:Null}" />
-                            </StackPanel>
+                            <Border Style="{StaticResource CartaoVidro}">
+                                <StackPanel>
+                                    <TextBlock Text="Cor de destaque" Margin="0,0,0,10" />
+                                    <ItemsControl ItemsSource="{Binding CoresSugeridas}" Focusable="False">
+                                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel MaxWidth="560" HorizontalAlignment="Left" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource BotaoCor}" ToolTip="{Binding}" CommandParameter="{Binding}"
+                                                        Command="{Binding DataContext.EscolherCorCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <Border Width="30" Height="30" CornerRadius="8" BorderBrush="{StaticResource Borda}" BorderThickness="1"
+                                                Background="{Binding CorDestaque, Converter={StaticResource CorParaPincel}}" />
+                                        <TextBox Text="{Binding CorDestaque, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}" Width="110" Margin="10,0"
+                                                 Style="{StaticResource CaixaVidro}" ToolTip="Cor livre no formato #RRGGBB" />
+                                        <Button Content="Não mexer" Command="{Binding EscolherCorCommand}" CommandParameter="{x:Null}" Style="{StaticResource BotaoVidro}" />
+                                    </StackPanel>
+                                    <Grid Margin="0,14,0,0">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Cor automática pelo papel de parede" VerticalAlignment="Center" />
+                                        <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Ligada}" SelectedValue="{Binding CorAutomatica}" />
+                                    </Grid>
+                                    <TextBlock Text="Escolher uma cor acima desliga a automática." FontSize="11" Foreground="{StaticResource TextoSecundario}" Margin="0,6,0,0" />
+                                </StackPanel>
+                            </Border>
 
-                            <TextBlock Text="Cor automática pelo papel de parede" Style="{StaticResource TituloSecao}" />
-                            <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding CorAutomatica}" Width="220" HorizontalAlignment="Left">
-                                <ComboBoxItem Content="Não mexer" Tag="{x:Static ui:Escolha.NaoMexer}" />
-                                <ComboBoxItem Content="Ligada" Tag="{x:Static ui:Escolha.Sim}" />
-                                <ComboBoxItem Content="Desligada" Tag="{x:Static ui:Escolha.Nao}" />
-                            </ComboBox>
-                            <TextBlock Text="Escolher uma cor acima desliga a automática." Opacity="0.65" FontSize="11" Margin="0,4,0,0" />
-
-                            <TextBlock Text="Efeitos de transparência" Style="{StaticResource TituloSecao}" />
-                            <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding Transparencia}" Width="220" HorizontalAlignment="Left">
-                                <ComboBoxItem Content="Não mexer" Tag="{x:Static ui:Escolha.NaoMexer}" />
-                                <ComboBoxItem Content="Ligados" Tag="{x:Static ui:Escolha.Sim}" />
-                                <ComboBoxItem Content="Desligados" Tag="{x:Static ui:Escolha.Nao}" />
-                            </ComboBox>
-
-                            <TextBlock Text="Cor de destaque no Iniciar e na barra de tarefas (só no modo escuro)" Style="{StaticResource TituloSecao}" />
-                            <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding DestaqueNaBarraEIniciar}" Width="220" HorizontalAlignment="Left">
-                                <ComboBoxItem Content="Não mexer" Tag="{x:Static ui:Escolha.NaoMexer}" />
-                                <ComboBoxItem Content="Ligada" Tag="{x:Static ui:Escolha.Sim}" />
-                                <ComboBoxItem Content="Desligada" Tag="{x:Static ui:Escolha.Nao}" />
-                            </ComboBox>
-
-                            <TextBlock Text="Cor de destaque nas barras de título e bordas" Style="{StaticResource TituloSecao}" />
-                            <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding DestaqueNosTitulos}" Width="220" HorizontalAlignment="Left">
-                                <ComboBoxItem Content="Não mexer" Tag="{x:Static ui:Escolha.NaoMexer}" />
-                                <ComboBoxItem Content="Ligada" Tag="{x:Static ui:Escolha.Sim}" />
-                                <ComboBoxItem Content="Desligada" Tag="{x:Static ui:Escolha.Nao}" />
-                            </ComboBox>
-
-                            <TextBlock Text="Alinhamento da barra de tarefas" Style="{StaticResource TituloSecao}" />
-                            <ComboBox SelectedValuePath="Tag" SelectedValue="{Binding Alinhamento}" Width="220" HorizontalAlignment="Left">
-                                <ComboBoxItem Content="Não mexer" Tag="{x:Static ui:AlinhamentoOpcional.NaoMexer}" />
-                                <ComboBoxItem Content="Centro" Tag="{x:Static ui:AlinhamentoOpcional.Centro}" />
-                                <ComboBoxItem Content="Esquerda" Tag="{x:Static ui:AlinhamentoOpcional.Esquerda}" />
-                            </ComboBox>
+                            <Border Style="{StaticResource CartaoVidro}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                    <TextBlock Text="Destaque no Iniciar e na barra (só no modo escuro)" VerticalAlignment="Center" />
+                                    <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Ligada}" SelectedValue="{Binding DestaqueNaBarraEIniciar}" />
+                                    <TextBlock Grid.Row="1" Text="Destaque nas barras de título e bordas" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="1" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Ligada}" SelectedValue="{Binding DestaqueNosTitulos}" />
+                                    <TextBlock Grid.Row="2" Text="Alinhamento da barra de tarefas" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="2" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Alinhamentos}" SelectedValue="{Binding Alinhamento}" />
+                                </Grid>
+                            </Border>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
-                <TabItem Header="Barra de tarefas" IsEnabled="False" ToolTip="Em breve" />
-                <TabItem Header="Iniciar" IsEnabled="False" ToolTip="Em breve" />
-                <TabItem Header="Central" IsEnabled="False" ToolTip="Em breve" />
-                <TabItem Header="Explorer" IsEnabled="False" ToolTip="Em breve" />
-                <TabItem Header="Barra do topo" IsEnabled="False" ToolTip="Em breve" />
-                <TabItem Header="Janelas" IsEnabled="False" ToolTip="Em breve" />
+                <TabItem Header="Barra de tarefas" Style="{StaticResource AbaVitral}" IsEnabled="False" />
+                <TabItem Header="Iniciar" Style="{StaticResource AbaVitral}" IsEnabled="False" />
+                <TabItem Header="Barra do topo" Style="{StaticResource AbaVitral}" IsEnabled="False" />
+                <TabItem Header="Janelas" Style="{StaticResource AbaVitral}" IsEnabled="False" />
             </TabControl>
 
-            <DockPanel Grid.Row="2" Margin="0,10,0,0" LastChildFill="True">
+            <DockPanel Grid.Row="2" Margin="0,14,0,0" LastChildFill="True">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Content="Salvar" Command="{Binding SalvarPerfilCommand}" Margin="0,0,8,0" />
-                    <Button Content="Testar (20 s)" Command="{Binding TestarCommand}" Margin="0,0,8,0" />
-                    <Button Content="Aplicar" Command="{Binding AplicarCommand}" Style="{DynamicResource AccentButtonStyle}" />
+                    <Button Content="Descartar" Command="{Binding DescartarCommand}" Style="{StaticResource BotaoVidro}" Margin="0,0,8,0" />
+                    <Button Content="Salvar" Command="{Binding SalvarPerfilCommand}" Style="{StaticResource BotaoVidro}" Margin="0,0,8,0" />
+                    <Button Content="Testar (20 s)" Command="{Binding TestarCommand}" Style="{StaticResource BotaoVidro}" Margin="0,0,8,0" />
+                    <Button Content="Aplicar" Command="{Binding AplicarCommand}" Style="{StaticResource BotaoPrimario}" />
                 </StackPanel>
-                <TextBlock Text="{Binding Mensagem}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="4,0,12,0" />
+                <TextBlock Text="{Binding Mensagem}" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource TextoSecundario}" Margin="0,0,16,0" />
             </DockPanel>
         </Grid>
     </Grid>

@@ -13,6 +13,7 @@ public partial class JanelaPrincipal : Window
     public JanelaPrincipal(PrincipalViewModel vm, Inicializacao inicializacao)
     {
         InitializeComponent();
+        Vidro.Aplicar(this);
         DataContext = vm;
         _inicializacao = inicializacao;
         IniciarComWindows.IsChecked = inicializacao.Ativa();
