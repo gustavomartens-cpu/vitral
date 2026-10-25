@@ -16,7 +16,8 @@ public sealed class ServicoRetratos(IRegistro registro, string pasta)
         perfil,
         AjustesNativos.Controlados.Select(c => registro.Ler(c.Chave, c.Nome, c.Tipo)).ToList());
 
-    public void Salvar(Retrato r)
+    /// Grava o retrato e devolve o nome do arquivo (para guardar a referência, por exemplo num teste em andamento).
+    public string Salvar(Retrato r)
     {
         Directory.CreateDirectory(pasta);
         // Sequencial com 3 dígitos para que dois retratos no mesmo milissegundo ordenem certo pelo nome.
@@ -26,16 +27,24 @@ public sealed class ServicoRetratos(IRegistro registro, string pasta)
         while (File.Exists(arquivo));
         File.WriteAllText(arquivo, Serializar(r));
         foreach (var velho in ArquivosDoHistorico().Skip(Limite)) File.Delete(velho);
+        return Path.GetFileName(arquivo);
     }
 
-    public Retrato? Ultimo() => ArquivosDoHistorico().Select(Carregar).FirstOrDefault();
+    /// Carrega um retrato pelo nome do arquivo; nulo se ele não existir mais.
+    public Retrato? Carregar(string nomeArquivo)
+    {
+        string arquivo = Path.Combine(pasta, Path.GetFileName(nomeArquivo));
+        return File.Exists(arquivo) ? LerArquivo(arquivo) : null;
+    }
 
-    public IReadOnlyList<Retrato> Historico() => ArquivosDoHistorico().Select(Carregar).ToList();
+    public Retrato? Ultimo() => ArquivosDoHistorico().Select(LerArquivo).FirstOrDefault();
+
+    public IReadOnlyList<Retrato> Historico() => ArquivosDoHistorico().Select(LerArquivo).ToList();
 
     public Retrato GarantirOriginal()
     {
         string arquivo = Path.Combine(pasta, NomeOriginal);
-        if (File.Exists(arquivo)) return Carregar(arquivo);
+        if (File.Exists(arquivo)) return LerArquivo(arquivo);
         Directory.CreateDirectory(pasta);
         var r = Tirar(null);
         File.WriteAllText(arquivo, Serializar(r));
@@ -62,7 +71,7 @@ public sealed class ServicoRetratos(IRegistro registro, string pasta)
         r.Valores.Select(v => new ValorJson(v.Chave, v.Nome, v.Tipo,
             v.Dado as uint?, v.Dado is byte[] b ? Convert.ToBase64String(b) : null, v.Dado as string)).ToList()), Opcoes);
 
-    private static Retrato Carregar(string arquivo)
+    private static Retrato LerArquivo(string arquivo)
     {
         var j = JsonSerializer.Deserialize<RetratoJson>(File.ReadAllText(arquivo), Opcoes)
                 ?? throw new InvalidDataException($"Retrato vazio: {arquivo}");
