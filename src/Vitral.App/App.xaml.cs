@@ -29,6 +29,10 @@ public partial class App : Application
     private ControleBarra? _barra;
     private BarraDeTarefas.ObservadorIcones? _observadorIcones;
     private EstadoBarra? _estadoBarra;
+    private EstadoDoca? _estadoDoca;
+    private Doca.ControleDoca? _doca;
+    private Doca.BarraDoWindows? _barraWindows;
+    private Doca.FonteBandeja? _bandejaApps;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -45,24 +49,39 @@ public partial class App : Application
         var registro = new RegistroWindows();
         var config = new ServicoConfig(System.IO.Path.Combine(Pastas.Raiz, "config.json"));
         _notificador = new NotificadorEmSegundoPlano(new NotificadorWindows()); // ver comentário da classe
-        _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m));
+        _bandejaApps = new Doca.FonteBandeja(Dispatcher);
+        _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m), _bandejaApps);
         _estadoBarra = new EstadoBarra(_barra, config, registro, _notificador); // também cuida do relógio de baixo
         var estadoIcones = new EstadoIcones(config);
-        var retratos = new ServicoRetratos(registro, Pastas.Retratos, _estadoBarra.Atual, estadoIcones.Atual);
+        _barraWindows = new Doca.BarraDoWindows(registro, _notificador);
+        _doca = new Doca.ControleDoca(_barraWindows, _bandejaApps, m => _bandeja?.Avisar("Vitral", m));
+        _estadoDoca = new EstadoDoca(_doca, _barraWindows, config);
+        // Travamento fatal com a doca ligada: a barra do Windows volta antes de o processo sumir.
+        // Na thread da interface também devolve os ícones da bandeja (a janela da ManagedShell morre com o processo).
+        AppDomain.CurrentDomain.UnhandledException += (_, _) =>
+        {
+            _barraWindows?.Mostrar();
+            if (Dispatcher.CheckAccess())
+                try { _bandejaApps?.Desligar(); } catch (Exception) { /* processo caindo: melhor esforço */ }
+        };
+        // Sair da conta ou desligar o Windows: mesma limpeza do Sair (barra do Windows e ocultar automático de volta).
+        SessionEnding += (_, _) => Sair();
+        var retratos = new ServicoRetratos(registro, Pastas.Retratos, _estadoBarra.Atual, estadoIcones.Atual, _estadoDoca.Atual);
         var perfis = new RepositorioPerfis(Pastas.Perfis);
-        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, _estadoBarra, estadoIcones), retratos, perfis, config);
+        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, _estadoBarra, estadoIcones, _estadoDoca), retratos, perfis, config);
         Inicializacao = new Inicializacao(registro);
 
         bool peloWindows = e.Args.Contains(Vitral.Core.Configuracao.Inicializacao.Argumento);
         var estado = Servico.AoIniciar(peloWindows);
         _estadoBarra.Mostrar(); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
+        _estadoDoca.AoIniciar(); // liga a doca se estava ligada; senão garante a barra do Windows
         // Depois de AoIniciar: um teste que ficou aberto já voltou, e o observador começa com a lista certa.
         _observadorIcones = new BarraDeTarefas.ObservadorIcones(registro, estadoIcones, _notificador);
         // Monitores, resolução ou escala mudaram, ou o PC voltou da suspensão: reposiciona e relê a barra.
-        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(() => _barra.Reajustar());
+        Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(() => { _barra.Reajustar(); _doca.Reajustar(); });
         Microsoft.Win32.SystemEvents.PowerModeChanged += (_, p) =>
         {
-            if (p.Mode == Microsoft.Win32.PowerModes.Resume) Dispatcher.BeginInvoke(() => _barra.Reajustar());
+            if (p.Mode == Microsoft.Win32.PowerModes.Resume) Dispatcher.BeginInvoke(() => { _barra.Reajustar(); _doca.Reajustar(); });
         };
 
         Principal = new PrincipalViewModel(Servico, perfis, new DialogosWpf(), new RelogioWpf(), () => Icones.Programas(registro));
@@ -90,6 +109,9 @@ public partial class App : Application
         _janelaContagem?.Close();
         _barra?.Fechar();
         _estadoBarra?.Encerrar(); // sem a barra do topo, o relógio de baixo volta
+        _estadoDoca?.Encerrar(); // sem a doca, a barra do Windows volta
+        _barraWindows?.Dispose();
+        _bandejaApps?.Dispose(); // devolve os ícones ao Windows
         _observadorIcones?.Dispose();
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));
         _bandeja?.Dispose();

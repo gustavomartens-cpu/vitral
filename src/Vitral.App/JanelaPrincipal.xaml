@@ -132,6 +132,19 @@
                                 </Style>
                             </StackPanel.Style>
 
+                            <!-- Doca do Vitral (seção barraBaixo do perfil) -->
+                            <Border Style="{StaticResource CartaoVidro}" DataContext="{Binding DataContext.EditorDoca, RelativeSource={RelativeSource AncestorType=Window}}">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Doca do Vitral" VerticalAlignment="Center" />
+                                        <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Ligada}" SelectedValue="{Binding Doca}" />
+                                    </Grid>
+                                    <TextBlock Text="Esconde a barra do Windows e mostra a doca do Vitral. Os ícones dos apps passam para a setinha da barra do topo."
+                                               FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                </StackPanel>
+                            </Border>
+
                             <Border Style="{StaticResource CartaoVidro}">
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>

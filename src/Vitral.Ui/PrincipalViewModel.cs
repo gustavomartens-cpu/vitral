@@ -32,6 +32,8 @@ public sealed partial class PrincipalViewModel : ObservableObject
 
     public EditorBarraViewModel EditorBarra { get; } = new();
 
+    public EditorDocaViewModel EditorDoca { get; } = new();
+
     public EditorBarraTarefasViewModel EditorBarraTarefas { get; }
 
     [ObservableProperty] private string? _selecionado;
@@ -118,6 +120,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
         Editor.Carregar(p?.Nativo);
         EditorBarra.Carregar(p?.BarraTopo);
         EditorBarraTarefas.Carregar(p?.BarraTarefas);
+        EditorDoca.Carregar(p?.BarraBaixo);
     }
 
     /// Perfis para o menu da bandeja, sem tocar na lista nem no editor da janela.
@@ -150,13 +153,31 @@ public sealed partial class PrincipalViewModel : ObservableObject
         var ajustes = Editor.ParaPerfil();
         var barra = EditorBarra.ParaPerfil();
         var barraTarefas = EditorBarraTarefas.ParaPerfil();
+        var doca = EditorDoca.ParaPerfil();
         if (ajustes.CorDestaque is { } cor)
         {
             try { Cor.DeHex(cor); }
             catch (FormatException e) { _dialogos.Avisar(e.Message); return false; }
         }
         string nome = Selecionado;
-        bool ok = Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, Environment.OSVersion.Version.ToString(), ajustes, barra, barraTarefas)); return true; });
+        bool ok = Executar(() =>
+        {
+            // Parte do perfil existente: seções que este editor não edita (ou de versões futuras) são preservadas.
+            Perfil? existente = null;
+            try { existente = _perfis.Carregar(nome); }
+            catch (Exception e) when (e is not OutOfMemoryException) { /* perfil novo ou ilegível: começa do zero */ }
+            var p = (existente ?? new Perfil(PerfilJson.EsquemaSuportado, nome, null, null)) with
+            {
+                Esquema = PerfilJson.EsquemaSuportado,
+                BuildTestada = Environment.OSVersion.Version.ToString(),
+                Nativo = ajustes,
+                BarraTopo = barra,
+                BarraTarefas = barraTarefas,
+                BarraBaixo = doca,
+            };
+            _perfis.Salvar(p);
+            return true;
+        });
         if (ok) SincronizarItens(); // a gema acompanha a cor salva
         return ok;
     }

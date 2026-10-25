@@ -3,13 +3,13 @@ using System.Windows.Interop;
 
 namespace Vitral.App.Barra;
 
-/// Reserva a faixa do topo do monitor principal como AppBar (spec §3.1): janelas maximizadas começam abaixo dela.
-/// Uma janela oculta recebe as notificações da AppBar (tela cheia, mudança de posição) e o "TaskbarCreated"
+/// Reserva uma faixa do monitor principal como AppBar: a do topo (barra do topo, spec §3.1) ou a de baixo (doca):
+/// janelas maximizadas ficam fora dela. Uma janela oculta recebe as notificações da AppBar (tela cheia, mudança de posição) e o "TaskbarCreated"
 /// do Explorer reiniciado. Se o Vitral cair, o Windows libera a reserva sozinho.
-internal sealed partial class ReservaTopo : IDisposable
+internal sealed partial class ReservaFaixa : IDisposable
 {
     private const uint AbmNew = 0, AbmRemove = 1, AbmQueryPos = 2, AbmSetPos = 3;
-    private const uint AbeTop = 1;
+    private const uint AbeTop = 1, AbeBottom = 3;
     private const int AbnPosChanged = 1, AbnFullScreenApp = 2;
 
     [StructLayout(LayoutKind.Sequential)]
@@ -31,7 +31,7 @@ internal sealed partial class ReservaTopo : IDisposable
     private static partial uint RegisterWindowMessage(string nome);
 
     private readonly HwndSource _janela;
-    private readonly uint _mensagemAppBar = RegisterWindowMessage("Vitral.ReservaTopo");
+    private readonly uint _mensagemAppBar = RegisterWindowMessage("Vitral.ReservaFaixa");
     private readonly uint _mensagemTaskbarCriada = RegisterWindowMessage("TaskbarCreated");
     private bool _registrada;
 
@@ -41,10 +41,16 @@ internal sealed partial class ReservaTopo : IDisposable
     /// O Explorer reiniciou ou a posição mudou: registrar de novo e reposicionar as ilhas.
     public event Action? Recriar;
 
-    public ReservaTopo()
+    private readonly bool _embaixo;
+    private readonly double _alturaDips;
+
+    /// <param name="embaixo">Faixa de baixo (doca) em vez da de cima.</param>
+    public ReservaFaixa(bool embaixo = false, double alturaDips = Ui.Barra.PosicaoIlhas.Reserva)
     {
+        _embaixo = embaixo;
+        _alturaDips = alturaDips;
         // Janela comum oculta (não "message-only"): precisa receber as mensagens de difusão, como TaskbarCreated.
-        _janela = new HwndSource(new HwndSourceParameters("Vitral.ReservaTopo") { Width = 0, Height = 0, WindowStyle = 0 });
+        _janela = new HwndSource(new HwndSourceParameters("Vitral.ReservaFaixa") { Width = 0, Height = 0, WindowStyle = 0 });
         _janela.AddHook(Processar);
     }
 
@@ -68,12 +74,17 @@ internal sealed partial class ReservaTopo : IDisposable
     {
         if (!_registrada) return;
         var monitor = MonitorPrincipal.Ler(); // escala e tamanho atuais do principal, não os da janela oculta
-        int altura = (int)Math.Round(Ui.Barra.PosicaoIlhas.Reserva * monitor.Dpi / 96.0);
+        int altura = (int)Math.Round(_alturaDips * monitor.Dpi / 96.0);
+        int fundo = monitor.Y + monitor.Altura;
         var d = Dados();
-        d.Borda = AbeTop;
-        d.Retangulo = new Ret { Esq = monitor.X, Topo = monitor.Y, Dir = monitor.X + monitor.Largura, Base = monitor.Y + altura };
+        d.Borda = _embaixo ? AbeBottom : AbeTop;
+        d.Retangulo = _embaixo
+            ? new Ret { Esq = monitor.X, Topo = fundo - altura, Dir = monitor.X + monitor.Largura, Base = fundo }
+            : new Ret { Esq = monitor.X, Topo = monitor.Y, Dir = monitor.X + monitor.Largura, Base = monitor.Y + altura };
         SHAppBarMessage(AbmQueryPos, ref d);
-        d.Retangulo.Base = d.Retangulo.Topo + altura; // o Windows pode ter empurrado o topo; a altura é nossa
+        // O Windows pode ter empurrado a borda; a altura é nossa.
+        if (_embaixo) d.Retangulo.Topo = d.Retangulo.Base - altura;
+        else d.Retangulo.Base = d.Retangulo.Topo + altura;
         SHAppBarMessage(AbmSetPos, ref d);
     }
 
@@ -128,7 +139,7 @@ internal sealed partial class ReservaTopo : IDisposable
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
-            LogBarra.Erro("ReservaTopo", e);
+            LogBarra.Erro("ReservaFaixa", e);
         }
         return IntPtr.Zero;
     }

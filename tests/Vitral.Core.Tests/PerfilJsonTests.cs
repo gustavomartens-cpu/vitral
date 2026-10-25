@@ -69,9 +69,9 @@ public class PerfilJsonTests
     [Fact]
     public void Esquema4_recusado()
     {
-        var ex = Assert.Throws<PerfilInvalidoException>(() => PerfilJson.Ler("""{ "esquema": 4, "nome": "x" }"""));
-        Assert.Contains("esquema 4", ex.Message);
-        Assert.Contains("até o esquema 3", ex.Message);
+        var ex = Assert.Throws<PerfilInvalidoException>(() => PerfilJson.Ler("""{ "esquema": 5, "nome": "x" }"""));
+        Assert.Contains("esquema 5", ex.Message);
+        Assert.Contains("até o esquema 4", ex.Message);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class PerfilJsonTests
     {
         var p = new Perfil(PerfilJson.EsquemaSuportado, "Barra", null, null, new BarraTopoPerfil(true, new IlhasBarra(Desempenho: false)));
         string json = PerfilJson.Escrever(p);
-        Assert.Contains("\"esquema\": 3", json);
+        Assert.Contains("\"esquema\": 4", json);
         Assert.Contains("\"desempenho\": false", json);
         Assert.Equal(p, PerfilJson.Ler(json));
     }
@@ -96,7 +96,7 @@ public class PerfilJsonTests
     {
         var p = PerfilJson.Ler("""{ "esquema": 1, "nome": "A", "nativo": {} }""");
         Assert.Null(p.BarraTopo);
-        Assert.Contains("\"esquema\": 3", PerfilJson.Escrever(p));
+        Assert.Contains("\"esquema\": 4", PerfilJson.Escrever(p));
     }
 
     [Fact]

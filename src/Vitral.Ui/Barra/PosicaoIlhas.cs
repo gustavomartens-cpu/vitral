@@ -21,6 +21,19 @@ public static class PosicaoIlhas
         return new Retangulo(x / escala, y / escala, largura / escala, altura / escala);
     }
 
+    /// Doca (spec da doca §3): 46 px de altura, 8 px acima da borda de baixo, centralizada; reserva de 62 px.
+    public const double DocaAltura = 46, DocaFolga = 8, ReservaDoca = 62;
+
+    public static Retangulo Doca(Retangulo monitor, double largura) =>
+        new(monitor.X + (monitor.Largura - largura) / 2, monitor.Y + monitor.Altura - DocaFolga - DocaAltura, largura, DocaAltura);
+
+    /// Miniaturas da doca: 10 px acima dela, centralizadas no botão e a pelo menos 12 px das bordas do monitor.
+    public static Retangulo Miniaturas(Retangulo doca, double centroBotao, double largura, double altura, Retangulo monitor)
+    {
+        double x = Math.Clamp(centroBotao - largura / 2, monitor.X + 12, Math.Max(monitor.X + 12, monitor.X + monitor.Largura - 12 - largura));
+        return new Retangulo(x, doca.Y - 10 - altura, largura, altura);
+    }
+
     /// Distância entre a ilha e o painel que desce dela (spec v2 §3.2).
     public const double FolgaPainel = 6;
 

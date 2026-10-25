@@ -100,3 +100,19 @@ internal sealed class WifiFalso : IFonteWifi
     public Task LigarAsync(bool ligado) { Ligacoes.Add(ligado); return Task.CompletedTask; }
     public void AbrirConfiguracoes(string uri) => Abertos.Add(uri);
 }
+
+internal sealed class BandejaFalsa : IFonteBandeja
+{
+    public IReadOnlyList<IconeBandeja> Icones { get; set; } =
+    [
+        new("wallpaper", "Wallpaper Engine", null, false),
+        new("volume", "Alto-falantes: 24%", null, true),
+        new("bateria", "Bateria: 100%", null, true),
+        new("steam", "Steam", null, false),
+    ];
+    public bool Disponivel { get; set; } = true;
+    public event Action? Mudou;
+    public List<(string Id, BotaoMouse Botao)> Cliques { get; } = [];
+    public void Clicar(string id, BotaoMouse botao) => Cliques.Add((id, botao));
+    public void Disparar() => Mudou?.Invoke();
+}

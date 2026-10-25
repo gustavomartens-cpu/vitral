@@ -105,3 +105,17 @@ public interface IFonteWifi
     Task LigarAsync(bool ligado);
     void AbrirConfiguracoes(string uri);
 }
+
+/// Um ícone de bandeja de app (spec da doca §7). Imagem é do WPF (ImageSource), opaca aqui.
+public sealed record IconeBandeja(string Id, string Titulo, object? Imagem, bool JaNoTopo);
+
+public enum BotaoMouse { Esquerdo, Direito }
+
+/// Os ícones de bandeja recebidos pelo Vitral enquanto a doca está ligada. Disponivel = false: a bandeja não iniciou.
+public interface IFonteBandeja
+{
+    IReadOnlyList<IconeBandeja> Icones { get; }
+    bool Disponivel { get; }
+    event Action? Mudou;
+    void Clicar(string id, BotaoMouse botao);
+}

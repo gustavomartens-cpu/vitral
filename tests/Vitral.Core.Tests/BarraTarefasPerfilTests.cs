@@ -11,9 +11,9 @@ public sealed class BarraTarefasPerfilTests
     [Fact]
     public void Esquema3_ida_e_volta()
     {
-        var p = new Perfil(3, "Barra", null, null, null, Completa);
+        var p = new Perfil(PerfilJson.EsquemaSuportado, "Barra", null, null, null, Completa);
         string json = PerfilJson.Escrever(p);
-        Assert.Contains("\"esquema\": 3", json);
+        Assert.Contains($"\"esquema\": {PerfilJson.EsquemaSuportado}", json);
         Assert.Contains("\"pesquisa\": \"icone\"", json);
         Assert.Contains("\"agrupar\": \"quandoCheia\"", json);
         Assert.Equal(p, PerfilJson.Ler(json));

@@ -8,7 +8,8 @@ public static class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        VelopackApp.Build().Run();
+        // Desinstalar com a doca ligada não pode deixar o usuário sem barra de tarefas.
+        VelopackApp.Build().OnBeforeUninstallFastCallback(_ => Doca.SaidaDaDoca.AoDesinstalar()).Run();
         var app = new App();
         app.InitializeComponent();
         app.Run();
