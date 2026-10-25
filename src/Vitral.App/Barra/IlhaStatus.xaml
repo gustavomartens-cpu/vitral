@@ -1,47 +1,55 @@
 <UserControl x:Class="Vitral.App.Barra.IlhaStatus"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Cada item clicável é uma pílula (ItemIlha): clara no hover, afunda no clique -->
     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
         <!-- CPU e MEM -->
-        <StackPanel Orientation="Horizontal" Background="Transparent" Cursor="Hand" ToolTip="Gerenciador de Tarefas"
-                    MouseLeftButtonUp="Desempenho_Clique"
-                    Visibility="{Binding MostrarDesempenho, Converter={StaticResource BoolParaVisivel}}">
-            <TextBlock Text="CPU" Foreground="{StaticResource TextoSecundario}" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0" />
-            <ContentPresenter Content="{Binding CpuFracao}" ContentTemplate="{StaticResource MiniBarra}" />
-            <TextBlock Text="{Binding Cpu}" Width="30" Margin="5,0,0,0" VerticalAlignment="Center" />
-            <TextBlock Text="MEM" Foreground="{StaticResource TextoSecundario}" FontSize="10" VerticalAlignment="Center" Margin="6,0,5,0" />
-            <ContentPresenter Content="{Binding MemoriaFracao}" ContentTemplate="{StaticResource MiniBarra}" />
-            <TextBlock Text="{Binding Memoria}" Width="30" Margin="5,0,0,0" VerticalAlignment="Center" />
-            <Border Width="1" Height="14" Background="{StaticResource Linha}" Margin="6,0,10,0" />
-        </StackPanel>
+        <Border Style="{StaticResource ItemIlha}" ToolTip="Gerenciador de Tarefas" MouseLeftButtonUp="Desempenho_Clique" Margin="0,0,2,0"
+                Visibility="{Binding MostrarDesempenho, Converter={StaticResource BoolParaVisivel}}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="CPU" Foreground="{StaticResource TextoSecundario}" FontSize="10" VerticalAlignment="Center" Margin="0,0,5,0" />
+                <ContentPresenter Content="{Binding CpuFracao}" ContentTemplate="{StaticResource MiniBarra}" />
+                <TextBlock Text="{Binding Cpu}" Width="30" Margin="5,0,0,0" VerticalAlignment="Center" />
+                <TextBlock Text="MEM" Foreground="{StaticResource TextoSecundario}" FontSize="10" VerticalAlignment="Center" Margin="6,0,5,0" />
+                <ContentPresenter Content="{Binding MemoriaFracao}" ContentTemplate="{StaticResource MiniBarra}" />
+                <TextBlock Text="{Binding Memoria}" Width="30" Margin="5,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+        <Border Width="1" Height="14" Background="{StaticResource Linha}" Margin="2,0,6,0"
+                Visibility="{Binding MostrarDesempenho, Converter={StaticResource BoolParaVisivel}}" />
 
         <!-- Ícones dos apps (só com a doca ligada, quando o Vitral é o dono da bandeja) -->
-        <TextBlock x:Name="Setinha" Text="&#xE70D;" FontFamily="{StaticResource FonteIcones}" FontSize="11" Visibility="Collapsed"
-                   VerticalAlignment="Center" Cursor="Hand" ToolTip="Ícones dos apps" Margin="0,0,12,0" MouseLeftButtonUp="Icones_Clique" />
+        <Border x:Name="Setinha" Style="{StaticResource ItemIlha}" Visibility="Collapsed" ToolTip="Ícones dos apps" MouseLeftButtonUp="Icones_Clique" Margin="0,0,2,0">
+            <TextBlock Text="&#xE70D;" FontFamily="{StaticResource FonteIcones}" FontSize="11" VerticalAlignment="Center" />
+        </Border>
 
         <!-- Rede -->
-        <TextBlock Text="{Binding Rede, Converter={StaticResource RedeParaIcone}}" FontFamily="{StaticResource FonteIcones}" FontSize="13"
-                   VerticalAlignment="Center" Cursor="Hand" ToolTip="Wi-Fi" MouseLeftButtonUp="Rede_Clique" />
+        <Border Style="{StaticResource ItemIlha}" ToolTip="Wi-Fi" MouseLeftButtonUp="Rede_Clique" Margin="0,0,2,0">
+            <TextBlock Text="{Binding Rede, Converter={StaticResource RedeParaIcone}}" FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center" />
+        </Border>
 
-        <!-- Volume: roda ±2, clique = mudo -->
-        <StackPanel Orientation="Horizontal" Background="Transparent" Margin="12,0,0,0" Cursor="Hand"
-                    ToolTip="Roda do mouse: volume. Clique: painel de volume" MouseWheel="Volume_Roda" MouseLeftButtonUp="Volume_Clique">
-            <TextBlock FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Text" Value="&#xE767;" />
-                        <Style.Triggers><DataTrigger Binding="{Binding Mudo}" Value="True"><Setter Property="Text" Value="&#xE74F;" /></DataTrigger></Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-            <TextBlock Text="{Binding Volume}" Margin="5,0,0,0" VerticalAlignment="Center" />
-        </StackPanel>
+        <!-- Volume: roda ±2, clique = painel -->
+        <Border Style="{StaticResource ItemIlha}" ToolTip="Roda do mouse: volume. Clique: painel de volume" MouseWheel="Volume_Roda" MouseLeftButtonUp="Volume_Clique" Margin="0,0,2,0">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="&#xE767;" />
+                            <Style.Triggers><DataTrigger Binding="{Binding Mudo}" Value="True"><Setter Property="Text" Value="&#xE74F;" /></DataTrigger></Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="{Binding Volume}" Margin="5,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
 
         <!-- Bateria (só com bateria) -->
-        <StackPanel Orientation="Horizontal" Margin="12,0,0,0" Background="Transparent" Cursor="Hand" ToolTip="Bateria e energia"
-                    MouseLeftButtonUp="Bateria_Clique" Visibility="{Binding BateriaVisivel, Converter={StaticResource BoolParaVisivel}}">
-            <TextBlock Text="&#xE83F;" FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding Bateria}" Margin="5,0,0,0" VerticalAlignment="Center" />
-        </StackPanel>
+        <Border Style="{StaticResource ItemIlha}" ToolTip="Bateria e energia" MouseLeftButtonUp="Bateria_Clique"
+                Visibility="{Binding BateriaVisivel, Converter={StaticResource BoolParaVisivel}}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE83F;" FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Bateria}" Margin="5,0,0,0" VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
     </StackPanel>
 </UserControl>

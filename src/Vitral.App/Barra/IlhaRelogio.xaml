@@ -1,9 +1,11 @@
 <UserControl x:Class="Vitral.App.Barra.IlhaRelogio"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Cursor="Hand" ToolTip="Calendário">
-    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent" MouseLeftButtonUp="Relogio_Clique">
-        <TextBlock Text="{Binding Hora}" FontWeight="SemiBold" VerticalAlignment="Center" />
-        <TextBlock Text="{Binding Data}" Foreground="{StaticResource TextoSecundario}" Margin="8,0,0,0" VerticalAlignment="Center" />
-    </StackPanel>
+             ToolTip="Calendário">
+    <Border Style="{StaticResource ItemIlha}" MouseLeftButtonUp="Relogio_Clique">
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{Binding Hora}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Data}" Foreground="{StaticResource TextoSecundario}" Margin="8,0,0,0" VerticalAlignment="Center" />
+        </StackPanel>
+    </Border>
 </UserControl>
