@@ -134,3 +134,21 @@ public sealed class PainelWifiTests
     }
 
 }
+
+public sealed class RevisaoWifiTests
+{
+    [Fact]
+    public async Task Senha_errada_com_a_lista_atualizada_mantem_o_campo()
+    {
+        var wifi = new WifiFalso { Resposta = new ResultadoConexao(false, "Senha incorreta."), AtualizarAoConectar = true };
+        using var vm = new PainelWifiViewModel(wifi);
+        await vm.EscolherCommand.ExecuteAsync(vm.Redes.Single(r => r.Nome == "Vizinho"));
+        vm.Senha = "errada";
+        await vm.ConectarComSenhaCommand.ExecuteAsync(null);
+
+        // A lista nova traz registros novos: a rede continua pedindo senha (por valor; a tela não pode comparar referência).
+        Assert.Equal("Senha incorreta.", vm.Mensagem);
+        Assert.Equal("Vizinho", vm.PedindoSenha?.Nome);
+        Assert.Contains(vm.PedindoSenha, vm.Redes);
+    }
+}

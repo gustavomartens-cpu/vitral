@@ -6,7 +6,6 @@
     <barra:BytesParaImagem x:Key="BytesParaImagem" />
     <barra:LarguraPreenchida x:Key="LarguraPreenchida" />
     <barra:SinalParaIcone x:Key="SinalParaIcone" />
-    <barra:MesmoObjeto x:Key="MesmoObjeto" />
     <FontFamily x:Key="FonteIcones">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <Style x:Key="BotaoIlha" TargetType="Button">

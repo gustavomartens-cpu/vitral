@@ -122,7 +122,10 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
 
     private void AoMudarMidia(object? s, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(IlhaMidiaViewModel.Visivel)) AtualizarVisibilidadeMidia();
+        if (e.PropertyName != nameof(IlhaMidiaViewModel.Visivel)) return;
+        // Nada mais tocando: a ilha some e o painel da mídia, se aberto, não pode ficar flutuando sem ela.
+        if (_vmMidia?.Visivel != true && _coordenador.Aberto == Painel.Midia) _coordenador.FecharTodos();
+        AtualizarVisibilidadeMidia();
     }
 
     private bool _telaCheia;

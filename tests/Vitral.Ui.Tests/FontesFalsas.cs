@@ -91,7 +91,11 @@ internal sealed class WifiFalso : IFonteWifi
     public List<string> Abertos { get; } = [];
 
     public Task AtualizarAsync() { Atualizacoes++; Mudou?.Invoke(); return Task.CompletedTask; }
-    public Task<ResultadoConexao> ConectarAsync(string rede, string? senha) { Conexoes.Add((rede, senha)); return Task.FromResult(Resposta); }
+    public Task<ResultadoConexao> ConectarAsync(string rede, string? senha) { Conexoes.Add((rede, senha)); 
+        if (AtualizarAoConectar) { Atual = Atual! with { Redes = Atual.Redes.Select(r => r with { }).ToList() }; Mudou?.Invoke(); } // como o Windows: lista nova
+        return Task.FromResult(Resposta);
+    }
+    public bool AtualizarAoConectar { get; set; }
     public void Desconectar() => Desconexoes++;
     public Task LigarAsync(bool ligado) { Ligacoes.Add(ligado); return Task.CompletedTask; }
     public void AbrirConfiguracoes(string uri) => Abertos.Add(uri);

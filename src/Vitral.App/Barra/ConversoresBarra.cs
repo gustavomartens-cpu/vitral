@@ -33,15 +33,6 @@ internal sealed class SinalParaIcone : IValueConverter
     public object ConvertBack(object? valor, Type alvo, object? parametro, CultureInfo cultura) => throw new NotSupportedException();
 }
 
-/// true quando os dois valores são o mesmo objeto (por exemplo, a rede da linha é a que está pedindo senha).
-internal sealed class MesmoObjeto : IMultiValueConverter
-{
-    public object Convert(object[] valores, Type alvo, object? parametro, CultureInfo cultura) =>
-        valores is [var a, var b] && a is not null && ReferenceEquals(a, b);
-
-    public object[] ConvertBack(object? valor, Type[] alvos, object? parametro, CultureInfo cultura) => throw new NotSupportedException();
-}
-
 /// Largura do preenchimento de um controle deslizante: valor / máximo × largura disponível.
 internal sealed class LarguraPreenchida : IMultiValueConverter
 {

@@ -85,6 +85,30 @@ internal sealed partial class ReservaTopo : IDisposable
         _registrada = false;
     }
 
+    /// O aviso também chega com a área de trabalho em primeiro plano ou tela cheia em outro monitor: confere.
+    private static bool TelaCheiaDeVerdade()
+    {
+        var janela = GetForegroundWindow();
+        if (janela == IntPtr.Zero || !GetWindowRect(janela, out var r)) return false;
+        string classe = NomeDaClasse(janela);
+        var m = MonitorPrincipal.Ler();
+        bool real = Ui.Barra.TelaCheia.EhDeVerdade(classe,
+            new Ui.Barra.Retangulo(r.Esq, r.Topo, r.Dir - r.Esq, r.Base - r.Topo), new Ui.Barra.Retangulo(m.X, m.Y, m.Largura, m.Altura));
+        if (!real) LogBarra.Info($"Aviso de tela cheia ignorado ({classe})");
+        return real;
+    }
+
+    private static unsafe string NomeDaClasse(IntPtr janela)
+    {
+        char* buffer = stackalloc char[256];
+        int n = GetClassName(janela, buffer, 256);
+        return n > 0 ? new string(buffer, 0, n) : "";
+    }
+
+    [LibraryImport("user32.dll")] private static partial IntPtr GetForegroundWindow();
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool GetWindowRect(IntPtr janela, out Ret ret);
+    [LibraryImport("user32.dll", EntryPoint = "GetClassNameW")] private static unsafe partial int GetClassName(IntPtr janela, char* classe, int tamanho);
+
     private AppBarData Dados() => new() { Tamanho = (uint)Marshal.SizeOf<AppBarData>(), Janela = _janela.Handle };
 
     private IntPtr Processar(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool tratado)
@@ -93,7 +117,7 @@ internal sealed partial class ReservaTopo : IDisposable
         {
             if (msg == _mensagemAppBar)
             {
-                if ((int)wParam == AbnFullScreenApp) TelaCheia?.Invoke(lParam != IntPtr.Zero);
+                if ((int)wParam == AbnFullScreenApp) TelaCheia?.Invoke(lParam != IntPtr.Zero && TelaCheiaDeVerdade());
                 else if ((int)wParam == AbnPosChanged) Reposicionar();
             }
             else if (msg == _mensagemTaskbarCriada)

@@ -28,14 +28,6 @@
                                     <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                 </DockPanel>
                             </Button>
-                            <!-- Senha logo abaixo da rede escolhida -->
-                            <StackPanel x:Name="Senha" Margin="8,4,8,8" Visibility="Collapsed">
-                                <PasswordBox PasswordChanged="Senha_Mudou" KeyDown="Senha_Tecla" Loaded="Senha_Carregada"
-                                             Background="{StaticResource Superficie}" Foreground="{StaticResource Texto}"
-                                             BorderBrush="{StaticResource Borda}" Padding="8,5" />
-                                <Button Content="Conectar" Style="{StaticResource BotaoPrimario}" HorizontalAlignment="Right" Margin="0,6,0,0"
-                                        Command="{Binding DataContext.ConectarComSenhaCommand, ElementName=Raiz}" />
-                            </StackPanel>
                         </StackPanel>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding Protegida}" Value="True"><Setter TargetName="Estado" Property="Visibility" Value="Visible" /></DataTrigger>
@@ -46,20 +38,28 @@
                                 <Setter TargetName="Estado" Property="Foreground" Value="{StaticResource Ambar}" />
                                 <Setter TargetName="Linha" Property="Background" Value="{StaticResource Selecao}" />
                             </DataTrigger>
-                            <DataTrigger Value="True">
-                                <DataTrigger.Binding>
-                                    <MultiBinding Converter="{StaticResource MesmoObjeto}">
-                                        <Binding />
-                                        <Binding Path="DataContext.PedindoSenha" ElementName="Raiz" />
-                                    </MultiBinding>
-                                </DataTrigger.Binding>
-                                <Setter TargetName="Senha" Property="Visibility" Value="Visible" />
-                            </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
+
+        <!-- Senha da rede escolhida: caixa única fora da lista, para o texto sobreviver às atualizações da lista -->
+        <StackPanel Margin="0,8,0,0">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Style.Triggers><DataTrigger Binding="{Binding PedindoSenha}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <TextBlock FontSize="11" Foreground="{StaticResource TextoSecundario}" Margin="0,0,0,4">
+                <Run Text="Senha de " /><Run Text="{Binding PedindoSenha.Nome, Mode=OneWay}" />
+            </TextBlock>
+            <PasswordBox x:Name="CaixaSenha" PasswordChanged="Senha_Mudou" KeyDown="Senha_Tecla"
+                         Background="{StaticResource Superficie}" Foreground="{StaticResource Texto}"
+                         BorderBrush="{StaticResource Borda}" Padding="8,5" />
+            <Button Content="Conectar" Style="{StaticResource BotaoPrimario}" HorizontalAlignment="Right" Margin="0,6,0,0"
+                    Command="{Binding ConectarComSenhaCommand}" />
+        </StackPanel>
 
         <TextBlock Text="{Binding Mensagem}" Foreground="{StaticResource Ambar}" TextWrapping="Wrap" Margin="0,6,0,0">
             <TextBlock.Style>
