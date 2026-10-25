@@ -132,6 +132,70 @@ public static class Efeitos
             AnimarEscala(s, 1, Rapida, Mola);
     }
 
+    // ---- Lupa: na doca, o ícone sob o mouse cresce e os vizinhos conforme a distância ---------------------------
+
+    public static readonly DependencyProperty LupaProperty =
+        DependencyProperty.RegisterAttached("Lupa", typeof(bool), typeof(Efeitos), new PropertyMetadata(false, AoMudarLupa));
+
+    public static bool GetLupa(DependencyObject o) => (bool)o.GetValue(LupaProperty);
+    public static void SetLupa(DependencyObject o, bool v) => o.SetValue(LupaProperty, v);
+
+    /// Marca o que cresce dentro de um elemento com Lupa.
+    public static readonly DependencyProperty AlvoDaLupaProperty =
+        DependencyProperty.RegisterAttached("AlvoDaLupa", typeof(bool), typeof(Efeitos), new PropertyMetadata(false, AoMudarAlvoDaLupa));
+
+    public static bool GetAlvoDaLupa(DependencyObject o) => (bool)o.GetValue(AlvoDaLupaProperty);
+    public static void SetAlvoDaLupa(DependencyObject o, bool v) => o.SetValue(AlvoDaLupaProperty, v);
+
+    private static void AoMudarLupa(DependencyObject o, DependencyPropertyChangedEventArgs e)
+    {
+        if (o is not UIElement el) return;
+        el.MouseMove -= LupaMoveu;
+        el.MouseLeave -= LupaSaiu;
+        if (!(bool)e.NewValue) return;
+        el.MouseMove += LupaMoveu;
+        el.MouseLeave += LupaSaiu;
+    }
+
+    // Cresce a partir de 3/4 da altura: quase tudo para cima, sem passar da altura da doca (1,22 × 30 px).
+    private static void AoMudarAlvoDaLupa(DependencyObject o, DependencyPropertyChangedEventArgs e)
+    {
+        if (o is UIElement el && (bool)e.NewValue) el.RenderTransformOrigin = new Point(0.5, 0.75);
+    }
+
+    private static IEnumerable<FrameworkElement> AlvosDaLupa(DependencyObject raiz)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(raiz); i++)
+        {
+            var filho = VisualTreeHelper.GetChild(raiz, i);
+            if (filho is FrameworkElement f && GetAlvoDaLupa(f)) { yield return f; continue; }
+            foreach (var neto in AlvosDaLupa(filho)) yield return neto;
+        }
+    }
+
+    /// Aplicada direto, sem animação, para acompanhar o cursor sem atraso.
+    private static void LupaMoveu(object sender, MouseEventArgs e)
+    {
+        if (!Movimento.Ligado || sender is not FrameworkElement raiz) return;
+        double x = e.GetPosition(raiz).X;
+        foreach (var alvo in AlvosDaLupa(raiz))
+        {
+            if (!alvo.IsVisible) continue;
+            double centro = alvo.TransformToAncestor(raiz).Transform(new Point(alvo.ActualWidth / 2, 0)).X;
+            var s = EscalaDe(alvo, EscalaLupaProperty);
+            s.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            s.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            s.ScaleX = s.ScaleY = Lupa.Escala(x - centro);
+        }
+    }
+
+    private static void LupaSaiu(object sender, MouseEventArgs e)
+    {
+        if (sender is not FrameworkElement raiz) return;
+        foreach (var alvo in AlvosDaLupa(raiz))
+            if (alvo.GetValue(EscalaLupaProperty) is ScaleTransform s) AnimarEscala(s, 1, Rapida, Suave);
+    }
+
     // ---- Assentar: o que aparece chega 8 px e com fade; nos painéis, o conteúdo em cascata ----------------------
 
     /// Chamado por quem mostra a janela ou o popup. Sempre recomeça do estado inicial.

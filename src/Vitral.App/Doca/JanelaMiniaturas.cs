@@ -93,6 +93,10 @@ internal sealed partial class JanelaMiniaturas : Window
             UpdateLayout();
             var r = PosicaoIlhas.Miniaturas(doca, centroBotao, ActualWidth, ActualHeight, monitor);
             Left = r.X;
+            // Sobe assentando (spec do ajuste visual §4.1). É a janela que se move, não o conteúdo: as miniaturas são
+            // desenhadas pelo DWM por cima e acompanham a janela, não o RenderTransform do WPF.
+            BeginAnimation(TopProperty, new System.Windows.Media.Animation.DoubleAnimation(r.Y + 8, r.Y, Tema.Efeitos.Lenta)
+                { EasingFunction = Tema.Efeitos.Mola, FillBehavior = System.Windows.Media.Animation.FillBehavior.Stop });
             Top = r.Y;
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("Miniaturas.Mostrar", e); Esconder(); }
