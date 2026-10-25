@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Identidade "Vitral noturno" (spec 2026-10-24 §2.1) -->
+    <Color x:Key="CorNoite">#FF0A0F20</Color>
+    <Color x:Key="CorNoiteVidro">#B80A0F20</Color>
+    <Color x:Key="CorNoiteLateral">#59060A16</Color>
+    <Color x:Key="CorAmbar">#FFF2B544</Color>
+    <Color x:Key="CorAzul">#FF4C7DF0</Color>
+    <Color x:Key="CorTexto">#FFEDEFF7</Color>
+    <Color x:Key="CorTextoSecundario">#A6EDEFF7</Color>
+    <Color x:Key="CorTextoSobreAmbar">#FF1A1206</Color>
+    <Color x:Key="CorLinha">#14FFFFFF</Color>
+    <Color x:Key="CorBorda">#1AFFFFFF</Color>
+    <Color x:Key="CorEspecular">#24FFFFFF</Color>
+    <Color x:Key="CorSuperficie">#0AFFFFFF</Color>
+    <Color x:Key="CorSuperficieHover">#16FFFFFF</Color>
+    <Color x:Key="CorSelecao">#1AF2B544</Color>
+
+    <SolidColorBrush x:Key="Noite" Color="{StaticResource CorNoite}" />
+    <SolidColorBrush x:Key="NoiteVidro" Color="{StaticResource CorNoiteVidro}" />
+    <SolidColorBrush x:Key="NoiteLateral" Color="{StaticResource CorNoiteLateral}" />
+    <SolidColorBrush x:Key="Ambar" Color="{StaticResource CorAmbar}" />
+    <SolidColorBrush x:Key="Azul" Color="{StaticResource CorAzul}" />
+    <SolidColorBrush x:Key="Texto" Color="{StaticResource CorTexto}" />
+    <SolidColorBrush x:Key="TextoSecundario" Color="{StaticResource CorTextoSecundario}" />
+    <SolidColorBrush x:Key="TextoSobreAmbar" Color="{StaticResource CorTextoSobreAmbar}" />
+    <SolidColorBrush x:Key="Linha" Color="{StaticResource CorLinha}" />
+    <SolidColorBrush x:Key="Borda" Color="{StaticResource CorBorda}" />
+    <SolidColorBrush x:Key="Superficie" Color="{StaticResource CorSuperficie}" />
+    <SolidColorBrush x:Key="SuperficieHover" Color="{StaticResource CorSuperficieHover}" />
+    <SolidColorBrush x:Key="Selecao" Color="{StaticResource CorSelecao}" />
+
+    <LinearGradientBrush x:Key="AmbarGradiente" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FFF7C766" Offset="0" />
+        <GradientStop Color="#FFE39A2B" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Borda de vidro: filete especular no alto, linha discreta embaixo -->
+    <LinearGradientBrush x:Key="BordaVidro" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="{StaticResource CorEspecular}" Offset="0" />
+        <GradientStop Color="{StaticResource CorLinha}" Offset="0.35" />
+        <GradientStop Color="{StaticResource CorLinha}" Offset="1" />
+    </LinearGradientBrush>
+
+    <CornerRadius x:Key="RaioCartao">16</CornerRadius>
+    <CornerRadius x:Key="RaioBotao">10</CornerRadius>
+    <CornerRadius x:Key="RaioPilula">999</CornerRadius>
+
+    <FontFamily x:Key="FonteTitulo">Segoe UI Variable Display, Segoe UI</FontFamily>
+    <FontFamily x:Key="FonteCorpo">Segoe UI Variable Text, Segoe UI</FontFamily>
+</ResourceDictionary>
