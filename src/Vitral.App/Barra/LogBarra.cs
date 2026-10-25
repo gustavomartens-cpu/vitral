@@ -8,14 +8,18 @@ internal static class LogBarra
 {
     private static readonly object Trava = new();
 
-    public static void Erro(string origem, Exception e)
+    public static void Info(string mensagem) => Escrever($"{DateTimeOffset.Now:O} [info] {mensagem}");
+
+    public static void Erro(string origem, Exception e) => Escrever($"{DateTimeOffset.Now:O} [{origem}] {e}");
+
+    private static void Escrever(string linha)
     {
         try
         {
             lock (Trava)
             {
                 Directory.CreateDirectory(Pastas.Logs);
-                File.AppendAllText(Path.Combine(Pastas.Logs, "barra.log"), $"{DateTimeOffset.Now:O} [{origem}] {e}{Environment.NewLine}");
+                File.AppendAllText(Path.Combine(Pastas.Logs, "barra.log"), linha + Environment.NewLine);
             }
         }
         catch { /* sem log, segue */ }
