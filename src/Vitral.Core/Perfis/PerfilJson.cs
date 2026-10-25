@@ -8,7 +8,7 @@ namespace Vitral.Core.Perfis;
 /// a gravação é sempre no esquema atual. Seções desconhecidas são ignoradas na leitura.
 public static class PerfilJson
 {
-    public const int EsquemaSuportado = 3;
+    public const int EsquemaSuportado = 4;
 
     private static readonly JsonSerializerOptions Opcoes = new()
     {

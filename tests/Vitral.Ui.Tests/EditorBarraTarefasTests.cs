@@ -79,7 +79,7 @@ public sealed class EditorBarraTarefasTests : IDisposable
 
         var p = _amb.Perfis.Carregar("A");
         Assert.Equal(new BarraTarefasPerfil(PesquisaBarra.Oculta, IconesVisiveis: ["Spotify.exe"]), p.BarraTarefas);
-        Assert.Contains("\"esquema\": 3", File.ReadAllText(Path.Combine(_amb.Perfis.Pasta, "A", "perfil.json")));
+        Assert.Contains("\"esquema\": 4", File.ReadAllText(Path.Combine(_amb.Perfis.Pasta, "A", "perfil.json")));
     }
 
     [Fact]
