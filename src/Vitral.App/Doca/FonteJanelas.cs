@@ -8,12 +8,11 @@ using Vitral.Ui.Doca;
 namespace Vitral.App.Doca;
 
 /// Janelas da doca (spec da doca §5): a lista filtrada da ManagedShell (Tasks.GroupedWindows, as mesmas regras da
-/// barra do Windows), sem as janelas do próprio Vitral. Avisa uma vez por rodada de mudanças, na thread da interface.
+/// barra do Windows: ilhas, doca e painéis do Vitral ficam de fora por serem janelas de ferramenta). Avisa uma vez por rodada de mudanças, na thread da interface.
 internal sealed class FonteJanelas : IFonteJanelas, IDisposable
 {
     private readonly FonteBandeja _bandeja;
     private readonly Dispatcher _ui;
-    private readonly uint _meuProcesso = (uint)Environment.ProcessId;
     private Tasks? _tasks;
     private List<ApplicationWindow> _vigiadas = [];
     private bool _avisoPendente;
@@ -45,7 +44,7 @@ internal sealed class FonteJanelas : IFonteJanelas, IDisposable
     /// Liga na lista da ManagedShell atual (a bandeja cria e desfaz o ShellManager).
     private void Anexar()
     {
-        var tasks = _bandeja.Shell?.Tasks;
+        var tasks = _bandeja.Tarefas;
         if (ReferenceEquals(tasks, _tasks)) return;
         Desanexar();
         _tasks = tasks;
@@ -68,7 +67,7 @@ internal sealed class FonteJanelas : IFonteJanelas, IDisposable
         try
         {
             foreach (var j in _vigiadas) j.PropertyChanged -= AoMudarJanela;
-            _vigiadas = _tasks?.GroupedWindows?.Cast<ApplicationWindow>().Where(j => j.ProcId != _meuProcesso).ToList() ?? [];
+            _vigiadas = _tasks?.GroupedWindows?.Cast<ApplicationWindow>().ToList() ?? [];
             foreach (var j in _vigiadas) j.PropertyChanged += AoMudarJanela;
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("FonteJanelas.Recarregar", e); _vigiadas = []; }
@@ -112,7 +111,7 @@ internal sealed class FonteJanelas : IFonteJanelas, IDisposable
 
     public void Minimizar(IntPtr janela) => Com(janela, j => j.Minimize(), "FonteJanelas.Minimizar");
 
-    public void Fechar(IntPtr janela) => Com(janela, j => _bandeja.Shell?.TasksService.CloseWindow(j), "FonteJanelas.Fechar");
+    public void Fechar(IntPtr janela) => Com(janela, j => _bandeja.ServicoTarefas?.CloseWindow(j), "FonteJanelas.Fechar");
 
     public void Dispose()
     {
