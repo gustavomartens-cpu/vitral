@@ -20,7 +20,9 @@ Passo 'Publicar (win-x64, com o .NET embutido)' {
     dotnet publish src/Vitral.App -c Release -r win-x64 --self-contained -p:Version=$Versao -o $publish --nologo -v q
 }
 Passo 'Empacotar (Velopack)' {
-    vpk pack --packId Vitral --packVersion $Versao --packDir $publish --mainExe Vitral.exe --runtime win-x64 `
+    # packId diferente da pasta de dados (%LOCALAPPDATA%\Vitral): o Velopack instala em %LOCALAPPDATA%\<packId>
+    # e apaga essa pasta ao desinstalar. Com o mesmo nome, desinstalar apagaria os perfis.
+    vpk pack --packId VitralApp --packVersion $Versao --packDir $publish --mainExe Vitral.exe --runtime win-x64 `
         --packTitle Vitral --packAuthors 'Gustavo Martens' --icon src/Vitral.App/Recursos/vitral.ico --outputDir $release
 }
 

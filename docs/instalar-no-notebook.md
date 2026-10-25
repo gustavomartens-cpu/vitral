@@ -4,16 +4,16 @@ O instalador é um arquivo só, **instala para o seu usuário, sem pedir admin**
 
 ## 1. Gerar os arquivos (neste PC)
 
-1. No terminal: `pwsh G:\dev\vitral\build.ps1`. No fim aparece `Pronto: ...\artifacts\release\Vitral-win-Setup.exe`.
+1. No terminal: `pwsh G:\dev\vitral\build.ps1`. No fim aparece `Pronto: ...\artifacts\release\VitralApp-win-Setup.exe`.
 2. No Vitral, selecione os perfis que quer levar e clique **Exportar**. Isso gera um arquivo `.vitral` por perfil.
 
 ## 2. Levar para o notebook
 
-Copie o `Vitral-win-Setup.exe` e os arquivos `.vitral` por pendrive, OneDrive ou rede.
+Copie o `VitralApp-win-Setup.exe` e os arquivos `.vitral` por pendrive, OneDrive ou rede.
 
 ## 3. Instalar
 
-1. Dê dois cliques no `Vitral-win-Setup.exe`.
+1. Dê dois cliques no `VitralApp-win-Setup.exe`.
 2. Se aparecer **"O Windows protegeu o computador"** (SmartScreen, porque o app não tem assinatura digital), clique em **Mais informações** e depois em **Executar assim mesmo**. Isso costuma acontecer só quando o arquivo veio da internet; por pendrive em geral não aparece.
 3. O Vitral abre sozinho no fim, e ganha atalhos na Área de Trabalho e no Menu Iniciar.
 
