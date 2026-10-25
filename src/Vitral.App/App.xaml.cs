@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Windows;
+using Vitral.App.Barra;
 using Vitral.Core.Aplicacao;
+using Vitral.Core.Barra;
 using Vitral.Core.Configuracao;
 using Vitral.Core.Nativo;
 using Vitral.Core.Perfis;
@@ -24,6 +26,7 @@ public partial class App : Application
     private InstanciaUnica? _instancia;
     private NotificadorEmSegundoPlano? _notificador;
     private Bandeja? _bandeja;
+    private ControleBarra? _barra;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -38,15 +41,18 @@ public partial class App : Application
         }
 
         var registro = new RegistroWindows();
-        var retratos = new ServicoRetratos(registro, Pastas.Retratos);
+        var config = new ServicoConfig(System.IO.Path.Combine(Pastas.Raiz, "config.json"));
+        _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m));
+        var estadoBarra = new EstadoBarra(_barra, config);
+        var retratos = new ServicoRetratos(registro, Pastas.Retratos, estadoBarra.Atual);
         var perfis = new RepositorioPerfis(Pastas.Perfis);
         _notificador = new NotificadorEmSegundoPlano(new NotificadorWindows()); // ver comentário da classe
-        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador), retratos, perfis,
-            new ServicoConfig(System.IO.Path.Combine(Pastas.Raiz, "config.json")));
+        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, estadoBarra), retratos, perfis, config);
         Inicializacao = new Inicializacao(registro);
 
         bool peloWindows = e.Args.Contains(Vitral.Core.Configuracao.Inicializacao.Argumento);
         var estado = Servico.AoIniciar(peloWindows);
+        _barra.Aplicar(Servico.BarraAtual()); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
 
         Principal = new PrincipalViewModel(Servico, perfis, new DialogosWpf(), new RelogioWpf());
         Principal.PropertyChanged += AoMudarPrincipal;
@@ -71,6 +77,7 @@ public partial class App : Application
         // Sair no meio de um teste volta ao anterior, como se a contagem tivesse acabado.
         Principal.Contagem?.VoltarCommand.Execute(null);
         _janelaContagem?.Close();
+        _barra?.Fechar();
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));
         _bandeja?.Dispose();
         _instancia?.Dispose();
