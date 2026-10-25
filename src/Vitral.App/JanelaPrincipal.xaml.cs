@@ -23,8 +23,18 @@ public partial class JanelaPrincipal : Window
     private void IniciarComWindows_Mudou(object sender, RoutedEventArgs e)
     {
         if (_carregando) return;
-        if (IniciarComWindows.IsChecked == true) _inicializacao.Ativar(Environment.ProcessPath!);
-        else _inicializacao.Desativar();
+        try
+        {
+            if (IniciarComWindows.IsChecked == true) _inicializacao.Ativar(Environment.ProcessPath!);
+            else _inicializacao.Desativar();
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            MessageBox.Show($"Não foi possível mudar o início com o Windows: {ex.Message}", "Vitral");
+            _carregando = true;
+            IniciarComWindows.IsChecked = _inicializacao.Ativa();
+            _carregando = false;
+        }
     }
 
     /// Fechar a janela só esconde: o Vitral continua na bandeja. "Sair" fica no menu da bandeja.

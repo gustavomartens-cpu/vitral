@@ -10,10 +10,13 @@ using Vitral.Core.Servicos;
 namespace Vitral.Ui;
 
 /// Janela principal: lista de perfis, editor e ações. Testar e Aplicar salvam antes o que está no editor.
+/// Durante a contagem de um teste, só Manter/Voltar valem: as outras mudanças esperam (evita misturar estados).
 public sealed partial class PrincipalViewModel : ObservableObject
 {
     public const int SegundosDoTeste = 20;
+    public const int SegundosDaBandeja = 12;
     private const string FiltroVitral = "Perfis do Vitral (*.vitral)|*.vitral";
+    private const string AvisoTesteEmCurso = "Há um teste em andamento: clique em Manter ou Voltar primeiro.";
 
     private readonly ServicoVitral _servico;
     private readonly RepositorioPerfis _perfis;
@@ -38,18 +41,31 @@ public sealed partial class PrincipalViewModel : ObservableObject
         PerfilAtivo = servico.PerfilAtivo;
     }
 
+    /// Sincroniza a lista com o disco sem "Reset": um Reset faz a ListBox soltar a seleção
+    /// e o editor perderia o que não foi salvo.
     public void AtualizarLista(string? selecionar = null)
     {
-        Perfis.Clear();
-        foreach (var n in _perfis.Nomes()) Perfis.Add(n);
-        if (selecionar is not null) Selecionado = selecionar;
+        var nomes = _perfis.Nomes();
+        for (int i = Perfis.Count - 1; i >= 0; i--)
+            if (!nomes.Contains(Perfis[i], StringComparer.OrdinalIgnoreCase)) Perfis.RemoveAt(i);
+        for (int i = 0; i < nomes.Count; i++)
+        {
+            if (i < Perfis.Count && string.Equals(Perfis[i], nomes[i], StringComparison.OrdinalIgnoreCase)) continue;
+            int existente = Perfis.IndexOf(nomes[i]);
+            if (existente >= 0) Perfis.Move(existente, i);
+            else Perfis.Insert(i, nomes[i]);
+        }
+        if (selecionar is not null && selecionar != Selecionado) Selecionado = selecionar;
     }
+
+    /// Perfis para o menu da bandeja, sem tocar na lista nem no editor da janela.
+    public IReadOnlyList<string> NomesParaMenu() => _perfis.Nomes();
 
     partial void OnSelecionadoChanged(string? value)
     {
         if (value is null) { Editor.Carregar(null); return; }
         try { Editor.Carregar(_perfis.Carregar(value).Nativo); }
-        catch (Exception e) when (e is PerfilInvalidoException or FileNotFoundException) { Mensagem = e.Message; }
+        catch (Exception e) when (e is not OutOfMemoryException) { Mensagem = e.Message; }
     }
 
     [RelayCommand]
@@ -58,14 +74,14 @@ public sealed partial class PrincipalViewModel : ObservableObject
         string? nome = _dialogos.PedirTexto("Nome do novo perfil:", "Novo perfil")?.Trim();
         if (string.IsNullOrEmpty(nome)) return;
         if (Perfis.Contains(nome, StringComparer.OrdinalIgnoreCase)) { _dialogos.Avisar($"Já existe um perfil \"{nome}\"."); return; }
-        _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, null, new AjustesNativosPerfil(null, null, null, null, null, null, null, null)));
-        AtualizarLista(nome);
+        bool ok = Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, null, new AjustesNativosPerfil(null, null, null, null, null, null, null, null))); return true; });
+        if (ok) AtualizarLista(nome);
     }
 
     [RelayCommand]
     private void SalvarPerfil() => SalvarEditor();
 
-    /// Salva o editor no perfil selecionado. Devolve false (e avisa) se algo estiver inválido.
+    /// Salva o editor no perfil selecionado. Devolve false (e avisa) se algo estiver inválido ou falhar.
     private bool SalvarEditor()
     {
         if (Selecionado is null) { _dialogos.Avisar("Escolha ou crie um perfil primeiro."); return false; }
@@ -75,37 +91,40 @@ public sealed partial class PrincipalViewModel : ObservableObject
             try { Cor.DeHex(cor); }
             catch (FormatException e) { _dialogos.Avisar(e.Message); return false; }
         }
-        _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, Selecionado, Environment.OSVersion.Version.ToString(), ajustes));
-        return true;
+        string nome = Selecionado;
+        return Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, Environment.OSVersion.Version.ToString(), ajustes)); return true; });
     }
 
     [RelayCommand]
     private void Testar()
     {
-        if (Contagem is not null || !SalvarEditor()) return;
+        if (Contagem is not null) { Mensagem = AvisoTesteEmCurso; return; }
+        if (!SalvarEditor()) return;
         IniciarTeste(Selecionado!, SegundosDoTeste);
     }
 
-    public const int SegundosDaBandeja = 12;
-
     /// Troca rápida pela bandeja: testa o perfil salvo (não o editor) com contagem de 12 s.
-    public void TrocarPelaBandeja(string perfil)
+    /// Devolve o que mostrar numa notificação (aplicação parcial ou teste já em curso), ou null.
+    public string? TrocarPelaBandeja(string perfil)
     {
-        if (Contagem is not null) return;
-        IniciarTeste(perfil, SegundosDaBandeja);
+        if (Contagem is not null) return AvisoTesteEmCurso;
+        var resultado = IniciarTeste(perfil, SegundosDaBandeja);
+        return resultado is { Ok: false } ? Mensagem : null;
     }
 
-    private void IniciarTeste(string perfil, int segundos)
+    private Resultado? IniciarTeste(string perfil, int segundos)
     {
         var resultado = Executar(() => _servico.IniciarTeste(perfil));
-        if (resultado is null) return;
+        if (resultado is null) return null;
         Mensagem = Descrever(resultado, $"Testando \"{perfil}\".");
         Contagem = new ContagemViewModel(segundos, _relogio,
             manter: () =>
             {
-                _servico.ConfirmarTeste();
-                PerfilAtivo = _servico.PerfilAtivo;
-                Mensagem = $"\"{perfil}\" mantido.";
+                if (Executar(() => { _servico.ConfirmarTeste(); return true; }))
+                {
+                    PerfilAtivo = _servico.PerfilAtivo;
+                    Mensagem = $"\"{perfil}\" mantido.";
+                }
                 Contagem = null;
             },
             voltar: () =>
@@ -114,12 +133,14 @@ public sealed partial class PrincipalViewModel : ObservableObject
                 if (naoVoltou is not null) Mensagem = DescreverVolta(naoVoltou, "Voltou ao anterior.");
                 Contagem = null;
             });
+        return resultado;
     }
 
     [RelayCommand]
     private void Aplicar()
     {
-        if (Contagem is not null || !SalvarEditor()) return;
+        if (Contagem is not null) { Mensagem = AvisoTesteEmCurso; return; }
+        if (!SalvarEditor()) return;
         string perfil = Selecionado!;
         var resultado = Executar(() => _servico.Aplicar(perfil));
         if (resultado is null) return;
@@ -130,6 +151,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
     [RelayCommand]
     private void Desfazer()
     {
+        if (Contagem is not null) { Mensagem = AvisoTesteEmCurso; return; }
         var naoVoltou = Executar(() => _servico.Desfazer());
         if (naoVoltou is not null) Mensagem = DescreverVolta(naoVoltou, "Desfeito: voltou ao estado anterior.");
     }
@@ -137,6 +159,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
     [RelayCommand]
     private void Original()
     {
+        if (Contagem is not null) { Mensagem = AvisoTesteEmCurso; return; }
         if (!_dialogos.Confirmar("Voltar o Windows ao estado de antes do primeiro uso do Vitral? (Dá para desfazer depois.)")) return;
         var naoVoltou = Executar(() => _servico.Original());
         if (naoVoltou is not null) Mensagem = DescreverVolta(naoVoltou, "Voltou ao Windows original.");
@@ -148,8 +171,9 @@ public sealed partial class PrincipalViewModel : ObservableObject
         if (Selecionado is null) { _dialogos.Avisar("Escolha um perfil para exportar."); return; }
         string? arquivo = _dialogos.EscolherArquivoParaSalvar(FiltroVitral, $"{RepositorioPerfis.NomeDePasta(Selecionado)}.vitral");
         if (arquivo is null) return;
+        string nome = Selecionado;
         string versao = typeof(PrincipalViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
-        if (Executar(() => { Pacote.Exportar(_perfis, [Selecionado], arquivo, versao, Environment.OSVersion.Version.ToString()); return true; }))
+        if (Executar(() => { Pacote.Exportar(_perfis, [nome], arquivo, versao, Environment.OSVersion.Version.ToString()); return true; }))
             Mensagem = $"Exportado: {arquivo}";
     }
 
@@ -165,10 +189,11 @@ public sealed partial class PrincipalViewModel : ObservableObject
         }
         catch (PerfilJaExisteException e)
         {
-            if (!_dialogos.Confirmar($"{e.Message.Split(" Nada foi")[0]} Substituir?")) { Mensagem = "Importação cancelada."; return; }
+            string nomes = string.Join(", ", e.Nomes.Select(n => $"\"{n}\""));
+            if (!_dialogos.Confirmar($"O perfil {nomes} já existe neste computador. Substituir?")) { Mensagem = "Importação cancelada."; return; }
             importados = Executar(() => Pacote.Importar(arquivo, _perfis, substituir: true));
         }
-        catch (PerfilInvalidoException e)
+        catch (Exception e) when (e is not OutOfMemoryException)
         {
             _dialogos.Avisar(e.Message);
             return;
@@ -178,11 +203,11 @@ public sealed partial class PrincipalViewModel : ObservableObject
         Mensagem = $"Importado: {string.Join(", ", importados.Select(p => p.Nome))}";
     }
 
-    /// Roda uma ação e transforma erro esperado em aviso (nunca derruba a janela).
+    /// Roda uma ação e transforma qualquer erro em aviso: a janela nunca cai por causa de arquivo ou registro.
     private T? Executar<T>(Func<T> acao)
     {
         try { return acao(); }
-        catch (Exception e) when (e is PerfilInvalidoException or IOException or InvalidOperationException or UnauthorizedAccessException)
+        catch (Exception e) when (e is not OutOfMemoryException)
         {
             _dialogos.Avisar(e.Message);
             return default;

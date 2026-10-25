@@ -33,8 +33,7 @@ internal sealed class Bandeja : IDisposable
         var menu = _icone.ContextMenu!;
         menu.Items.Clear();
         var vm = _app.Principal;
-        vm.AtualizarLista(vm.Selecionado);
-        foreach (var item in MenuBandeja.Montar(vm.Perfis.ToList(), vm.PerfilAtivo))
+        foreach (var item in MenuBandeja.Montar(vm.NomesParaMenu(), vm.PerfilAtivo)) // não mexe na janela (editor não salvo)
         {
             if (item.Separador) { menu.Items.Add(new Separator()); continue; }
             var mi = new MenuItem { Header = item.Texto, IsCheckable = false, IsChecked = item.Marcado };
@@ -55,7 +54,7 @@ internal sealed class Bandeja : IDisposable
             case "sair": _app.Sair(); break;
             default:
                 if (acao.StartsWith("perfil:", StringComparison.Ordinal))
-                    vm.TrocarPelaBandeja(acao["perfil:".Length..]);
+                    Mostrar(vm.TrocarPelaBandeja(acao["perfil:".Length..])); // parcial ou teste já em curso
                 break;
         }
     }

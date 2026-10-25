@@ -5,15 +5,24 @@ public sealed class RepositorioPerfis(string pastaPerfis)
 {
     public string Pasta { get; } = pastaPerfis;
 
+    /// Nomes dos perfis válidos. Um perfil.json ilegível é ignorado aqui (não pode impedir o app de abrir);
+    /// ao tentar carregá-lo, <see cref="Carregar"/> mostra o erro.
     public IReadOnlyList<string> Nomes() =>
         Directory.Exists(Pasta)
             ? Directory.GetDirectories(Pasta)
                 .Select(d => Path.Combine(d, "perfil.json"))
                 .Where(File.Exists)
-                .Select(f => PerfilJson.Ler(File.ReadAllText(f)).Nome)
+                .Select(NomeSeValido)
+                .OfType<string>()
                 .Order(StringComparer.CurrentCultureIgnoreCase)
                 .ToList()
             : [];
+
+    private static string? NomeSeValido(string arquivo)
+    {
+        try { return PerfilJson.Ler(File.ReadAllText(arquivo)).Nome; }
+        catch (Exception e) when (e is PerfilInvalidoException or IOException or UnauthorizedAccessException) { return null; }
+    }
 
     public Perfil Carregar(string nome)
     {
@@ -26,7 +35,10 @@ public sealed class RepositorioPerfis(string pastaPerfis)
     {
         string arquivo = ArquivoDe(p.Nome);
         Directory.CreateDirectory(Path.GetDirectoryName(arquivo)!);
-        File.WriteAllText(arquivo, PerfilJson.Escrever(p));
+        // Temporário e troca: uma queda no meio não deixa o perfil.json pela metade.
+        string tmp = arquivo + ".tmp";
+        File.WriteAllText(tmp, PerfilJson.Escrever(p));
+        File.Move(tmp, arquivo, overwrite: true);
     }
 
     /// Nome da pasta de um perfil: caracteres inválidos em nome de arquivo viram "_".

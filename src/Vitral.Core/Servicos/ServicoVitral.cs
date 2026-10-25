@@ -58,6 +58,7 @@ public sealed class ServicoVitral(Aplicador aplicador, ServicoRetratos retratos,
     public IReadOnlyList<(ValorRegistro Valor, string Motivo)> Original() =>
         aplicador.Restaurar(retratos.GarantirOriginal(), "(antes de original)");
 
+    /// Nunca lança: qualquer falha vira aviso, para o app abrir sempre (inclusive no login).
     public EstadoInicial AoIniciar(bool inicializacaoDoWindows)
     {
         var c = config.Ler();
@@ -65,13 +66,14 @@ public sealed class ServicoVitral(Aplicador aplicador, ServicoRetratos retratos,
         {
             try
             {
-                CancelarTeste();
-                return new EstadoInicial(true, null);
+                var naoVoltou = CancelarTeste();
+                return new EstadoInicial(true, naoVoltou.Count == 0 ? null : FraseParcial("restaurar", naoVoltou));
             }
-            catch (InvalidOperationException e)
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
+                // Retrato sumido ou ilegível: limpa a marca, senão o app tentaria (e falharia) a cada abertura.
                 config.Gravar(c with { TesteEmAndamento = null });
-                return new EstadoInicial(false, e.Message);
+                return new EstadoInicial(false, $"Um teste ficou aberto, mas não foi possível voltar ao anterior: {e.Message}");
             }
         }
 
@@ -79,13 +81,21 @@ public sealed class ServicoVitral(Aplicador aplicador, ServicoRetratos retratos,
         {
             try
             {
-                aplicador.Aplicar(perfis.Carregar(ativo));
+                var resultado = aplicador.Aplicar(perfis.Carregar(ativo));
+                if (!resultado.Ok) return new EstadoInicial(false, $"\"{ativo}\" aplicado em parte: {FraseParcial("aplicar", resultado.NaoAplicados)}");
             }
-            catch (Exception e) when (e is FileNotFoundException or PerfilInvalidoException)
+            catch (FileNotFoundException)
             {
                 return new EstadoInicial(false, $"O perfil ativo \"{ativo}\" não foi encontrado; nada foi aplicado.");
+            }
+            catch (Exception e) when (e is not OutOfMemoryException)
+            {
+                return new EstadoInicial(false, $"O perfil ativo \"{ativo}\" não pôde ser aplicado: {e.Message}");
             }
         }
         return new EstadoInicial(false, null);
     }
+
+    private static string FraseParcial(string verbo, IReadOnlyList<(ValorRegistro Valor, string Motivo)> itens) =>
+        $"o Windows não deixou {verbo} {string.Join(", ", itens.Select(i => i.Valor.Nome))}.";
 }

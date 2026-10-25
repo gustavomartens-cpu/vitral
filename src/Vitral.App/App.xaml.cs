@@ -28,6 +28,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        DispatcherUnhandledException += AoErroNaoTratado;
 
         _instancia = new InstanciaUnica(() => Dispatcher.BeginInvoke(MostrarJanela));
         if (!_instancia.EhPrimeira)
@@ -74,6 +75,21 @@ public partial class App : Application
         _bandeja?.Dispose();
         _instancia?.Dispose();
         Shutdown();
+    }
+
+    /// Rede de segurança: um erro inesperado na interface vira aviso e log, em vez de derrubar o app
+    /// (com um teste em andamento, cair deixaria o visual de teste aplicado até a próxima abertura).
+    private void AoErroNaoTratado(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(Pastas.Logs);
+            System.IO.File.AppendAllText(System.IO.Path.Combine(Pastas.Logs, "app-erros.log"), $"{DateTimeOffset.Now:O} {e.Exception}{Environment.NewLine}");
+        }
+        catch { /* sem log, o aviso abaixo ainda aparece */ }
+        MessageBox.Show($"Algo deu errado: {e.Exception.Message}\n\nDetalhes em {Pastas.Logs}.", "Vitral",
+            MessageBoxButton.OK, MessageBoxImage.Warning);
+        e.Handled = true;
     }
 
     /// A contagem do "Testar" aparece numa janelinha sempre visível, no canto da tela.
