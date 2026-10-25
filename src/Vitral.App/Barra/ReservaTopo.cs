@@ -11,7 +11,6 @@ internal sealed partial class ReservaTopo : IDisposable
     private const uint AbmNew = 0, AbmRemove = 1, AbmQueryPos = 2, AbmSetPos = 3;
     private const uint AbeTop = 1;
     private const int AbnPosChanged = 1, AbnFullScreenApp = 2;
-    private const int SmCxScreen = 0;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Ret { public int Esq, Topo, Dir, Base; }
@@ -30,8 +29,6 @@ internal sealed partial class ReservaTopo : IDisposable
     [LibraryImport("shell32.dll")] private static partial UIntPtr SHAppBarMessage(uint mensagem, ref AppBarData dados);
     [LibraryImport("user32.dll", EntryPoint = "RegisterWindowMessageW", StringMarshalling = StringMarshalling.Utf16)]
     private static partial uint RegisterWindowMessage(string nome);
-    [LibraryImport("user32.dll")] private static partial int GetSystemMetrics(int indice);
-    [LibraryImport("user32.dll")] private static partial uint GetDpiForWindow(IntPtr janela);
 
     private readonly HwndSource _janela;
     private readonly uint _mensagemAppBar = RegisterWindowMessage("Vitral.ReservaTopo");
@@ -70,12 +67,11 @@ internal sealed partial class ReservaTopo : IDisposable
     public void Reposicionar()
     {
         if (!_registrada) return;
-        double escala = GetDpiForWindow(_janela.Handle) / 96.0;
-        if (escala <= 0) escala = 1;
-        int altura = (int)Math.Round(Ui.Barra.PosicaoIlhas.Reserva * escala);
+        var monitor = MonitorPrincipal.Ler(); // escala e tamanho atuais do principal, não os da janela oculta
+        int altura = (int)Math.Round(Ui.Barra.PosicaoIlhas.Reserva * monitor.Dpi / 96.0);
         var d = Dados();
         d.Borda = AbeTop;
-        d.Retangulo = new Ret { Esq = 0, Topo = 0, Dir = GetSystemMetrics(SmCxScreen), Base = altura };
+        d.Retangulo = new Ret { Esq = monitor.X, Topo = monitor.Y, Dir = monitor.X + monitor.Largura, Base = monitor.Y + altura };
         SHAppBarMessage(AbmQueryPos, ref d);
         d.Retangulo.Base = d.Retangulo.Topo + altura; // o Windows pode ter empurrado o topo; a altura é nossa
         SHAppBarMessage(AbmSetPos, ref d);

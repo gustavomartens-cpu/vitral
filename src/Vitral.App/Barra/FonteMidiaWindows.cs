@@ -21,7 +21,8 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
     private readonly Dispatcher _ui;
     private Gerente? _gerente;
     private Sessao? _sessao;
-    private bool _descartada;
+    private volatile bool _descartada;
+    private readonly UltimaAtualizacao _ultima = new(); // leituras podem terminar fora de ordem
 
     public EstadoMidia? Atual { get; private set; }
     public event Action? Mudou;
@@ -71,6 +72,7 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
 
     private async Task AtualizarAsync()
     {
+        int geracao = _ultima.Comecar();
         EstadoMidia? novo = null;
         try
         {
@@ -86,7 +88,7 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
         catch (Exception e) { LogBarra.Erro("Midia.Atualizar", e); }
         await _ui.InvokeAsync(() =>
         {
-            if (_descartada) return;
+            if (_descartada || !_ultima.EhAtual(geracao)) return; // uma leitura mais nova já publicou
             Atual = novo;
             Mudou?.Invoke();
         });

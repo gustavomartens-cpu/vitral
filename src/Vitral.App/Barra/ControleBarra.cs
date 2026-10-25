@@ -92,6 +92,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         {
             janela = new JanelaIlha(nome) { Conteudo = criar() };
             janela.SizeChanged += (_, _) => Posicionar();
+            janela.DpiChanged += (_, _) => Reajustar(); // troca de escala nem sempre manda WM_DISPLAYCHANGE
         }
         janela.DataContext = vm;
         return janela;
@@ -128,11 +129,16 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
     /// Recoloca as ilhas no monitor principal atual (DIPs).
     public void Posicionar()
     {
-        var monitor = new Retangulo(0, 0, SystemParameters.PrimaryScreenWidth, SystemParameters.PrimaryScreenHeight);
-        var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.ActualWidth ?? 0, _status?.ActualWidth ?? 0);
-        Colocar(_midia, m);
-        Colocar(_relogio, r);
-        Colocar(_status, s);
+        try
+        {
+            var p = MonitorPrincipal.Ler(); // as ilhas ficam no principal: DIPs pela escala atual dele
+            var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
+            var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.ActualWidth ?? 0, _status?.ActualWidth ?? 0);
+            Colocar(_midia, m);
+            Colocar(_relogio, r);
+            Colocar(_status, s);
+        }
+        catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("ControleBarra.Posicionar", e); }
     }
 
     private static void Colocar(JanelaIlha? janela, Retangulo r)

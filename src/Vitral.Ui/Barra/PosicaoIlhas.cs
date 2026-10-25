@@ -8,6 +8,13 @@ public static class PosicaoIlhas
 {
     public const double Topo = 8, Borda = 12, Altura = 30, Reserva = 46;
 
+    /// Retângulo de um monitor em pixels para DIPs, pela escala do próprio monitor (não a da inicialização do app).
+    public static Retangulo ParaDips(int x, int y, int largura, int altura, uint dpi)
+    {
+        double escala = dpi == 0 ? 1 : dpi / 96.0;
+        return new Retangulo(x / escala, y / escala, largura / escala, altura / escala);
+    }
+
     public static (Retangulo Midia, Retangulo Relogio, Retangulo Status) Calcular(
         Retangulo monitor, double larguraMidia, double larguraRelogio, double larguraStatus)
     {
