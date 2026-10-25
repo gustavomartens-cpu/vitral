@@ -15,6 +15,9 @@ public sealed class ServicoVitral(Aplicador aplicador, ServicoRetratos retratos,
 {
     public string? PerfilAtivo => config.Ler().PerfilAtivo;
 
+    /// Estado guardado da barra do topo, para o App mostrá-la ao abrir. Sem registro, desligada.
+    public BarraTopoPerfil BarraAtual() => config.Ler().BarraTopo ?? BarraTopoPerfil.Desligada;
+
     public Resultado Aplicar(string perfil)
     {
         var resultado = aplicador.Aplicar(perfis.Carregar(perfil));
@@ -45,7 +48,7 @@ public sealed class ServicoVitral(Aplicador aplicador, ServicoRetratos retratos,
             ?? throw new InvalidOperationException(
                 $"O retrato de antes do teste ({c.TesteEmAndamento.Retrato}) não existe mais. Use \"Desfazer\" ou \"Voltar ao Windows original\".");
         var naoVoltou = aplicador.Reverter(retrato);
-        config.Gravar(c with { TesteEmAndamento = null });
+        config.Gravar(config.Ler() with { TesteEmAndamento = null }); // relido: a reversão grava o estado da barra
         return naoVoltou;
     }
 
