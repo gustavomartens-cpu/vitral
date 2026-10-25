@@ -98,28 +98,6 @@ public sealed class BarraDeTarefasTests : IDisposable
     }
 
     [Fact]
-    public void Relogio_segue_a_barra_do_topo()
-    {
-        _aplicador.Aplicar(P(topo: new BarraTopoPerfil(true)));
-        Assert.Equal(0u, Dword(Advanced, "ShowSystrayDateTimeValueName"));
-
-        _aplicador.Aplicar(P(topo: BarraTopoPerfil.Desligada));
-        Assert.Null(Dword(Advanced, "ShowSystrayDateTimeValueName"));
-
-        _registro.Gravar(new ValorRegistro(Advanced, "ShowSystrayDateTimeValueName", TipoValor.Dword, 0u));
-        _aplicador.Aplicar(P());
-        Assert.Equal(0u, Dword(Advanced, "ShowSystrayDateTimeValueName"));
-    }
-
-    [Fact]
-    public void Perfil_que_desliga_a_barra_do_topo_devolve_o_relogio()
-    {
-        _aplicador.Aplicar(P(topo: new BarraTopoPerfil(true)));
-        _aplicador.Aplicar(new Perfil(3, "Sem barra", null, null, BarraTopoPerfil.Desligada, null));
-        Assert.Null(Dword(Advanced, "ShowSystrayDateTimeValueName"));
-    }
-
-    [Fact]
     public void Avisos()
     {
         _aplicador.Aplicar(P(new BarraTarefasPerfil(Pesquisa: PesquisaBarra.Oculta)));

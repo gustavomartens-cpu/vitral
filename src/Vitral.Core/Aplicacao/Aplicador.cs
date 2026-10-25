@@ -32,7 +32,6 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
                     "Configuração da barra não encontrada."));
             if (barraTarefas.IconesVisiveis is { } lista) valores.AddRange(Icones.Calcular(registro, lista));
         }
-        if (BarraDeTarefas.Relogio(p.BarraTopo) is { } relogio) valores.Add(relogio);
         try
         {
             foreach (var v in valores)
@@ -55,7 +54,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         }
 
         barra?.Aplicar(p.BarraTopo);
-        if (p.BarraTarefas?.IconesVisiveis is { } visiveis) icones?.Definir(visiveis);
+        icones?.Definir(p.BarraTarefas?.IconesVisiveis); // sem lista no perfil = não mexer: o observador para
         Avisar(aplicados);
         return new Resultado(naoAplicados.Count == 0, aplicados, naoAplicados, anterior, arquivoAnterior);
     }
@@ -64,9 +63,11 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
     /// Devolve o que o Windows não deixou voltar (spec §6: nunca relatar sucesso parcial como total).
     public IReadOnlyList<(ValorRegistro Valor, string Motivo)> Reverter(Retrato r)
     {
+        // A lista volta antes do registro: o Voltar apaga IsPromoted que não existiam, e o observador não pode
+        // tratá-los como ícones novos com a lista que está saindo.
+        icones?.Definir(r.IconesVisiveis);
         var naoVoltou = ReverterRegistro(r);
         barra?.Aplicar(r.BarraTopo);
-        icones?.Definir(null); // de volta a um retrato: o Vitral para de esconder ícones novos
         return naoVoltou;
     }
 
