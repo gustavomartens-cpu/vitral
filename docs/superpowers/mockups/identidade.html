@@ -1,0 +1,152 @@
+<style>
+  .dirs { display:grid; grid-template-columns:1fr; gap:28px; }
+  .dir { border:1px solid var(--border); border-radius:16px; padding:14px; background:var(--bg-secondary); cursor:pointer; transition:border-color .15s; }
+  .dir:hover { border-color:var(--accent); }
+  .dir.selected { border-color:var(--success); box-shadow:0 0 0 2px var(--success) inset; }
+  .dir h3 { margin:0 0 2px; display:flex; gap:10px; align-items:baseline; }
+  .dir h3 .rec { font-size:.7rem; color:#04210d; background:var(--success); padding:1px 8px; border-radius:999px; }
+  .dir .sub { color:var(--text-secondary); font-size:.84rem; margin:0 0 12px; }
+  .palette { display:flex; gap:6px; align-items:center; margin:10px 0 0; font-size:.75rem; color:var(--text-secondary); flex-wrap:wrap; }
+  .palette i { width:22px; height:22px; border-radius:6px; display:inline-block; border:1px solid rgba(127,127,127,.4); }
+
+  /* "desktop" atrás da janela, para o vidro ter o que desfocar */
+  .desk { position:relative; border-radius:12px; overflow:hidden; padding:26px 30px; min-height:360px;
+          background: radial-gradient(circle at 15% 25%, #ff7a59 0 12%, transparent 30%), radial-gradient(circle at 80% 20%, #3fa8ff 0 14%, transparent 34%),
+                      radial-gradient(circle at 60% 85%, #9b5cff 0 15%, transparent 36%), radial-gradient(circle at 30% 80%, #19c6a8 0 10%, transparent 28%), #1b2340; }
+  .win { position:relative; border-radius:var(--r); overflow:hidden; display:grid; grid-template-columns:190px 1fr; min-height:300px;
+         font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif; color:var(--fg); background:var(--glass);
+         backdrop-filter: blur(var(--blur)) saturate(160%); -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
+         border:1px solid var(--edge); box-shadow: 0 24px 60px rgba(0,0,0,.45), inset 0 1px 0 var(--spec); }
+  .side { padding:14px 10px; border-right:1px solid var(--line); display:flex; flex-direction:column; gap:4px; background:var(--side); }
+  .brand { display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; padding:2px 6px 12px; letter-spacing:.2px; }
+  .mark { width:20px; height:20px; transform:rotate(45deg); border-radius:4px; background:conic-gradient(var(--a1) 0 25%, var(--a2) 0 50%, var(--a1) 0 75%, var(--a2) 0); box-shadow:0 0 12px var(--glow); }
+  .lbl { font-size:10px; letter-spacing:1.4px; text-transform:uppercase; opacity:.55; padding:6px 6px 4px; }
+  .pf { padding:7px 9px; border-radius:calc(var(--r) * .5); font-size:12.5px; display:flex; gap:8px; align-items:center; position:relative; }
+  .pf .gem { width:9px; height:9px; transform:rotate(45deg); border-radius:2px; }
+  .pf.sel { background:var(--selbg); }
+  .pf.sel::before { content:""; position:absolute; left:-2px; top:22%; height:56%; width:3px; border-radius:3px; background:var(--a1); box-shadow:0 0 10px var(--glow); }
+  .pf .on { margin-left:auto; font-size:9.5px; color:var(--a1); }
+  .main { padding:16px 18px; display:flex; flex-direction:column; gap:10px; }
+  .title { font-family:var(--display); font-size:22px; font-weight:var(--dw); letter-spacing:var(--dls); }
+  .tabs { display:flex; gap:14px; font-size:12px; opacity:.85; border-bottom:1px solid var(--line); padding-bottom:6px; }
+  .tabs .t.on { color:var(--a1); position:relative; }
+  .tabs .t.on::after { content:""; position:absolute; left:0; right:0; bottom:-7px; height:2px; background:var(--a1); border-radius:2px; box-shadow:0 0 8px var(--glow); }
+  .tabs .t.off { opacity:.4; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:calc(var(--r) * .7); padding:10px 12px; display:grid; grid-template-columns:1fr auto; gap:8px 12px; align-items:center; font-size:12px; box-shadow: inset 0 1px 0 var(--spec2); }
+  .seg { display:flex; border-radius:999px; border:1px solid var(--line); overflow:hidden; font-size:11px; }
+  .seg span { padding:3px 10px; opacity:.75; }
+  .seg span.on { background:var(--a1); color:var(--onA); opacity:1; }
+  .sw { display:flex; gap:5px; }
+  .sw i { width:16px; height:16px; border-radius:5px; display:block; }
+  .sw i.on { outline:2px solid var(--fg); outline-offset:1px; }
+  .foot { margin-top:auto; display:flex; gap:8px; justify-content:flex-end; align-items:center; font-size:11.5px; }
+  .foot .msg { margin-right:auto; opacity:.7; }
+  .b { padding:6px 14px; border-radius:var(--btnr); border:1px solid var(--line); background:var(--card); }
+  .b.pri { background:var(--btn); color:var(--onA); border-color:transparent; box-shadow:0 6px 18px var(--glow); font-weight:600; }
+  .toast { position:absolute; right:22px; bottom:20px; width:220px; padding:12px 14px; border-radius:var(--r); font-family:"Segoe UI Variable Display","Segoe UI",sans-serif;
+           color:var(--fg); background:var(--glass); backdrop-filter:blur(var(--blur)) saturate(160%); -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
+           border:1px solid var(--edge); box-shadow:0 18px 40px rgba(0,0,0,.5), inset 0 1px 0 var(--spec); font-size:12px; }
+  .toast b { font-family:var(--display); font-weight:var(--dw); font-size:14px; display:block; margin-bottom:4px; }
+  .ring { height:4px; border-radius:4px; background:var(--line); margin:8px 0; overflow:hidden; }
+  .ring div { width:62%; height:100%; background:var(--btn); box-shadow:0 0 8px var(--glow); }
+
+  /* Direção A: Vitral noturno */
+  .A { --r:16px; --blur:28px; --btnr:10px; --fg:#EDEFF7; --glass:rgba(10,15,32,.72); --side:rgba(6,10,22,.35); --edge:rgba(255,255,255,.10);
+       --spec:rgba(255,255,255,.14); --spec2:rgba(255,255,255,.05); --line:rgba(255,255,255,.08); --card:rgba(255,255,255,.04); --selbg:rgba(242,181,68,.10);
+       --a1:#F2B544; --a2:#4C7DF0; --glow:rgba(242,181,68,.45); --btn:linear-gradient(135deg,#F7C766,#E39A2B); --onA:#1A1206;
+       --display:"Segoe UI Variable Display","Segoe UI",sans-serif; --dw:600; --dls:-.2px; }
+  /* Direção B: Vidro líquido azul */
+  .B { --r:22px; --blur:22px; --btnr:999px; --fg:#F4F7FF; --glass:rgba(22,32,70,.42); --side:rgba(255,255,255,.04); --edge:rgba(255,255,255,.22);
+       --spec:rgba(255,255,255,.35); --spec2:rgba(255,255,255,.12); --line:rgba(255,255,255,.14); --card:rgba(255,255,255,.08); --selbg:rgba(120,170,255,.16);
+       --a1:#7FC8FF; --a2:#8B6BFF; --glow:rgba(110,170,255,.55); --btn:linear-gradient(135deg,#5AC8FA,#7C5CFF); --onA:#fff;
+       --display:"Segoe UI Variable Display","Segoe UI",sans-serif; --dw:700; --dls:-.4px; }
+  /* Direção C: Obsidiana e ouro */
+  .C { --r:10px; --blur:34px; --btnr:4px; --fg:#ECE6DA; --glass:rgba(10,10,12,.86); --side:rgba(0,0,0,.25); --edge:rgba(201,164,92,.28);
+       --spec:rgba(201,164,92,.20); --spec2:rgba(255,255,255,.03); --line:rgba(201,164,92,.16); --card:rgba(255,255,255,.025); --selbg:rgba(201,164,92,.08);
+       --a1:#C9A45C; --a2:#6E5A36; --glow:rgba(201,164,92,.30); --btn:#C9A45C; --onA:#16120A;
+       --display:Georgia,"Times New Roman",serif; --dw:400; --dls:.3px; }
+  .C .lbl, .C .tabs { letter-spacing:2px; text-transform:uppercase; font-size:10px; }
+</style>
+
+<h2>Identidade visual: três direções</h2>
+<p class="subtitle">Todas juntam "vidro líquido" com "escuro e sofisticado". O fundo colorido faz o papel do seu papel de parede, para dar para ver o vidro. Cada uma mostra a janela e a janelinha do "Testar". <b>Clique na que mais te agrada</b> (pode marcar mais de uma) e me diga o que mudaria. Dá para misturar: "a cor da A com os cantos da B", por exemplo.</p>
+
+<div class="dirs">
+  <div class="dir" data-choice="A-vitral-noturno" onclick="toggleSelect(this)">
+    <h3>A · Vitral noturno <span class="rec">recomendada</span></h3>
+    <p class="sub">Azul-noite translúcido (o seu azul de hoje, mais profundo), com um <b>âmbar</b> que brilha nos pontos de ação, como luz atravessando um vitral. O logo é um losango de vitral. É sóbrio no dia a dia e tem personalidade nos detalhes.</p>
+    <div class="desk A">
+      <div class="win">
+        <div class="side">
+          <div class="brand"><span class="mark"></span>Vitral</div>
+          <div class="lbl">Perfis</div>
+          <div class="pf sel"><span class="gem" style="background:#F2B544"></span>Vidro escuro<span class="on">ativo</span></div>
+          <div class="pf"><span class="gem" style="background:#4C7DF0"></span>Barra limpa</div>
+          <div class="pf"><span class="gem" style="background:#E81123"></span>Teste vermelho</div>
+          <div class="pf" style="opacity:.6">+ Novo perfil</div>
+        </div>
+        <div class="main">
+          <div class="title">Vidro escuro</div>
+          <div class="tabs"><span class="t on">Cores e tema</span><span class="t off">Barra</span><span class="t off">Iniciar</span><span class="t off">Barra do topo</span></div>
+          <div class="card"><span>Modo do Windows</span><div class="seg"><span>Não mexer</span><span>Claro</span><span class="on">Escuro</span></div>
+            <span>Cor de destaque</span><div class="sw"><i style="background:#21375E" class="on"></i><i style="background:#0078D4"></i><i style="background:#8764B8"></i><i style="background:#E81123"></i><i style="background:#FFB900"></i></div></div>
+          <div class="foot"><span class="msg">"Vidro escuro" aplicado.</span><span class="b">Salvar</span><span class="b">Testar (20 s)</span><span class="b pri">Aplicar</span></div>
+        </div>
+      </div>
+      <div class="toast"><b>Manter este visual?</b>Volta ao anterior em 12 s.<div class="ring"><div></div></div><div style="display:flex;gap:6px;justify-content:flex-end"><span class="b">Voltar</span><span class="b pri">Manter</span></div></div>
+    </div>
+    <div class="palette"><i style="background:#0A0F20"></i>noite <i style="background:#F2B544"></i>âmbar (ação) <i style="background:#4C7DF0"></i>azul (apoio) · Segoe UI Variable · cantos 16 px · janela em acrílico do Windows</div>
+  </div>
+
+  <div class="dir" data-choice="B-vidro-liquido" onclick="toggleSelect(this)">
+    <h3>B · Vidro líquido</h3>
+    <p class="sub">Mais transparente e luminoso. As bordas brilham, os cantos são bem redondos, os botões são em pílula e há um gradiente azul-violeta. É a mais próxima do OS26/LiquidGlass e a mais chamativa.</p>
+    <div class="desk B">
+      <div class="win">
+        <div class="side">
+          <div class="brand"><span class="mark"></span>Vitral</div>
+          <div class="lbl">Perfis</div>
+          <div class="pf sel"><span class="gem" style="background:#7FC8FF"></span>Vidro escuro<span class="on">ativo</span></div>
+          <div class="pf"><span class="gem" style="background:#8B6BFF"></span>Barra limpa</div>
+          <div class="pf"><span class="gem" style="background:#E81123"></span>Teste vermelho</div>
+          <div class="pf" style="opacity:.6">+ Novo perfil</div>
+        </div>
+        <div class="main">
+          <div class="title">Vidro escuro</div>
+          <div class="tabs"><span class="t on">Cores e tema</span><span class="t off">Barra</span><span class="t off">Iniciar</span><span class="t off">Barra do topo</span></div>
+          <div class="card"><span>Modo do Windows</span><div class="seg"><span>Não mexer</span><span>Claro</span><span class="on">Escuro</span></div>
+            <span>Cor de destaque</span><div class="sw"><i style="background:#21375E" class="on"></i><i style="background:#0078D4"></i><i style="background:#8764B8"></i><i style="background:#E81123"></i><i style="background:#FFB900"></i></div></div>
+          <div class="foot"><span class="msg">"Vidro escuro" aplicado.</span><span class="b">Salvar</span><span class="b">Testar (20 s)</span><span class="b pri">Aplicar</span></div>
+        </div>
+      </div>
+      <div class="toast"><b>Manter este visual?</b>Volta ao anterior em 12 s.<div class="ring"><div></div></div><div style="display:flex;gap:6px;justify-content:flex-end"><span class="b">Voltar</span><span class="b pri">Manter</span></div></div>
+    </div>
+    <div class="palette"><i style="background:#16204A"></i>vidro azul <i style="background:linear-gradient(135deg,#5AC8FA,#7C5CFF)"></i>gradiente (ação) <i style="background:#7FC8FF"></i>ciano · cantos 22 px · botões em pílula · mais transparência</div>
+  </div>
+
+  <div class="dir" data-choice="C-obsidiana" onclick="toggleSelect(this)">
+    <h3>C · Obsidiana e ouro</h3>
+    <p class="sub">Quase preto, com vidro bem fosco, filetes dourados finos, títulos com serifa e rótulos em caixa-alta espaçada. É a mais "luxo" e a mais discreta no vidro.</p>
+    <div class="desk C">
+      <div class="win">
+        <div class="side">
+          <div class="brand"><span class="mark"></span>Vitral</div>
+          <div class="lbl">Perfis</div>
+          <div class="pf sel"><span class="gem" style="background:#C9A45C"></span>Vidro escuro<span class="on">ativo</span></div>
+          <div class="pf"><span class="gem" style="background:#6E5A36"></span>Barra limpa</div>
+          <div class="pf"><span class="gem" style="background:#9E2B2B"></span>Teste vermelho</div>
+          <div class="pf" style="opacity:.6">+ Novo perfil</div>
+        </div>
+        <div class="main">
+          <div class="title">Vidro escuro</div>
+          <div class="tabs"><span class="t on">Cores e tema</span><span class="t off">Barra</span><span class="t off">Iniciar</span><span class="t off">Barra do topo</span></div>
+          <div class="card"><span>Modo do Windows</span><div class="seg"><span>Não mexer</span><span>Claro</span><span class="on">Escuro</span></div>
+            <span>Cor de destaque</span><div class="sw"><i style="background:#21375E" class="on"></i><i style="background:#0078D4"></i><i style="background:#8764B8"></i><i style="background:#E81123"></i><i style="background:#FFB900"></i></div></div>
+          <div class="foot"><span class="msg">"Vidro escuro" aplicado.</span><span class="b">Salvar</span><span class="b">Testar (20 s)</span><span class="b pri">Aplicar</span></div>
+        </div>
+      </div>
+      <div class="toast"><b>Manter este visual?</b>Volta ao anterior em 12 s.<div class="ring"><div></div></div><div style="display:flex;gap:6px;justify-content:flex-end"><span class="b">Voltar</span><span class="b pri">Manter</span></div></div>
+    </div>
+    <div class="palette"><i style="background:#0A0A0C"></i>obsidiana <i style="background:#C9A45C"></i>ouro <i style="background:#6E5A36"></i>bronze · serifa nos títulos · cantos 10 px · vidro bem fosco</div>
+  </div>
+</div>

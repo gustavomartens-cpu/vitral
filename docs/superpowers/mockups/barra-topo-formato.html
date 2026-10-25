@@ -1,0 +1,76 @@
+<style>
+  .opts { display:flex; flex-direction:column; gap:26px; }
+  .op { border:1px solid var(--border); border-radius:16px; padding:14px; background:var(--bg-secondary); cursor:pointer; }
+  .op:hover { border-color:var(--accent); }
+  .op.selected { border-color:var(--success); box-shadow:0 0 0 2px var(--success) inset; }
+  .op h3 { margin:0 0 2px; } .op p { color:var(--text-secondary); font-size:.84rem; margin:0 0 12px; }
+  .scr { position:relative; height:250px; border-radius:12px; overflow:hidden; font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif; color:#EDEFF7;
+         background: radial-gradient(circle at 18% 70%, #ff7a59 0 10%, transparent 28%), radial-gradient(circle at 82% 30%, #3fa8ff 0 12%, transparent 32%),
+                     radial-gradient(circle at 55% 95%, #9b5cff 0 14%, transparent 34%), #1b2340; }
+  .glass { background:rgba(10,15,32,.72); backdrop-filter:blur(26px) saturate(160%); -webkit-backdrop-filter:blur(26px) saturate(160%);
+           border:1px solid rgba(255,255,255,.10); box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 8px 24px rgba(0,0,0,.35); }
+  .maxwin { position:absolute; left:0; right:0; bottom:0; background:rgba(240,240,245,.06); border-top:1px dashed rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:11px; opacity:.7; }
+  .row { display:flex; align-items:center; gap:10px; font-size:12px; white-space:nowrap; }
+  .scr { min-width:640px; } .op { overflow-x:auto; }
+  .mark { width:12px; height:12px; transform:rotate(45deg); border-radius:3px; background:conic-gradient(#F2B544 0 25%, #4C7DF0 0 50%, #F2B544 0 75%, #4C7DF0 0); box-shadow:0 0 8px rgba(242,181,68,.5); }
+  .art { width:18px; height:18px; border-radius:5px; background:linear-gradient(135deg,#1db954,#0b6e31); }
+  .ctl { display:flex; gap:8px; opacity:.85; font-size:11px; }
+  .ctl .pp { color:#F2B544; }
+  .clock { font-weight:600; font-size:13px; letter-spacing:.2px; } .date { opacity:.6; font-size:11px; }
+  .meter { display:flex; align-items:center; gap:5px; font-size:10.5px; opacity:.85; }
+  .meter .bar { width:26px; height:4px; border-radius:3px; background:rgba(255,255,255,.12); overflow:hidden; }
+  .meter .bar i { display:block; height:100%; background:#F2B544; }
+  .ico { opacity:.85; font-size:12px; }
+  .sep { width:1px; height:14px; background:rgba(255,255,255,.12); }
+  /* L1: barra inteira */
+  .l1 .bar1 { position:absolute; top:0; left:0; right:0; height:34px; border-radius:0; padding:0 14px; display:flex; align-items:center; justify-content:space-between; border-left:0; border-right:0; border-top:0; }
+  .l1 .maxwin { top:34px; }
+  /* L2: ilhas */
+  .l2 .isl { position:absolute; top:8px; height:30px; border-radius:15px; padding:0 14px; display:flex; align-items:center; }
+  .l2 .maxwin { top:46px; }
+  /* L3: ilha central dinâmica */
+  .l3 .din { position:absolute; top:8px; left:50%; transform:translateX(-50%); height:30px; border-radius:15px; padding:0 16px; display:flex; align-items:center; gap:12px; }
+  .l3 .st { position:absolute; top:8px; right:12px; height:30px; border-radius:15px; padding:0 12px; display:flex; align-items:center; gap:10px; }
+  .l3 .maxwin { top:46px; }
+  .note { font-size:.78rem; color:var(--text-secondary); margin-top:8px; }
+</style>
+
+<h2>Barra do topo: qual formato?</h2>
+<p class="subtitle">No monitor principal, estilo Vitral noturno. Todas reservam o espaço no alto: janelas maximizadas começam embaixo da barra (a área tracejada). Na mídia, os controles anterior / pausar / próxima. Clique no formato que preferir.</p>
+
+<div class="opts">
+  <div class="op" data-choice="L1-barra-inteira" onclick="toggleSelect(this)">
+    <h3>1 · Barra inteira</h3>
+    <p>Uma faixa fina de ponta a ponta. Mídia à esquerda, relógio no centro, desempenho e status à direita. É a mais clássica e a que mais cabe informação.</p>
+    <div class="scr l1">
+      <div class="bar1 glass">
+        <div class="row"><span class="mark"></span><span class="art"></span><span>Tame Impala · The Less I Know…</span><span class="ctl"><span>⏮</span><span class="pp">⏸</span><span>⏭</span></span></div>
+        <div class="row"><span class="clock">21:47</span><span class="date">sex, 24 out</span></div>
+        <div class="row"><span class="meter">CPU <span class="bar"><i style="width:23%"></i></span> 23%</span><span class="meter">MEM <span class="bar"><i style="width:61%"></i></span> 61%</span><span class="sep"></span><span class="ico">📶</span><span class="ico">🔊 45</span></div>
+      </div>
+      <div class="maxwin">janela maximizada começa aqui</div>
+    </div>
+  </div>
+
+  <div class="op" data-choice="L2-ilhas" onclick="toggleSelect(this)">
+    <h3>2 · Três ilhas flutuantes</h3>
+    <p>Três "ilhas" de vidro separadas, com o papel de parede aparecendo entre elas. Mais leve e moderno, conversa com os temas de dock que você gostou.</p>
+    <div class="scr l2">
+      <div class="isl glass" style="left:12px"><div class="row"><span class="mark"></span><span class="art"></span><span>The Less I Know…</span><span class="ctl"><span>⏮</span><span class="pp">⏸</span><span>⏭</span></span></div></div>
+      <div class="isl glass" style="left:50%;transform:translateX(-50%)"><div class="row"><span class="clock">21:47</span><span class="date">sex, 24 out</span></div></div>
+      <div class="isl glass" style="right:12px"><div class="row"><span class="meter">CPU <span class="bar"><i style="width:23%"></i></span></span><span class="meter">MEM <span class="bar"><i style="width:61%"></i></span></span><span class="sep"></span><span class="ico">📶</span><span class="ico">🔊 45</span></div></div>
+      <div class="maxwin">janela maximizada começa aqui</div>
+    </div>
+  </div>
+
+  <div class="op" data-choice="L3-ilha-dinamica" onclick="toggleSelect(this)">
+    <h3>3 · Ilha central que cresce</h3>
+    <p>Uma ilha no centro só com o relógio. Quando algo toca, ela <b>cresce</b> e mostra a mídia (como a "Dynamic Island" do iPhone). O status fica numa ilhinha à direita. É a mais minimalista.</p>
+    <div class="scr l3">
+      <div class="din glass"><span class="art"></span><span>The Less I Know…</span><span class="ctl"><span>⏮</span><span class="pp">⏸</span><span>⏭</span></span><span class="sep"></span><span class="clock">21:47</span><span class="date">sex, 24 out</span></div>
+      <div class="st glass"><span class="meter">CPU 23%</span><span class="meter">MEM 61%</span><span class="ico">📶</span><span class="ico">🔊</span></div>
+      <div class="maxwin">janela maximizada começa aqui</div>
+    </div>
+    <p class="note">Sem mídia tocando, a ilha central encolhe para só "21:47 · sex, 24 out".</p>
+  </div>
+</div>
