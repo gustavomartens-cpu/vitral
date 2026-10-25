@@ -15,7 +15,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
     {
         retratos.GarantirOriginal();
         var anterior = retratos.Tirar(p.Nome);
-        retratos.Salvar(anterior);
+        string arquivoAnterior = retratos.Salvar(anterior);
 
         var valores = p.Nativo is null ? [] : AjustesNativos.Calcular(p.Nativo);
         var aplicados = new List<ValorRegistro>();
@@ -42,7 +42,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         }
 
         Avisar(mudouBarra: aplicados.Any(EhAlinhamento));
-        return new Resultado(naoAplicados.Count == 0, aplicados, naoAplicados, anterior);
+        return new Resultado(naoAplicados.Count == 0, aplicados, naoAplicados, anterior, arquivoAnterior);
     }
 
     /// Volta ao estado do retrato: valores ausentes são apagados, os outros regravados.

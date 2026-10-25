@@ -8,4 +8,5 @@ public sealed record Resultado(
     bool Ok,
     IReadOnlyList<ValorRegistro> Aplicados,
     IReadOnlyList<(ValorRegistro Valor, string Motivo)> NaoAplicados,
-    Retrato RetratoAnterior);
+    Retrato RetratoAnterior,
+    string? ArquivoRetratoAnterior = null);
