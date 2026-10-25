@@ -122,7 +122,81 @@
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
-                <TabItem Header="Barra de tarefas" Style="{StaticResource AbaVitral}" IsEnabled="False" />
+                <TabItem Header="Barra de tarefas" Style="{StaticResource AbaVitral}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                        <StackPanel DataContext="{Binding EditorBarraTarefas}"
+                                    IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger></Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <Border Style="{StaticResource CartaoVidro}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                    <TextBlock Text="Pesquisa" VerticalAlignment="Center" />
+                                    <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Pesquisas}" SelectedValue="{Binding Pesquisa}" />
+                                    <TextBlock Grid.Row="1" Text="Visão de tarefas" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="1" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Escolhas}" SelectedValue="{Binding VisaoTarefas}" />
+                                    <TextBlock Grid.Row="2" Text="Mostrar área de trabalho no canto" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="2" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Escolhas}" SelectedValue="{Binding MostrarAreaDeTrabalho}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource CartaoVidro}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                    <TextBlock Text="Agrupar botões" VerticalAlignment="Center" />
+                                    <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Agrupamentos}" SelectedValue="{Binding Agrupar}" />
+                                    <TextBlock Grid.Row="1" Text="Ocultar automaticamente" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="1" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Escolhas}" SelectedValue="{Binding OcultarAutomaticamente}" />
+                                    <TextBlock Grid.Row="2" Text="Barra em todos os monitores" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="2" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Escolhas}" SelectedValue="{Binding TodosOsMonitores}" />
+                                    <TextBlock Grid.Row="3" Text="Selos nos ícones" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="3" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Escolhas}" SelectedValue="{Binding Selos}" />
+                                    <TextBlock Grid.Row="4" Text="Piscar ao pedir atenção" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="4" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Escolhas}" SelectedValue="{Binding Piscar}" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource CartaoVidro}">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Ícones perto do relógio" VerticalAlignment="Center" />
+                                        <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.EscolherIcones}" SelectedValue="{Binding EscolherIcones}" />
+                                    </Grid>
+                                    <TextBlock Text="Marcados ficam à mostra; os outros vão para a setinha ^." FontSize="11" Foreground="{StaticResource TextoSecundario}" Margin="0,6,0,8" />
+                                    <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl ItemsSource="{Binding Icones}" Focusable="False">
+                                            <ItemsControl.Style>
+                                                <Style TargetType="ItemsControl">
+                                                    <Setter Property="IsEnabled" Value="False" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding EscolherIcones}" Value="{x:Static ui:Escolha.Sim}"><Setter Property="IsEnabled" Value="True" /></DataTrigger>
+                                                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ItemsControl.Style>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox Content="{Binding Nome}" IsChecked="{Binding Visivel}" Foreground="{StaticResource Texto}"
+                                                              FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,3" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Text="Transparência da barra: TranslucentTB. Com a barra do topo ligada, o relógio daqui some."
+                                       FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="4,4,0,8" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
                 <TabItem Header="Iniciar" Style="{StaticResource AbaVitral}" IsEnabled="False" />
                 <TabItem Header="Barra do topo" Style="{StaticResource AbaVitral}">
                     <StackPanel DataContext="{Binding EditorBarra}"

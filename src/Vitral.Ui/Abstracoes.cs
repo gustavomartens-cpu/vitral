@@ -21,3 +21,7 @@ public enum Escolha { NaoMexer, Sim, Nao }
 public enum ModoOpcional { NaoMexer, Claro, Escuro }
 
 public enum AlinhamentoOpcional { NaoMexer, Esquerda, Centro }
+
+public enum PesquisaOpcional { NaoMexer, Oculta, Icone, Caixa }
+
+public enum AgruparOpcional { NaoMexer, Sempre, QuandoCheia, Nunca }

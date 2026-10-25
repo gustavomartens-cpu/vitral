@@ -63,7 +63,7 @@ public partial class App : Application
             if (p.Mode == Microsoft.Win32.PowerModes.Resume) Dispatcher.BeginInvoke(() => _barra.Reajustar());
         };
 
-        Principal = new PrincipalViewModel(Servico, perfis, new DialogosWpf(), new RelogioWpf());
+        Principal = new PrincipalViewModel(Servico, perfis, new DialogosWpf(), new RelogioWpf(), () => Icones.Programas(registro));
         Principal.PropertyChanged += AoMudarPrincipal;
         if (estado.TesteCancelado) Principal.Mensagem = "Um teste ficou aberto da última vez; o visual voltou ao anterior.";
         if (estado.Aviso is not null) Principal.Mensagem = estado.Aviso;
