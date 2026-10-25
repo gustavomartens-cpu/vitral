@@ -32,6 +32,8 @@ public sealed partial class PrincipalViewModel : ObservableObject
 
     public EditorBarraViewModel EditorBarra { get; } = new();
 
+    public EditorDocaViewModel EditorDoca { get; } = new();
+
     public EditorBarraTarefasViewModel EditorBarraTarefas { get; }
 
     [ObservableProperty] private string? _selecionado;
@@ -118,6 +120,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
         Editor.Carregar(p?.Nativo);
         EditorBarra.Carregar(p?.BarraTopo);
         EditorBarraTarefas.Carregar(p?.BarraTarefas);
+        EditorDoca.Carregar(p?.BarraBaixo);
     }
 
     /// Perfis para o menu da bandeja, sem tocar na lista nem no editor da janela.
@@ -150,6 +153,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
         var ajustes = Editor.ParaPerfil();
         var barra = EditorBarra.ParaPerfil();
         var barraTarefas = EditorBarraTarefas.ParaPerfil();
+        var doca = EditorDoca.ParaPerfil();
         if (ajustes.CorDestaque is { } cor)
         {
             try { Cor.DeHex(cor); }
@@ -169,6 +173,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
                 Nativo = ajustes,
                 BarraTopo = barra,
                 BarraTarefas = barraTarefas,
+                BarraBaixo = doca,
             };
             _perfis.Salvar(p);
             return true;
