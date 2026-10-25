@@ -73,4 +73,26 @@ public sealed class PacoteTests : IDisposable
         Assert.Equal("Vidro/escuro", repo.Carregar("Vidro/escuro").Nome);
         Assert.Contains("Vidro/escuro", repo.Nomes());
     }
+
+    [Fact]
+    public void Importa_pacote_com_perfil_esquema1()
+    {
+        string zip = Path.Combine(_raiz, "antigo.vitral");
+        Directory.CreateDirectory(_raiz);
+        using (var arquivo = ZipFile.Open(zip, ZipArchiveMode.Create))
+        {
+            void Escrever(string caminho, string conteudo)
+            {
+                using var w = new StreamWriter(arquivo.CreateEntry(caminho).Open());
+                w.Write(conteudo);
+            }
+            Escrever("manifest.json", """{ "esquema": 1, "versaoApp": "0.1.0", "buildOrigem": "26200", "perfis": ["Antigo"] }""");
+            Escrever("perfis/Antigo/perfil.json", """{ "esquema": 1, "nome": "Antigo", "nativo": { "modoApps": "escuro" } }""");
+        }
+
+        var importados = Pacote.Importar(zip, new RepositorioPerfis(Path.Combine(_raiz, "C")));
+
+        Assert.Equal("Antigo", importados.Single().Nome);
+        Assert.Null(importados.Single().BarraTopo);
+    }
 }

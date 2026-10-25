@@ -25,6 +25,8 @@ Copie o `VitralApp-win-Setup.exe` e os arquivos `.vitral` por pendrive, OneDrive
 2. Selecione o perfil e clique **Testar (20 s)**. Se gostar, **Manter**; senão, ele volta sozinho.
 3. Para ele voltar a cada vez que o notebook ligar, marque **Iniciar com o Windows** e use **Aplicar**.
 
+A **barra do topo** (mídia, relógio e status no alto da tela) também faz parte do perfil: aba **Barra do topo** → **Ligada**. Ela aparece no monitor principal e reserva uma faixa de 46 px, para as janelas maximizadas começarem abaixo dela. Com o Vitral fechado, a barra some e a faixa é liberada.
+
 ## Atualizar
 
 Gere um `Setup.exe` novo com uma versão maior (`pwsh build.ps1 -Versao 0.2.0`) e rode-o no notebook por cima. Seus perfis são mantidos.

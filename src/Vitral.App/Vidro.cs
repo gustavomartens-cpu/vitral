@@ -77,7 +77,7 @@ internal static partial class Vidro
         }
     }
 
-    private static bool TransparenciaLigada()
+    internal static bool TransparenciaLigada()
     {
         using var k = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
         return k?.GetValue("EnableTransparency") is int v && v != 0;

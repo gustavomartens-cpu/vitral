@@ -48,7 +48,7 @@ Descartável: o código fica no scratchpad, não no repositório. Só a decisão
 - [ ] **Step 3: Registrar a decisão** aqui e no ledger: técnica escolhida e parâmetros exatos. Se nenhuma mantiver o desfoque, propor o fallback (Noite 85% sem desfoque) e **esperar a aprovação do Gustavo** antes da Task 6.
 - [ ] **Step 4: Commit** só do plano e do ledger: `docs: decisão do vidro das ilhas`.
 
-**Decisão do vidro:** _(preencher no Step 3)_
+**Decisão do vidro (25/10, com o Gustavo na tela):** só `SetWindowCompositionAttribute` com `ACCENT_ENABLE_ACRYLICBLURBEHIND` (4), `AccentFlags = 2`, `GradientColor = 0xB8200F0A`, em janela **sem camadas** (`AllowsTransparency=False`), com `DwmExtendFrameIntoClientArea(-1)`, `CompositionTarget.BackgroundColor` transparente e fundo WPF transparente, manteve o desfoque com a ilha inativa. BLURBEHIND (com e sem camadas), acrílico em camadas e HOSTBACKDROP ficaram opacos. Consequência: o arredondado é o do DWM (`DWMWCP_ROUND`, ~8 px), não a pílula completa. Com a transparência do Windows desligada, as ilhas usam `Noite` a 85% sólido.
 
 ---
 

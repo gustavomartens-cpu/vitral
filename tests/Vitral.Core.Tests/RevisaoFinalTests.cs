@@ -131,7 +131,7 @@ public sealed class RevisaoFinalTests : IDisposable
     public void Esquema_futuro_com_campo_desconhecido_cita_o_esquema()
     {
         var ex = Assert.Throws<PerfilInvalidoException>(() =>
-            PerfilJson.Ler("""{ "esquema": 2, "nome": "x", "nativo": { "modoSistema": "auto" } }"""));
-        Assert.Contains("esquema 2", ex.Message);
+            PerfilJson.Ler("""{ "esquema": 3, "nome": "x", "nativo": { "modoSistema": "auto" } }"""));
+        Assert.Contains("esquema 3", ex.Message);
     }
 }

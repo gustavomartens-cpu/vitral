@@ -4,11 +4,11 @@ using Vitral.Core.Cores;
 
 namespace Vitral.Core.Perfis;
 
-/// Lê e grava o perfil.json (camelCase, enums em texto minúsculo). Seções de fases futuras
-/// (por exemplo "barra") são ignoradas na leitura.
+/// Lê e grava o perfil.json (camelCase, enums em texto minúsculo). O esquema 1 é lido normalmente (sem barraTopo);
+/// a gravação é sempre no esquema 2. Seções desconhecidas são ignoradas na leitura.
 public static class PerfilJson
 {
-    public const int EsquemaSuportado = 1;
+    public const int EsquemaSuportado = 2;
 
     private static readonly JsonSerializerOptions Opcoes = new()
     {
@@ -59,5 +59,5 @@ public static class PerfilJson
         return p;
     }
 
-    public static string Escrever(Perfil p) => JsonSerializer.Serialize(p, Opcoes);
+    public static string Escrever(Perfil p) => JsonSerializer.Serialize(p with { Esquema = EsquemaSuportado }, Opcoes);
 }

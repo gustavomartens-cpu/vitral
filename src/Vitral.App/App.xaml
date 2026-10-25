@@ -9,6 +9,7 @@
                 <ResourceDictionary Source="Tema/Tokens.xaml" />
                 <ResourceDictionary Source="Tema/Estilos.xaml" />
                 <ResourceDictionary Source="Tema/Logo.xaml" />
+                <ResourceDictionary Source="Barra/IlhasConteudo.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
