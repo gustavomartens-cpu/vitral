@@ -8,8 +8,8 @@ namespace Vitral.App.Barra;
 /// padrão (fone Bluetooth, monitor HDMI...). Falha vira null.
 internal sealed class FonteVolumeWindows : IFonteVolume, IDisposable
 {
-    private const int Saida = 0;      // eRender
-    private const int Multimidia = 1; // eMultimedia
+    private const int Saida = CoreAudio.Saida;
+    private const int Multimidia = CoreAudio.Multimidia;
 
     private readonly Dispatcher _ui;
     private readonly IMMDeviceEnumerator? _enumerador;
@@ -142,60 +142,5 @@ internal sealed class FonteVolumeWindows : IFonteVolume, IDisposable
             return 0;
         }
         public int OnPropertyValueChanged(IntPtr id, IntPtr chave) => 0;
-    }
-
-    // ---- Core Audio (mmdeviceapi.h, endpointvolume.h) ----
-
-    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-    private class MMDeviceEnumerator;
-
-    [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDeviceEnumerator
-    {
-        [PreserveSig] int EnumAudioEndpoints(int fluxo, int estado, out IntPtr dispositivos);
-        [PreserveSig] int GetDefaultAudioEndpoint(int fluxo, int papel, out IMMDevice dispositivo);
-        [PreserveSig] int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, out IMMDevice dispositivo);
-        [PreserveSig] int RegisterEndpointNotificationCallback(IMMNotificationClient cliente);
-        [PreserveSig] int UnregisterEndpointNotificationCallback(IMMNotificationClient cliente);
-    }
-
-    [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IMMDevice
-    {
-        [PreserveSig] int Activate(ref Guid iid, int contexto, IntPtr parametros, [MarshalAs(UnmanagedType.IUnknown)] out object interfaceAtivada);
-    }
-
-    [ComImport, Guid("7991EEC9-7E89-4D85-8390-6C703CEC60C0"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IMMNotificationClient
-    {
-        [PreserveSig] int OnDeviceStateChanged(IntPtr id, uint estado);
-        [PreserveSig] int OnDeviceAdded(IntPtr id);
-        [PreserveSig] int OnDeviceRemoved(IntPtr id);
-        [PreserveSig] int OnDefaultDeviceChanged(int fluxo, int papel, IntPtr id);
-        [PreserveSig] int OnPropertyValueChanged(IntPtr id, IntPtr chave);
-    }
-
-    [ComImport, Guid("657804FA-D6AD-4496-8A60-352752AF4F89"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    internal interface IAudioEndpointVolumeCallback
-    {
-        [PreserveSig] int OnNotify(IntPtr dados);
-    }
-
-    [ComImport, Guid("5CDF2C82-841E-4546-9722-0CF74078229A"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IAudioEndpointVolume
-    {
-        [PreserveSig] int RegisterControlChangeNotify(IAudioEndpointVolumeCallback retorno);
-        [PreserveSig] int UnregisterControlChangeNotify(IAudioEndpointVolumeCallback retorno);
-        [PreserveSig] int GetChannelCount(out uint canais);
-        [PreserveSig] int SetMasterVolumeLevel(float nivelDb, ref Guid contexto);
-        [PreserveSig] int SetMasterVolumeLevelScalar(float nivel, ref Guid contexto);
-        [PreserveSig] int GetMasterVolumeLevel(out float nivelDb);
-        [PreserveSig] int GetMasterVolumeLevelScalar(out float nivel);
-        [PreserveSig] int SetChannelVolumeLevel(uint canal, float nivelDb, ref Guid contexto);
-        [PreserveSig] int SetChannelVolumeLevelScalar(uint canal, float nivel, ref Guid contexto);
-        [PreserveSig] int GetChannelVolumeLevel(uint canal, out float nivelDb);
-        [PreserveSig] int GetChannelVolumeLevelScalar(uint canal, out float nivel);
-        [PreserveSig] int SetMute([MarshalAs(UnmanagedType.Bool)] bool mudo, ref Guid contexto);
-        [PreserveSig] int GetMute([MarshalAs(UnmanagedType.Bool)] out bool mudo);
     }
 }

@@ -23,6 +23,7 @@ internal sealed class VolumeFalso : IFonteVolume
     public int MudoAlternado { get; private set; }
     public void Definir(int volume) { Definidos.Add(volume); Volume = volume; Mudou?.Invoke(); }
     public void AlternarMudo() { MudoAlternado++; Mudo = !(Mudo ?? false); Mudou?.Invoke(); }
+    public void Disparar() => Mudou?.Invoke();
 }
 
 internal sealed class RedeFalsa : IFonteRede
@@ -48,4 +49,15 @@ internal sealed class DesempenhoFalso : IFonteDesempenho
 internal sealed class AgoraFalso(DateTime agora) : IRelogioDoSistema
 {
     public DateTime Agora { get; set; } = agora;
+}
+
+internal sealed class DispositivosFalsos : IFonteDispositivosAudio
+{
+    public IReadOnlyList<DispositivoAudio> Saidas { get; set; } =
+        [new("alto", "Alto-falantes", true), new("fone", "Fone Bluetooth", false)];
+    public bool PodeTrocar { get; set; } = true;
+    public event Action? Mudou;
+    public List<string> Tornados { get; } = [];
+    public void TornarPadrao(string id) => Tornados.Add(id);
+    public void Disparar() => Mudou?.Invoke();
 }

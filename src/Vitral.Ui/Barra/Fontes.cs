@@ -56,3 +56,15 @@ public interface IRelogioDoSistema
 {
     DateTime Agora { get; }
 }
+
+public sealed record DispositivoAudio(string Id, string Nome, bool Padrao);
+
+/// Dispositivos de reprodução ativos e a troca do padrão (spec v2 §5). PodeTrocar = false quando a interface
+/// não documentada do Windows (IPolicyConfig) não está disponível.
+public interface IFonteDispositivosAudio
+{
+    IReadOnlyList<DispositivoAudio> Saidas { get; }
+    bool PodeTrocar { get; }
+    event Action? Mudou;
+    void TornarPadrao(string id);
+}

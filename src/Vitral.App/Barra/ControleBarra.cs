@@ -22,6 +22,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
     private readonly CoordenadorPaineis _coordenador = new();
     private readonly Dictionary<Painel, JanelaPainel> _paineis = [];
     private CalendarioViewModel? _vmCalendario;
+    private readonly List<IDisposable> _vmsPaineis = [];
     private bool _coordenadorLigado;
 
     /// As fontes vivem enquanto a barra está ligada (COM e WinRT são soltos ao desligar).
@@ -31,6 +32,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         public FonteVolumeWindows Volume { get; } = new(Application.Current.Dispatcher);
         public FonteRedeWindows Rede { get; } = new(Application.Current.Dispatcher);
         public FonteBateriaWindows Bateria { get; } = new(Application.Current.Dispatcher);
+        public FonteDispositivosAudioWindows Dispositivos { get; } = new(Application.Current.Dispatcher);
         public FonteDesempenhoWindows Desempenho { get; } = new();
         public RelogioDoSistema Agora { get; } = new();
 
@@ -40,6 +42,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
             Volume.Dispose();
             Rede.Dispose();
             Bateria.Dispose();
+            Dispositivos.Dispose();
         }
     }
 
@@ -183,6 +186,9 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
                 _vmCalendario = new CalendarioViewModel(_fontes.Agora);
                 nova = new JanelaPainel("Calendário", 248) { Conteudo = new PainelCalendario(), DataContext = _vmCalendario };
                 break;
+            case Painel.Volume when _fontes is not null:
+                nova = new JanelaPainel("Volume", 280) { Conteudo = new PainelVolume(), DataContext = Guardar(new PainelVolumeViewModel(_fontes.Volume, _fontes.Dispositivos)) };
+                break;
         }
         if (nova is null) return null;
         nova.PerdeuFoco += () => _coordenador.FecharPorFoco(painel, DateTime.Now);
@@ -191,12 +197,20 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         return nova;
     }
 
+    private T Guardar<T>(T vm) where T : IDisposable
+    {
+        _vmsPaineis.Add(vm);
+        return vm;
+    }
+
     private void FecharPaineis()
     {
         _coordenador.FecharTodos();
         foreach (var janela in _paineis.Values) janela.Close();
         _paineis.Clear();
         _vmCalendario = null;
+        foreach (var vm in _vmsPaineis) vm.Dispose();
+        _vmsPaineis.Clear();
     }
 
     private void AoMudarTelaCheia(bool telaCheia)

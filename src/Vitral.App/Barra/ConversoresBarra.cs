@@ -19,6 +19,19 @@ internal sealed class RedeParaIcone : IValueConverter
     public object ConvertBack(object? valor, Type alvo, object? parametro, CultureInfo cultura) => throw new NotSupportedException();
 }
 
+/// Largura do preenchimento de um controle deslizante: valor / máximo × largura disponível.
+internal sealed class LarguraPreenchida : IMultiValueConverter
+{
+    public object Convert(object[] valores, Type alvo, object? parametro, CultureInfo cultura)
+    {
+        if (valores is [double valor, double maximo, double largura] && maximo > 0)
+            return Math.Clamp(valor / maximo, 0, 1) * largura;
+        return 0.0;
+    }
+
+    public object[] ConvertBack(object? valor, Type[] alvos, object? parametro, CultureInfo cultura) => throw new NotSupportedException();
+}
+
 /// Bytes da capa do álbum para imagem; null ou inválido vira null (a ilha mostra o ícone de música).
 internal sealed class BytesParaImagem : IValueConverter
 {
