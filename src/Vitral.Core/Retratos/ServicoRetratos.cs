@@ -16,7 +16,8 @@ public sealed class ServicoRetratos(IRegistro registro, string pasta, Func<Barra
     public Retrato Tirar(string? perfil) => new(
         DateTimeOffset.Now,
         perfil,
-        AjustesNativos.Controlados.Concat(BarraDeTarefas.Controlados).Select(c => registro.Ler(c.Chave, c.Nome, c.Tipo)).ToList(),
+        AjustesNativos.Controlados.Concat(BarraDeTarefas.Controlados).Select(c => registro.Ler(c.Chave, c.Nome, c.Tipo))
+            .Concat(Icones.Retratar(registro)).ToList(),
         barraAtual?.Invoke());
 
     /// Grava o retrato e devolve o nome do arquivo (para guardar a referência, por exemplo num teste em andamento).

@@ -9,7 +9,9 @@ namespace Vitral.Core.Aplicacao;
 /// Aplica os ajustes nativos de um perfil com retrato antes. Escrita bloqueada (UCPD) é listada e não interrompe;
 /// qualquer outra falha desfaz o que já foi gravado e é relançada. Com <paramref name="barra"/>, a seção barraTopo
 /// do perfil (e a do retrato, ao reverter) também é aplicada; sem ele (CLI), a barra não é tocada.
-public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INotificador notificador, EstadoBarra? barra = null)
+/// Com <paramref name="icones"/>, a lista de ícones aplicada fica guardada para os ícones que aparecerem depois.
+public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INotificador notificador, EstadoBarra? barra = null,
+    EstadoIcones? icones = null)
 {
 
     public Resultado Aplicar(Perfil p)
@@ -28,6 +30,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
             if (barraTarefas.OcultarAutomaticamente is not null && BarraDeTarefas.OcultarAutomatico(stuck) is null)
                 naoAplicados.Add((new ValorRegistro(BarraDeTarefas.StuckRects, "Settings", TipoValor.Binario, null),
                     "Configuração da barra não encontrada."));
+            if (barraTarefas.IconesVisiveis is { } lista) valores.AddRange(Icones.Calcular(registro, lista));
         }
         if (BarraDeTarefas.Relogio(p.BarraTopo) is { } relogio) valores.Add(relogio);
         try
@@ -52,6 +55,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         }
 
         barra?.Aplicar(p.BarraTopo);
+        if (p.BarraTarefas?.IconesVisiveis is { } visiveis) icones?.Definir(visiveis);
         Avisar(aplicados);
         return new Resultado(naoAplicados.Count == 0, aplicados, naoAplicados, anterior, arquivoAnterior);
     }
@@ -62,6 +66,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
     {
         var naoVoltou = ReverterRegistro(r);
         barra?.Aplicar(r.BarraTopo);
+        icones?.Definir(null); // de volta a um retrato: o Vitral para de esconder ícones novos
         return naoVoltou;
     }
 
@@ -97,7 +102,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
     private void Avisar(IEnumerable<ValorRegistro> gravados)
     {
         notificador.AvisarMudancaDeTema();
-        if (gravados.Any(BarraDeTarefas.EhDaBarra)) notificador.AvisarMudancaDaBarra();
+        if (gravados.Any(v => BarraDeTarefas.EhDaBarra(v) || Icones.EhDeIcone(v))) notificador.AvisarMudancaDaBarra();
         if (gravados.FirstOrDefault(BarraDeTarefas.EhStuckRects) is { } stuck
             && BarraDeTarefas.OcultarAutomatico(stuck.Dado as byte[]) is { } ocultar)
             notificador.AvisarOcultarAutomatico(ocultar);

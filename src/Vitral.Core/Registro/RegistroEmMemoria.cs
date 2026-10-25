@@ -26,6 +26,18 @@ public sealed class RegistroEmMemoria : IRegistro
         _valores.Remove((chave, nome));
     }
 
+    /// Subchaves que têm algum valor (no registro em memória, uma chave só existe através dos seus valores).
+    public IReadOnlyList<string> SubChaves(string chave)
+    {
+        string prefixo = chave.TrimEnd('\\') + "\\";
+        return _valores.Keys
+            .Select(k => k.Item1)
+            .Where(c => c.StartsWith(prefixo, StringComparison.OrdinalIgnoreCase))
+            .Select(c => c[prefixo.Length..].Split('\\')[0])
+            .Distinct(Comparador)
+            .ToList();
+    }
+
     private sealed class ComparadorPar : IEqualityComparer<(string, string)>
     {
         public bool Equals((string, string) a, (string, string) b) =>

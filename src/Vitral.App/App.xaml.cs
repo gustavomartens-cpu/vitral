@@ -27,6 +27,7 @@ public partial class App : Application
     private NotificadorEmSegundoPlano? _notificador;
     private Bandeja? _bandeja;
     private ControleBarra? _barra;
+    private BarraDeTarefas.ObservadorIcones? _observadorIcones;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -47,7 +48,9 @@ public partial class App : Application
         var retratos = new ServicoRetratos(registro, Pastas.Retratos, estadoBarra.Atual);
         var perfis = new RepositorioPerfis(Pastas.Perfis);
         _notificador = new NotificadorEmSegundoPlano(new NotificadorWindows()); // ver comentário da classe
-        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, estadoBarra), retratos, perfis, config);
+        var estadoIcones = new EstadoIcones(config);
+        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, estadoBarra, estadoIcones), retratos, perfis, config);
+        _observadorIcones = new BarraDeTarefas.ObservadorIcones(registro, estadoIcones, _notificador);
         Inicializacao = new Inicializacao(registro);
 
         bool peloWindows = e.Args.Contains(Vitral.Core.Configuracao.Inicializacao.Argumento);
@@ -84,6 +87,7 @@ public partial class App : Application
         Principal.Contagem?.VoltarCommand.Execute(null);
         _janelaContagem?.Close();
         _barra?.Fechar();
+        _observadorIcones?.Dispose();
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));
         _bandeja?.Dispose();
         _instancia?.Dispose();

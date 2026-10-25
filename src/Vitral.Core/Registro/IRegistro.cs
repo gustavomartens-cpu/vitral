@@ -11,4 +11,7 @@ public interface IRegistro
 
     /// Apaga o valor, se existir.
     void Apagar(string chave, string nome);
+
+    /// Nomes das subchaves diretas (um nível); chave inexistente = lista vazia.
+    IReadOnlyList<string> SubChaves(string chave);
 }
