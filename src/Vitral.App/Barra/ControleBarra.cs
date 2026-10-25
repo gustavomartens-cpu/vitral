@@ -196,6 +196,13 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
                 _vmBateria = Guardar(new PainelBateriaViewModel(_fontes.Bateria, _fontes.ModoEnergia));
                 nova = new JanelaPainel("Bateria", 320) { Conteudo = new PainelBateria(), DataContext = _vmBateria };
                 break;
+            case Painel.Midia when _fontes is not null:
+                nova = new JanelaPainel("Mídia", 260)
+                {
+                    Conteudo = new PainelMidia(),
+                    DataContext = Guardar(new PainelMidiaViewModel(_fontes.Midia, new RelogioWpf(), _fontes.Agora)),
+                };
+                break;
         }
         if (nova is null) return null;
         nova.PerdeuFoco += () => _coordenador.FecharPorFoco(painel, DateTime.Now);

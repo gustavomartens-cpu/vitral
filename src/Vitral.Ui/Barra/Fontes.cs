@@ -3,7 +3,10 @@ namespace Vitral.Ui.Barra;
 // Fontes de dados das ilhas da barra do topo. O App implementa com APIs do Windows; os testes usam falsas.
 // Contrato das implementações: nunca lançam (falha vira null e log) e disparam Mudou na thread da interface.
 
-public sealed record EstadoMidia(string? Titulo, string? Artista, string NomeApp, bool Tocando, byte[]? Capa);
+public sealed record EstadoMidia(string? Titulo, string? Artista, string NomeApp, bool Tocando, byte[]? Capa, LinhaDoTempo? Tempo = null);
+
+/// Posição e duração da faixa, lidas em LidaEm (hora local); enquanto toca, a posição real é estimada a partir daí.
+public sealed record LinhaDoTempo(TimeSpan Posicao, TimeSpan Duracao, DateTime LidaEm);
 
 public interface IFonteMidia
 {

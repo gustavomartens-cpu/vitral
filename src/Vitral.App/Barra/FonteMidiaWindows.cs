@@ -55,12 +55,14 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
             {
                 _sessao.MediaPropertiesChanged -= AoMudarPropriedades;
                 _sessao.PlaybackInfoChanged -= AoMudarReproducao;
+                _sessao.TimelinePropertiesChanged -= AoMudarTempo;
             }
             _sessao = _gerente?.GetCurrentSession();
             if (_sessao is not null)
             {
                 _sessao.MediaPropertiesChanged += AoMudarPropriedades;
                 _sessao.PlaybackInfoChanged += AoMudarReproducao;
+                _sessao.TimelinePropertiesChanged += AoMudarTempo;
             }
         }
         catch (Exception e) { LogBarra.Erro("Midia.TrocarSessao", e); _sessao = null; }
@@ -69,6 +71,7 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
 
     private void AoMudarPropriedades(Sessao s, MediaPropertiesChangedEventArgs a) => _ = AtualizarAsync();
     private void AoMudarReproducao(Sessao s, PlaybackInfoChangedEventArgs a) => _ = AtualizarAsync();
+    private void AoMudarTempo(Sessao s, TimelinePropertiesChangedEventArgs a) => _ = AtualizarAsync();
 
     private async Task AtualizarAsync()
     {
@@ -82,7 +85,7 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
                 var info = s.GetPlaybackInfo();
                 novo = new EstadoMidia(props?.Title, props?.Artist, NomeDoApp(s.SourceAppUserModelId),
                     info?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
-                    await LerCapaAsync(props?.Thumbnail));
+                    await LerCapaAsync(props?.Thumbnail), LerTempo(s));
             }
         }
         catch (Exception e) { LogBarra.Erro("Midia.Atualizar", e); }
@@ -92,6 +95,18 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
             Atual = novo;
             Mudou?.Invoke();
         });
+    }
+
+    /// Posição e duração da faixa; null se o app não informa (rádio, alguns players de navegador).
+    private static LinhaDoTempo? LerTempo(Sessao s)
+    {
+        try
+        {
+            var t = s.GetTimelineProperties();
+            var duracao = t.EndTime - t.StartTime;
+            return duracao <= TimeSpan.Zero ? null : new LinhaDoTempo(t.Position - t.StartTime, duracao, t.LastUpdatedTime.LocalDateTime);
+        }
+        catch (Exception) { return null; }
     }
 
     private static async Task<byte[]?> LerCapaAsync(IRandomAccessStreamReference? referencia)
@@ -158,6 +173,7 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
             {
                 _sessao.MediaPropertiesChanged -= AoMudarPropriedades;
                 _sessao.PlaybackInfoChanged -= AoMudarReproducao;
+                _sessao.TimelinePropertiesChanged -= AoMudarTempo;
             }
         }
         catch (Exception e) { LogBarra.Erro("Midia.Dispose", e); }

@@ -43,7 +43,7 @@ internal sealed class BytesParaImagem : IValueConverter
             var imagem = new BitmapImage();
             imagem.BeginInit();
             imagem.CacheOption = BitmapCacheOption.OnLoad;
-            imagem.DecodePixelWidth = 36;
+            imagem.DecodePixelWidth = parametro is string s && int.TryParse(s, out int largura) ? largura : 36; // ilha 36, painel maior
             imagem.StreamSource = new MemoryStream(bytes);
             imagem.EndInit();
             imagem.Freeze();
