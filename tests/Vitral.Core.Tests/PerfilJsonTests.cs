@@ -44,7 +44,7 @@ public class PerfilJsonTests
     {
         var p = PerfilJson.Ler(ExemploSpec);
         var de_novo = PerfilJson.Ler(PerfilJson.Escrever(p));
-        Assert.Equal(p, de_novo);
+        Assert.Equal(p with { Esquema = PerfilJson.EsquemaSuportado }, de_novo);
     }
 
     [Fact]
@@ -67,10 +67,39 @@ public class PerfilJsonTests
     }
 
     [Fact]
-    public void Recusa_esquema_futuro()
+    public void Esquema3_recusado()
     {
-        var ex = Assert.Throws<PerfilInvalidoException>(() => PerfilJson.Ler("""{ "esquema": 2, "nome": "x" }"""));
-        Assert.Contains("esquema 2", ex.Message);
+        var ex = Assert.Throws<PerfilInvalidoException>(() => PerfilJson.Ler("""{ "esquema": 3, "nome": "x" }"""));
+        Assert.Contains("esquema 3", ex.Message);
+        Assert.Contains("até o esquema 2", ex.Message);
+    }
+
+    [Fact]
+    public void Esquema2_ida_e_volta()
+    {
+        var p = new Perfil(2, "Barra", null, null, new BarraTopoPerfil(true, new IlhasBarra(Desempenho: false)));
+        string json = PerfilJson.Escrever(p);
+        Assert.Contains("\"esquema\": 2", json);
+        Assert.Contains("\"desempenho\": false", json);
+        Assert.Equal(p, PerfilJson.Ler(json));
+    }
+
+    [Fact]
+    public void Esquema1_le_com_barra_nula()
+    {
+        var p = PerfilJson.Ler("""{ "esquema": 1, "nome": "A", "nativo": {} }""");
+        Assert.Null(p.BarraTopo);
+        Assert.Contains("\"esquema\": 2", PerfilJson.Escrever(p));
+    }
+
+    [Fact]
+    public void Ilhas_ausente_e_campo_ausente_valem_ligado()
+    {
+        var semIlhas = PerfilJson.Ler("""{ "esquema": 2, "nome": "A", "barraTopo": { "visivel": true } }""");
+        Assert.Equal(IlhasBarra.Todas, semIlhas.BarraTopo!.IlhasEfetivas);
+
+        var semCampos = PerfilJson.Ler("""{ "esquema": 2, "nome": "A", "barraTopo": { "visivel": true, "ilhas": { "midia": false } } }""");
+        Assert.Equal(new IlhasBarra(Midia: false), semCampos.BarraTopo!.IlhasEfetivas);
     }
 
     [Fact]
