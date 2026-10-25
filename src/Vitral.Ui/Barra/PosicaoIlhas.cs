@@ -21,6 +21,12 @@ public static class PosicaoIlhas
         return new Retangulo(x / escala, y / escala, largura / escala, altura / escala);
     }
 
+    /// Doca (spec da doca §3): 46 px de altura, 8 px acima da borda de baixo, centralizada; reserva de 62 px.
+    public const double DocaAltura = 46, DocaFolga = 8, ReservaDoca = 62;
+
+    public static Retangulo Doca(Retangulo monitor, double largura) =>
+        new(monitor.X + (monitor.Largura - largura) / 2, monitor.Y + monitor.Altura - DocaFolga - DocaAltura, largura, DocaAltura);
+
     /// Distância entre a ilha e o painel que desce dela (spec v2 §3.2).
     public const double FolgaPainel = 6;
 

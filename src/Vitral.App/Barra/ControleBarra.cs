@@ -10,7 +10,7 @@ namespace Vitral.App.Barra;
 /// <see cref="IControleBarra"/>): erro vai para o log e, se a reserva falhar, as ilhas aparecem mesmo assim com um aviso.
 internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
 {
-    private ReservaTopo? _reserva;
+    private ReservaFaixa? _reserva;
     private Fontes? _fontes;
     private JanelaIlha? _midia, _relogio, _status;
     private IlhaMidiaViewModel? _vmMidia;
@@ -70,7 +70,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
     {
         if (_reserva is null)
         {
-            _reserva = new ReservaTopo();
+            _reserva = new ReservaFaixa();
             _reserva.Recriar += AoRecriar;
             _reserva.TelaCheia += AoMudarTelaCheia;
         }

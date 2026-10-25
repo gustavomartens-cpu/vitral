@@ -42,4 +42,8 @@ public sealed class PosicaoIlhasTests
         var r = PosicaoIlhas.Painel(new Retangulo(12, 8, 100, 30), 260, 300, AlinhamentoPainel.Direita, new Retangulo(0, 0, 1920, 1080));
         Assert.Equal(12, r.X);
     }
+
+    [Fact]
+    public void Doca_centralizada_acima_da_borda() =>
+        Assert.Equal(new Retangulo(1080, 1386, 400, 46), PosicaoIlhas.Doca(new Retangulo(0, 0, 2560, 1440), 400));
 }

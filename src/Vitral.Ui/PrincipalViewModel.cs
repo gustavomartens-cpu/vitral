@@ -156,7 +156,23 @@ public sealed partial class PrincipalViewModel : ObservableObject
             catch (FormatException e) { _dialogos.Avisar(e.Message); return false; }
         }
         string nome = Selecionado;
-        bool ok = Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, Environment.OSVersion.Version.ToString(), ajustes, barra, barraTarefas)); return true; });
+        bool ok = Executar(() =>
+        {
+            // Parte do perfil existente: seções que este editor não edita (ou de versões futuras) são preservadas.
+            Perfil? existente = null;
+            try { existente = _perfis.Carregar(nome); }
+            catch (Exception e) when (e is not OutOfMemoryException) { /* perfil novo ou ilegível: começa do zero */ }
+            var p = (existente ?? new Perfil(PerfilJson.EsquemaSuportado, nome, null, null)) with
+            {
+                Esquema = PerfilJson.EsquemaSuportado,
+                BuildTestada = Environment.OSVersion.Version.ToString(),
+                Nativo = ajustes,
+                BarraTopo = barra,
+                BarraTarefas = barraTarefas,
+            };
+            _perfis.Salvar(p);
+            return true;
+        });
         if (ok) SincronizarItens(); // a gema acompanha a cor salva
         return ok;
     }
