@@ -40,6 +40,13 @@ public sealed class RegistroWindows : IRegistro
         catch (System.Security.SecurityException e) { throw new EscritaBloqueadaException(v, e); }
     }
 
+    public IReadOnlyList<string> SubChaves(string chave)
+    {
+        using var raiz = Hkcu();
+        using var k = raiz.OpenSubKey(chave);
+        return k?.GetSubKeyNames() ?? [];
+    }
+
     public void Apagar(string chave, string nome)
     {
         try

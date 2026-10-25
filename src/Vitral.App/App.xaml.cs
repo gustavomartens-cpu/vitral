@@ -27,6 +27,8 @@ public partial class App : Application
     private NotificadorEmSegundoPlano? _notificador;
     private Bandeja? _bandeja;
     private ControleBarra? _barra;
+    private BarraDeTarefas.ObservadorIcones? _observadorIcones;
+    private EstadoBarra? _estadoBarra;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -42,17 +44,20 @@ public partial class App : Application
 
         var registro = new RegistroWindows();
         var config = new ServicoConfig(System.IO.Path.Combine(Pastas.Raiz, "config.json"));
-        _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m));
-        var estadoBarra = new EstadoBarra(_barra, config);
-        var retratos = new ServicoRetratos(registro, Pastas.Retratos, estadoBarra.Atual);
-        var perfis = new RepositorioPerfis(Pastas.Perfis);
         _notificador = new NotificadorEmSegundoPlano(new NotificadorWindows()); // ver comentário da classe
-        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, estadoBarra), retratos, perfis, config);
+        _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m));
+        _estadoBarra = new EstadoBarra(_barra, config, registro, _notificador); // também cuida do relógio de baixo
+        var estadoIcones = new EstadoIcones(config);
+        var retratos = new ServicoRetratos(registro, Pastas.Retratos, _estadoBarra.Atual, estadoIcones.Atual);
+        var perfis = new RepositorioPerfis(Pastas.Perfis);
+        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, _estadoBarra, estadoIcones), retratos, perfis, config);
         Inicializacao = new Inicializacao(registro);
 
         bool peloWindows = e.Args.Contains(Vitral.Core.Configuracao.Inicializacao.Argumento);
         var estado = Servico.AoIniciar(peloWindows);
-        _barra.Aplicar(Servico.BarraAtual()); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
+        _estadoBarra.Mostrar(); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
+        // Depois de AoIniciar: um teste que ficou aberto já voltou, e o observador começa com a lista certa.
+        _observadorIcones = new BarraDeTarefas.ObservadorIcones(registro, estadoIcones, _notificador);
         // Monitores, resolução ou escala mudaram, ou o PC voltou da suspensão: reposiciona e relê a barra.
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Dispatcher.BeginInvoke(() => _barra.Reajustar());
         Microsoft.Win32.SystemEvents.PowerModeChanged += (_, p) =>
@@ -60,7 +65,7 @@ public partial class App : Application
             if (p.Mode == Microsoft.Win32.PowerModes.Resume) Dispatcher.BeginInvoke(() => _barra.Reajustar());
         };
 
-        Principal = new PrincipalViewModel(Servico, perfis, new DialogosWpf(), new RelogioWpf());
+        Principal = new PrincipalViewModel(Servico, perfis, new DialogosWpf(), new RelogioWpf(), () => Icones.Programas(registro));
         Principal.PropertyChanged += AoMudarPrincipal;
         if (estado.TesteCancelado) Principal.Mensagem = "Um teste ficou aberto da última vez; o visual voltou ao anterior.";
         if (estado.Aviso is not null) Principal.Mensagem = estado.Aviso;
@@ -84,6 +89,8 @@ public partial class App : Application
         Principal.Contagem?.VoltarCommand.Execute(null);
         _janelaContagem?.Close();
         _barra?.Fechar();
+        _estadoBarra?.Encerrar(); // sem a barra do topo, o relógio de baixo volta
+        _observadorIcones?.Dispose();
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));
         _bandeja?.Dispose();
         _instancia?.Dispose();

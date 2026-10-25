@@ -44,7 +44,15 @@ Descartável: mudanças manuais no registro, desfeitas no fim. Só o resultado e
 - [ ] **Step 2: Registrar** a tabela "opção → na hora / exige reinício" abaixo e no ledger; confirmar que tudo voltou ao estado inicial.
 - [ ] **Step 3: Commit** `docs: o que vale na hora na barra de tarefas`.
 
-**Resultado do teste:** _(preencher no Step 2)_
+**Resultado do teste (25/10, Gustavo na tela):** todas valem **na hora** com `TraySettings`. Nenhuma exige reiniciar o Explorer, então a aba não precisa do aviso "Vale depois de reiniciar o Explorer".
+
+| Opção | Resultado |
+|---|---|
+| `ShowTaskViewButton`, `TaskbarSd`, `TaskbarGlomLevel`, `MMTaskbarEnabled` (barra no 2º monitor), `SearchboxTaskbarMode` (0 e 2) | mudaram na hora e voltaram |
+| `TaskbarBadges`, `TaskbarFlashing` | sem efeito visível no momento (nenhum selo nem piscada na tela); tratadas como "na hora", como as outras de `Advanced` |
+| Ocultar automaticamente (`ABM_SETSTATE`) | muda na hora; o Explorer grava `StuckRects3[8] = 3` ao **ligar**, mas **não regrava** ao desligar (ficou 3 com a barra visível) |
+
+**Consequência para a Task 3:** gravar o `StuckRects3` **e** chamar `ABM_SETSTATE` nos dois sentidos (aplicar e reverter). Só o aviso deixaria o registro dizendo "ocultar", e a barra se ocultaria no próximo início do Explorer.
 
 ---
 

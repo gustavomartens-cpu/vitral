@@ -57,7 +57,7 @@ public sealed class EditorBarraTests : IDisposable
         var p = _amb.Perfis.Carregar("A");
         Assert.Equal(new BarraTopoPerfil(true, new IlhasBarra(Desempenho: false)), p.BarraTopo);
         Assert.Equal(Modo.Claro, p.Nativo!.ModoApps);
-        Assert.Contains("\"esquema\": 2", File.ReadAllText(Path.Combine(_amb.Perfis.Pasta, "A", "perfil.json")));
+        Assert.Contains("\"esquema\": 3", File.ReadAllText(Path.Combine(_amb.Perfis.Pasta, "A", "perfil.json")));
     }
 
     [Fact]

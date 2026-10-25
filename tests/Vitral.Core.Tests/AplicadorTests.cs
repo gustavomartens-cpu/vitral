@@ -116,6 +116,7 @@ public sealed class AplicadorTests : IDisposable
         public int Barra { get; private set; }
         public void AvisarMudancaDeTema() => Tema++;
         public void AvisarMudancaDaBarra() => Barra++;
+        public void AvisarOcultarAutomatico(bool ligado) { }
     }
 
     /// Delega ao registro real em memória, mas lança IOException na N-ésima gravação.
@@ -124,6 +125,7 @@ public sealed class AplicadorTests : IDisposable
         private int _gravacoes;
         public ValorRegistro Ler(string chave, string nome, TipoValor tipo) => interno.Ler(chave, nome, tipo);
         public void Apagar(string chave, string nome) => interno.Apagar(chave, nome);
+        public IReadOnlyList<string> SubChaves(string chave) => interno.SubChaves(chave);
         public void Gravar(ValorRegistro v)
         {
             if (++_gravacoes == falharNa) throw new IOException("falha simulada");

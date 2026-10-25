@@ -32,17 +32,22 @@ public sealed partial class PrincipalViewModel : ObservableObject
 
     public EditorBarraViewModel EditorBarra { get; } = new();
 
+    public EditorBarraTarefasViewModel EditorBarraTarefas { get; }
+
     [ObservableProperty] private string? _selecionado;
     [ObservableProperty] private string? _perfilAtivo;
     [ObservableProperty] private string? _mensagem;
     [ObservableProperty] private ContagemViewModel? _contagem;
 
-    public PrincipalViewModel(ServicoVitral servico, RepositorioPerfis perfis, IDialogos dialogos, IRelogio relogio)
+    /// <param name="programasBandeja">Programas que já apareceram perto do relógio (o App lê do registro); nulo = nenhum.</param>
+    public PrincipalViewModel(ServicoVitral servico, RepositorioPerfis perfis, IDialogos dialogos, IRelogio relogio,
+        Func<IReadOnlyList<Vitral.Core.Nativo.ProgramaBandeja>>? programasBandeja = null)
     {
         _servico = servico;
         _perfis = perfis;
         _dialogos = dialogos;
         _relogio = relogio;
+        EditorBarraTarefas = new EditorBarraTarefasViewModel(programasBandeja ?? (() => []));
         AtualizarLista();
         PerfilAtivo = servico.PerfilAtivo;
     }
@@ -112,6 +117,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
     {
         Editor.Carregar(p?.Nativo);
         EditorBarra.Carregar(p?.BarraTopo);
+        EditorBarraTarefas.Carregar(p?.BarraTarefas);
     }
 
     /// Perfis para o menu da bandeja, sem tocar na lista nem no editor da janela.
@@ -143,13 +149,14 @@ public sealed partial class PrincipalViewModel : ObservableObject
         if (Selecionado is null) { _dialogos.Avisar("Escolha ou crie um perfil primeiro."); return false; }
         var ajustes = Editor.ParaPerfil();
         var barra = EditorBarra.ParaPerfil();
+        var barraTarefas = EditorBarraTarefas.ParaPerfil();
         if (ajustes.CorDestaque is { } cor)
         {
             try { Cor.DeHex(cor); }
             catch (FormatException e) { _dialogos.Avisar(e.Message); return false; }
         }
         string nome = Selecionado;
-        bool ok = Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, Environment.OSVersion.Version.ToString(), ajustes, barra)); return true; });
+        bool ok = Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, Environment.OSVersion.Version.ToString(), ajustes, barra, barraTarefas)); return true; });
         if (ok) SincronizarItens(); // a gema acompanha a cor salva
         return ok;
     }

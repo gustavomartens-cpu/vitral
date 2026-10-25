@@ -9,9 +9,10 @@ namespace Vitral.Core.Aplicacao;
 /// Aplica os ajustes nativos de um perfil com retrato antes. Escrita bloqueada (UCPD) é listada e não interrompe;
 /// qualquer outra falha desfaz o que já foi gravado e é relançada. Com <paramref name="barra"/>, a seção barraTopo
 /// do perfil (e a do retrato, ao reverter) também é aplicada; sem ele (CLI), a barra não é tocada.
-public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INotificador notificador, EstadoBarra? barra = null)
+/// Com <paramref name="icones"/>, a lista de ícones aplicada fica guardada para os ícones que aparecerem depois.
+public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INotificador notificador, EstadoBarra? barra = null,
+    EstadoIcones? icones = null)
 {
-    private const string Advanced = @"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
 
     public Resultado Aplicar(Perfil p)
     {
@@ -19,9 +20,18 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         var anterior = retratos.Tirar(p.Nome);
         string arquivoAnterior = retratos.Salvar(anterior);
 
-        var valores = p.Nativo is null ? [] : AjustesNativos.Calcular(p.Nativo);
+        var valores = new List<ValorRegistro>(p.Nativo is null ? [] : AjustesNativos.Calcular(p.Nativo));
         var aplicados = new List<ValorRegistro>();
         var naoAplicados = new List<(ValorRegistro, string)>();
+        if (p.BarraTarefas is { } barraTarefas)
+        {
+            var stuck = registro.Ler(BarraDeTarefas.StuckRects, "Settings", TipoValor.Binario).Dado as byte[];
+            valores.AddRange(BarraDeTarefas.Calcular(barraTarefas, stuck));
+            if (barraTarefas.OcultarAutomaticamente is not null && BarraDeTarefas.OcultarAutomatico(stuck) is null)
+                naoAplicados.Add((new ValorRegistro(BarraDeTarefas.StuckRects, "Settings", TipoValor.Binario, null),
+                    "Configuração da barra não encontrada."));
+            if (barraTarefas.IconesVisiveis is { } lista) valores.AddRange(Icones.Calcular(registro, lista));
+        }
         try
         {
             foreach (var v in valores)
@@ -44,7 +54,8 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         }
 
         barra?.Aplicar(p.BarraTopo);
-        Avisar(mudouBarra: aplicados.Any(EhAlinhamento));
+        icones?.Definir(p.BarraTarefas?.IconesVisiveis); // sem lista no perfil = não mexer: o observador para
+        Avisar(aplicados);
         return new Resultado(naoAplicados.Count == 0, aplicados, naoAplicados, anterior, arquivoAnterior);
     }
 
@@ -52,6 +63,9 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
     /// Devolve o que o Windows não deixou voltar (spec §6: nunca relatar sucesso parcial como total).
     public IReadOnlyList<(ValorRegistro Valor, string Motivo)> Reverter(Retrato r)
     {
+        // A lista volta antes do registro: o Voltar apaga IsPromoted que não existiam, e o observador não pode
+        // tratá-los como ícones novos com a lista que está saindo.
+        icones?.Definir(r.IconesVisiveis);
         var naoVoltou = ReverterRegistro(r);
         barra?.Aplicar(r.BarraTopo);
         return naoVoltou;
@@ -72,7 +86,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
                 naoVoltou.Add((v, e.Message));
             }
         }
-        Avisar(mudouBarra: r.Valores.Any(EhAlinhamento));
+        Avisar(r.Valores);
         return naoVoltou;
     }
 
@@ -84,13 +98,14 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         return Reverter(alvo);
     }
 
-    private void Avisar(bool mudouBarra)
+    /// Tema sempre; "TraySettings" se mudou algo da barra; e o aviso de ocultar automaticamente quando o StuckRects3
+    /// foi gravado (o Explorer não relê o registro sozinho e, ao desligar, nem regrava o byte — teste de 25/10).
+    private void Avisar(IEnumerable<ValorRegistro> gravados)
     {
         notificador.AvisarMudancaDeTema();
-        if (mudouBarra) notificador.AvisarMudancaDaBarra();
+        if (gravados.Any(v => BarraDeTarefas.EhDaBarra(v) || Icones.EhDeIcone(v))) notificador.AvisarMudancaDaBarra();
+        if (gravados.FirstOrDefault(BarraDeTarefas.EhStuckRects) is { } stuck
+            && BarraDeTarefas.OcultarAutomatico(stuck.Dado as byte[]) is { } ocultar)
+            notificador.AvisarOcultarAutomatico(ocultar);
     }
-
-    private static bool EhAlinhamento(ValorRegistro v) =>
-        string.Equals(v.Chave, Advanced, StringComparison.OrdinalIgnoreCase) &&
-        string.Equals(v.Nome, "TaskbarAl", StringComparison.OrdinalIgnoreCase);
 }

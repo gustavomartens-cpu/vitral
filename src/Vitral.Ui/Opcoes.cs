@@ -19,6 +19,16 @@ public static class Opcoes
     public static IReadOnlyList<Opcao<Barra.ModoEnergia>> ModosEnergia { get; } =
         [new("Economia", Barra.ModoEnergia.Economia), new("Equilibrado", Barra.ModoEnergia.Equilibrado), new("Desempenho", Barra.ModoEnergia.Desempenho)];
 
+    public static IReadOnlyList<Opcao<PesquisaOpcional>> Pesquisas { get; } =
+        [new("Não mexer", PesquisaOpcional.NaoMexer), new("Oculta", PesquisaOpcional.Oculta), new("Ícone", PesquisaOpcional.Icone), new("Caixa", PesquisaOpcional.Caixa)];
+
+    public static IReadOnlyList<Opcao<AgruparOpcional>> Agrupamentos { get; } =
+        [new("Não mexer", AgruparOpcional.NaoMexer), new("Sempre", AgruparOpcional.Sempre), new("Quando cheia", AgruparOpcional.QuandoCheia), new("Nunca", AgruparOpcional.Nunca)];
+
+    /// Ícones perto do relógio: "Escolher" liga a lista (Sim).
+    public static IReadOnlyList<Opcao<Escolha>> EscolherIcones { get; } =
+        [new("Não mexer", Escolha.NaoMexer), new("Escolher", Escolha.Sim)];
+
     public static IReadOnlyList<Opcao<AlinhamentoOpcional>> Alinhamentos { get; } =
         [new("Não mexer", AlinhamentoOpcional.NaoMexer), new("Centro", AlinhamentoOpcional.Centro), new("Esquerda", AlinhamentoOpcional.Esquerda)];
 }

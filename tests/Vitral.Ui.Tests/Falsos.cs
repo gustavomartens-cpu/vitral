@@ -77,5 +77,6 @@ internal sealed class Ambiente : IDisposable
     {
         public void AvisarMudancaDeTema() { }
         public void AvisarMudancaDaBarra() { }
+        public void AvisarOcultarAutomatico(bool ligado) { }
     }
 }

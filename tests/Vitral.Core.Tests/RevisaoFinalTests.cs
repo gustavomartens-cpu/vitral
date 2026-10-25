@@ -24,6 +24,7 @@ public sealed class RevisaoFinalTests : IDisposable
     {
         public void AvisarMudancaDeTema() { }
         public void AvisarMudancaDaBarra() { }
+        public void AvisarOcultarAutomatico(bool ligado) { }
     }
 
     private (Aplicador, ServicoRetratos) Criar()
@@ -131,7 +132,7 @@ public sealed class RevisaoFinalTests : IDisposable
     public void Esquema_futuro_com_campo_desconhecido_cita_o_esquema()
     {
         var ex = Assert.Throws<PerfilInvalidoException>(() =>
-            PerfilJson.Ler("""{ "esquema": 3, "nome": "x", "nativo": { "modoSistema": "auto" } }"""));
-        Assert.Contains("esquema 3", ex.Message);
+            PerfilJson.Ler("""{ "esquema": 4, "nome": "x", "nativo": { "modoSistema": "auto" } }"""));
+        Assert.Contains("esquema 4", ex.Message);
     }
 }
