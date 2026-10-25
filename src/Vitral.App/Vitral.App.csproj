@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Vitral</AssemblyName>
+    <RootNamespace>Vitral.App</RootNamespace>
+    <ApplicationIcon>Recursos\vitral.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.1.0</Version>
+    <!-- ThemeMode (Fluent) ainda é marcado como experimental no WPF -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Recursos\vitral.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Vitral.Core\Vitral.Core.csproj" />
+    <ProjectReference Include="..\Vitral.Ui\Vitral.Ui.csproj" />
+  </ItemGroup>
+
+</Project>

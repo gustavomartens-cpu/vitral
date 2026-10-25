@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Vitral.Core.Perfis;
 
 namespace Vitral.Ui;
@@ -20,6 +21,10 @@ public sealed partial class EditorNativoViewModel : ObservableObject
         "#0078D4", "#21375E", "#0063B1", "#8764B8", "#744DA9", "#E3008C", "#C30052", "#E81123", "#CA5010",
         "#FF8C00", "#FFB900", "#107C10", "#00B294", "#038387", "#2D7D9A", "#69797E", "#567C73", "#4C4A48",
     ];
+
+    /// Clique num quadrado da paleta (cor) ou em "Não mexer" (null).
+    [RelayCommand]
+    private void EscolherCor(string? cor) => CorDestaque = cor;
 
     public void Carregar(AjustesNativosPerfil? a)
     {

@@ -47,6 +47,16 @@ public class EditorNativoTests
     }
 
     [Fact]
+    public void Escolher_cor_e_nao_mexer_pela_paleta()
+    {
+        var e = new EditorNativoViewModel();
+        e.EscolherCorCommand.Execute("#E81123");
+        Assert.Equal("#E81123", e.CorDestaque);
+        e.EscolherCorCommand.Execute(null);
+        Assert.Null(e.CorDestaque);
+    }
+
+    [Fact]
     public void Tem_as_18_cores_sugeridas_do_esboco()
     {
         var cores = new EditorNativoViewModel().CoresSugeridas;

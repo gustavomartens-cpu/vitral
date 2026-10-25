@@ -1,0 +1,18 @@
+<Window x:Class="Vitral.App.JanelaContagem"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Vitral" Icon="Recursos/vitral.ico"
+        Width="340" SizeToContent="Height" ResizeMode="NoResize"
+        Topmost="True" ShowInTaskbar="False" WindowStyle="ToolWindow">
+    <StackPanel Margin="16">
+        <TextBlock Text="Manter este visual?" FontSize="16" FontWeight="SemiBold" />
+        <TextBlock Margin="0,6,0,10" TextWrapping="Wrap">
+            <Run Text="Volta ao anterior em " /><Run Text="{Binding Restantes, Mode=OneWay}" /><Run Text=" s." />
+        </TextBlock>
+        <ProgressBar Height="4" Maximum="{Binding Total, Mode=OneWay}" Value="{Binding Restantes, Mode=OneWay}" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+            <Button Content="Voltar" Command="{Binding VoltarCommand}" Margin="0,0,8,0" MinWidth="90" />
+            <Button Content="Manter" Command="{Binding ManterCommand}" MinWidth="90" Style="{DynamicResource AccentButtonStyle}" />
+        </StackPanel>
+    </StackPanel>
+</Window>
