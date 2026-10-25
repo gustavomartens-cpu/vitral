@@ -107,7 +107,8 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         notificador.AvisarMudancaDeTema();
         if (gravados.Any(v => BarraDeTarefas.EhDaBarra(v) || Icones.EhDeIcone(v))) notificador.AvisarMudancaDaBarra();
         if (gravados.FirstOrDefault(BarraDeTarefas.EhStuckRects) is { } stuck
-            && BarraDeTarefas.OcultarAutomatico(stuck.Dado as byte[]) is { } ocultar)
+            && BarraDeTarefas.OcultarAutomatico(stuck.Dado as byte[]) is { } ocultar
+            && doca?.AbsorverOcultarAutomatico(ocultar) != true) // com a doca ligada, vale para quando ela desligar
             notificador.AvisarOcultarAutomatico(ocultar);
     }
 }

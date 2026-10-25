@@ -12,6 +12,7 @@ internal sealed class FonteFixados(RepositorioFixados repositorio) : IFonteFixad
 {
     private readonly Dictionary<string, object?> _icones = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<Fixado>? _lista;
+    private readonly Dictionary<string, (bool Existe, DateTime Quando)> _existe = new(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyList<Fixado> Lista => _lista ??= Carregar();
 
@@ -23,8 +24,15 @@ internal sealed class FonteFixados(RepositorioFixados repositorio) : IFonteFixad
         return importados;
     }
 
-    public bool Existe(Fixado f) =>
-        f.Caminho.StartsWith("shell:", StringComparison.OrdinalIgnoreCase) || File.Exists(f.Caminho) || (f.Alvo is { } a && File.Exists(a));
+    /// Com cache curto: a doca pergunta a cada mudança de janela, e um alvo na rede não pode travar a interface.
+    public bool Existe(Fixado f)
+    {
+        var agora = DateTime.UtcNow;
+        if (_existe.TryGetValue(f.Caminho, out var c) && agora - c.Quando < TimeSpan.FromSeconds(30)) return c.Existe;
+        bool existe = f.Existe(File.Exists);
+        _existe[f.Caminho] = (existe, agora);
+        return existe;
+    }
 
     public object? Icone(Fixado f)
     {

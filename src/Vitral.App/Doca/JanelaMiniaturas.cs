@@ -46,6 +46,9 @@ internal sealed partial class JanelaMiniaturas : Window
     /// O botão cujas janelas estão na tela (null quando escondida).
     public BotaoAppViewModel? Botao { get; private set; }
 
+    /// As janelas mostradas, na ordem.
+    public IReadOnlyList<IntPtr> Handles { get; private set; } = [];
+
     public JanelaMiniaturas()
     {
         Title = "Vitral · Miniaturas";
@@ -83,6 +86,7 @@ internal sealed partial class JanelaMiniaturas : Window
         {
             Liberar();
             Botao = botao;
+            Handles = botao.Janelas.Select(j => j.Handle).ToList();
             if (_handle == IntPtr.Zero) _handle = new WindowInteropHelper(this).EnsureHandle();
             foreach (var j in botao.Janelas) _linha.Children.Add(Celula(j, vm));
             Show();
@@ -189,5 +193,6 @@ internal sealed partial class JanelaMiniaturas : Window
         _miniaturas.Clear();
         _linha.Children.Clear();
         Botao = null;
+        Handles = [];
     }
 }

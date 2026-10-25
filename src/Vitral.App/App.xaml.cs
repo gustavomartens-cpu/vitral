@@ -57,7 +57,15 @@ public partial class App : Application
         _doca = new Doca.ControleDoca(_barraWindows, _bandejaApps, m => _bandeja?.Avisar("Vitral", m));
         _estadoDoca = new EstadoDoca(_doca, _barraWindows, config);
         // Travamento fatal com a doca ligada: a barra do Windows volta antes de o processo sumir.
-        AppDomain.CurrentDomain.UnhandledException += (_, _) => _barraWindows?.Mostrar();
+        // Na thread da interface também devolve os ícones da bandeja (a janela da ManagedShell morre com o processo).
+        AppDomain.CurrentDomain.UnhandledException += (_, _) =>
+        {
+            _barraWindows?.Mostrar();
+            if (Dispatcher.CheckAccess())
+                try { _bandejaApps?.Desligar(); } catch (Exception) { /* processo caindo: melhor esforço */ }
+        };
+        // Sair da conta ou desligar o Windows: mesma limpeza do Sair (barra do Windows e ocultar automático de volta).
+        SessionEnding += (_, _) => Sair();
         var retratos = new ServicoRetratos(registro, Pastas.Retratos, _estadoBarra.Atual, estadoIcones.Atual, _estadoDoca.Atual);
         var perfis = new RepositorioPerfis(Pastas.Perfis);
         Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, _estadoBarra, estadoIcones, _estadoDoca), retratos, perfis, config);

@@ -21,6 +21,16 @@ public sealed class EstadoDoca(IControleDoca controle, IBarraDoWindows barraWind
         config.Gravar(config.Ler() with { BarraBaixo = estado });
     }
 
+    /// Um perfil (ou um Voltar) gravou o "ocultar automaticamente" com a doca ligada: o valor fica guardado para quando
+    /// a doca desligar e o Windows continua com ele ligado (a doca precisa). Devolve false com a doca desligada.
+    public bool AbsorverOcultarAutomatico(bool ocultar)
+    {
+        if (!Atual().Visivel) return false;
+        config.Gravar(config.Ler() with { OcultarAutomaticoAntesDaDoca = ocultar });
+        barraWindows.DefinirOcultarAutomatico(true);
+        return true;
+    }
+
     /// Ao abrir o App: liga se estava ligada; senão garante a barra do Windows (e desfaz o que um travamento deixou).
     public void AoIniciar()
     {

@@ -67,10 +67,13 @@ internal sealed partial class FonteBandeja(Dispatcher ui) : IFonteBandeja, IDisp
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("Bandeja.Desligar", e); }
         _shell = null;
-        // Os apps registram os ícones de novo, agora na barra do Windows.
-        SendNotifyMessage(new IntPtr(0xFFFF), RegisterWindowMessage("TaskbarCreated"), IntPtr.Zero, IntPtr.Zero);
+        DevolverIcones();
         Mudou?.Invoke();
     }
+
+    /// TaskbarCreated para todos: os apps registram os ícones de novo, agora na barra do Windows.
+    public static void DevolverIcones() =>
+        SendNotifyMessage(new IntPtr(0xFFFF), RegisterWindowMessage("TaskbarCreated"), IntPtr.Zero, IntPtr.Zero);
 
     private void AoMudar(object? s, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) =>
         ui.BeginInvoke(() => Mudou?.Invoke());

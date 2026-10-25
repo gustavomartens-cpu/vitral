@@ -66,7 +66,7 @@ public sealed partial class DocaViewModel : ObservableObject, IDisposable
             b.PedindoAtencao = g.Janelas.Any(j => j.PedindoAtencao);
             b.Fixado = g.Fixado;
             b.AtalhoExiste = g.Fixado is null || _fixados.Existe(g.Fixado);
-            b.Janelas = g.Janelas;
+            if (!b.Janelas.SequenceEqual(g.Janelas)) b.Janelas = g.Janelas; // evita refazer as miniaturas à toa
         }
     }
 

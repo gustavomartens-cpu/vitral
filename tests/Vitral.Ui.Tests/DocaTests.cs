@@ -288,3 +288,36 @@ public sealed class MenuDocaTests
         Assert.Equal(["abrir:Spotify", @"nova:C:\b\b.exe"], _atalhos.Chamadas);
     }
 }
+
+public sealed class DocaRevisaoTests
+{
+    private static JanelaApp J(int h, string titulo, string? appId, string exe) => new(h, titulo, appId, exe, false, false, null);
+
+    [Fact]
+    public void App_web_com_id_proprio_nao_cai_no_fixado_do_navegador()
+    {
+        var fixados = new List<Fixado> { new(@"C:\l\Edge.lnk", "MSEdge", "Edge", @"C:\e\msedge.exe") };
+        var grupos = GrupoApps.Montar(fixados,
+        [
+            J(1, "Edge", "MSEdge", @"C:\e\msedge.exe"),
+            J(2, "Outlook (PWA)", "MSEdge._crx_abc", @"C:\e\msedge.exe"),
+            J(3, "Edge sem id", null, @"C:\e\msedge.exe"),
+        ]);
+        Assert.Equal(2, grupos.Count);
+        Assert.Equal([1, 3], grupos[0].Janelas.Select(j => (int)j.Handle));
+    }
+
+    [Fact]
+    public void Atualizar_sem_mudanca_nao_troca_a_lista_de_janelas()
+    {
+        var janelas = new JanelasFalsas { Janelas = [J(1, "a", "A", "a.exe")] };
+        var vm = new DocaViewModel(janelas, new FixadosFalsos(), new AtalhosFalsos(), new DialogosFalsos());
+        var mudancas = new List<string?>();
+        vm.Botoes[0].PropertyChanged += (_, e) => mudancas.Add(e.PropertyName);
+
+        janelas.Janelas = [J(1, "a", "A", "a.exe")]; // mesma janela, lista nova
+        janelas.Disparar();
+
+        Assert.DoesNotContain(nameof(BotaoAppViewModel.Janelas), mudancas);
+    }
+}

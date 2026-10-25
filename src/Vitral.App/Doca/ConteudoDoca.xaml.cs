@@ -115,6 +115,7 @@ public partial class ConteudoDoca : UserControl
     private void AoMudarBotao(object? s, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(BotaoAppViewModel.Janelas) || s is not BotaoAppViewModel botao || !ReferenceEquals(_miniaturas?.Botao, botao)) return;
+        if (_miniaturas!.Handles.SequenceEqual(botao.Janelas.Select(j => j.Handle))) return; // só o título mudou
         var item = ItensDaDoca().FirstOrDefault(f => ReferenceEquals(f.DataContext, botao));
         botao.PropertyChanged -= AoMudarBotao;
         _miniaturas!.Esconder();

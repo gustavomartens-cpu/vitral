@@ -37,7 +37,7 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Grid Width="40" Height="44" ToolTip="{Binding Nome}" Background="Transparent" AllowDrop="True"
+                    <Grid x:Name="Raiz" Width="40" Height="44" ToolTip="{Binding Nome}" Background="Transparent" AllowDrop="True"
                           PreviewMouseLeftButtonDown="Botao_Apertou" PreviewMouseMove="Botao_Moveu" Drop="Botao_Soltou"
                           MouseRightButtonUp="Botao_Direito" MouseUp="Botao_Meio"
                           MouseEnter="Botao_Entrou" MouseLeave="Botao_Saiu">
@@ -60,6 +60,9 @@
                     <DataTemplate.Triggers>
                         <DataTrigger Binding="{Binding Icone}" Value="{x:Null}">
                             <Setter TargetName="SemIcone" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding AtalhoExiste}" Value="False">
+                            <Setter TargetName="Raiz" Property="Opacity" Value="0.4" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding Aberto}" Value="True">
                             <Setter TargetName="Marca" Property="Visibility" Value="Visible" />

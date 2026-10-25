@@ -19,17 +19,22 @@ public sealed class DocaTests : IDisposable
     private readonly ServicoRetratos _retratos;
     private readonly RepositorioPerfis _perfis;
     private readonly ServicoVitral _servico;
+    private readonly RegistroEmMemoria _registro = new();
+    private readonly NotificadorNulo _notificador = new();
 
     private static readonly BarraBaixoPerfil Ligada = new(true);
 
     public DocaTests()
     {
-        var registro = new RegistroEmMemoria();
+        var registro = _registro;
+        var stuck = Enumerable.Repeat((byte)0xAB, 48).ToArray();
+        stuck[8] = 0x02;
+        registro.Gravar(new ValorRegistro(BarraDeTarefas.StuckRects, "Settings", TipoValor.Binario, stuck));
         _config = new ServicoConfig(Path.Combine(_raiz, "config.json"));
         _doca = new EstadoDoca(_controle, _windows, _config);
         _retratos = new ServicoRetratos(registro, Path.Combine(_raiz, "retratos"), docaAtual: _doca.Atual);
         _perfis = new RepositorioPerfis(Path.Combine(_raiz, "perfis"));
-        _servico = new ServicoVitral(new Aplicador(registro, _retratos, new NotificadorNulo(), doca: _doca), _retratos, _perfis, _config);
+        _servico = new ServicoVitral(new Aplicador(registro, _retratos, _notificador, doca: _doca), _retratos, _perfis, _config);
     }
 
     public void Dispose()
@@ -136,6 +141,35 @@ public sealed class DocaTests : IDisposable
         Assert.Null(_config.Ler().OcultarAutomaticoAntesDaDoca);
     }
 
+    private void Salvar(string nome, BarraBaixoPerfil? doca, BarraTarefasPerfil? barra) =>
+        _perfis.Salvar(new Perfil(4, nome, null, null, BarraTarefas: barra, BarraBaixo: doca));
+
+    [Fact]
+    public void Perfil_com_doca_e_ocultar_desligado_nao_tira_o_ocultar_da_doca()
+    {
+        _windows.Ocultar = true; // o usuário tinha ocultar automático antes da doca
+        Salvar("D", Ligada, new BarraTarefasPerfil(OcultarAutomaticamente: false));
+
+        _servico.Aplicar("D");
+
+        Assert.True(_windows.Ocultar);                                 // a doca precisa do ocultar ligado
+        Assert.DoesNotContain(false, _notificador.Ocultar);            // o Explorer não recebe o "desligado" do perfil
+        Assert.False(_config.Ler().OcultarAutomaticoAntesDaDoca);      // ele vale quando a doca desligar
+    }
+
+    [Fact]
+    public void Voltar_com_a_doca_ligada_reafirma_o_ocultar()
+    {
+        Salvar("D", Ligada);
+        _servico.Aplicar("D");
+        Salvar("T", null, new BarraTarefasPerfil(OcultarAutomaticamente: false));
+        _servico.IniciarTeste("T");
+        _servico.CancelarTeste();
+
+        Assert.True(_windows.Ocultar);
+        Assert.DoesNotContain(false, _notificador.Ocultar);
+    }
+
     private sealed class ControleDocaFalso : IControleDoca
     {
         public List<BarraBaixoPerfil> Chamadas { get; } = [];
@@ -156,6 +190,8 @@ public sealed class DocaTests : IDisposable
     {
         public void AvisarMudancaDeTema() { }
         public void AvisarMudancaDaBarra() { }
-        public void AvisarOcultarAutomatico(bool ligado) { }
+        public List<bool> Ocultar { get; } = [];
+        public void AvisarOcultarAutomatico(bool ligado) => Ocultar.Add(ligado);
     }
 }
+
