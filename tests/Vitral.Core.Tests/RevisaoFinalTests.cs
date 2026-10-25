@@ -97,8 +97,9 @@ public sealed class RevisaoFinalTests : IDisposable
         string zip = Path.Combine(_raiz, "p.vitral");
         Pacote.Exportar(a, ["p"], zip, "0.1.0", "x");
 
-        var ex = Assert.Throws<PerfilInvalidoException>(() => Pacote.Importar(zip, b));
+        var ex = Assert.Throws<PerfilJaExisteException>(() => Pacote.Importar(zip, b));
         Assert.Contains("já existe", ex.Message);
+        Assert.Equal(["p"], ex.Nomes);
         Assert.Equal(Modo.Escuro, b.Carregar("p").Nativo!.ModoApps);
 
         Pacote.Importar(zip, b, substituir: true);

@@ -13,6 +13,8 @@ public sealed record EstadoInicial(bool TesteCancelado, string? Aviso);
 /// ou cancelado, para que um app morto no meio volte ao anterior quando abrir de novo.
 public sealed class ServicoVitral(Aplicador aplicador, ServicoRetratos retratos, RepositorioPerfis perfis, ServicoConfig config)
 {
+    public string? PerfilAtivo => config.Ler().PerfilAtivo;
+
     public Resultado Aplicar(string perfil)
     {
         var resultado = aplicador.Aplicar(perfis.Carregar(perfil));

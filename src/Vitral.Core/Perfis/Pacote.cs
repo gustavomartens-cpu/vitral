@@ -67,7 +67,7 @@ public static class Pacote
             var existentes = destino.Nomes().ToHashSet(StringComparer.OrdinalIgnoreCase);
             var conflitos = perfis.Where(p => existentes.Contains(p.Nome)).Select(p => p.Nome).ToList();
             if (conflitos.Count > 0)
-                throw new PerfilInvalidoException(
+                throw new PerfilJaExisteException(conflitos,
                     $"O perfil {string.Join(", ", conflitos.Select(n => $"\"{n}\""))} já existe neste computador. " +
                     "Nada foi importado. Use --substituir para sobrescrever.");
         }

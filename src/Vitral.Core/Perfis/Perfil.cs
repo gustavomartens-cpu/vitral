@@ -18,4 +18,10 @@ public sealed record AjustesNativosPerfil(
     bool? DestaqueNosTitulos,
     Alinhamento? AlinhamentoBarra);
 
-public sealed class PerfilInvalidoException(string motivo, Exception? causa = null) : Exception(motivo, causa);
+public class PerfilInvalidoException(string motivo, Exception? causa = null) : Exception(motivo, causa);
+
+/// Importação recusada porque já há perfis locais com estes nomes (use substituir para sobrescrever).
+public sealed class PerfilJaExisteException(IReadOnlyList<string> nomes, string motivo) : PerfilInvalidoException(motivo)
+{
+    public IReadOnlyList<string> Nomes { get; } = nomes;
+}
