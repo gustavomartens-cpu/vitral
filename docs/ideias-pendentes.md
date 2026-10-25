@@ -8,3 +8,11 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
   área de notificação da barra de tarefas. Decidir na fase da barra de tarefas: o que fica em cima e o que sai de baixo.
 - **Painéis próprios e notch:** viraram a spec `docs/superpowers/specs/2026-10-25-barra-do-topo-v2-design.md`.
 - **Compromissos no calendário do notch** (Google ou Outlook): fora da v2; exige login na conta dentro do Vitral.
+
+## Notch "vivo" (25/10/2026)
+
+- Notificações chegando pelo notch e respostas por ali (precisa de identidade de pacote para ler notificações de
+  outros apps).
+- Atalho para o Claude no notch: avisos do Claude Code (tarefa terminada, pergunta esperando resposta) e, se possível,
+  responder por ali; ou um chat pela API da Anthropic.
+- Cantos curvos ("orelhas") ligando o notch à borda de cima; provavelmente exige notch escuro sólido, sem acrílico.
