@@ -22,6 +22,16 @@ internal sealed partial class JanelaPainel : Window
 
     private readonly Border _casca;
     private readonly TranslateTransform _deslize = new();
+    private System.Windows.Threading.DispatcherTimer? _vigiaMenu;
+    private DateTime _inicioMenu;
+    private bool _vistoMenu;
+
+    [LibraryImport("user32.dll", EntryPoint = "FindWindowExW", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial IntPtr FindWindowEx(IntPtr pai, IntPtr depois, string? classe, string? titulo);
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool IsWindowVisible(IntPtr h);
+    [LibraryImport("user32.dll")] private static partial IntPtr GetForegroundWindow();
+    [LibraryImport("user32.dll")] private static partial uint GetWindowThreadProcessId(IntPtr h, out uint processo);
+    [LibraryImport("user32.dll", EntryPoint = "GetClassNameW", StringMarshalling = StringMarshalling.Utf16)] private static partial int GetClassName(IntPtr h, [Out] char[] nome, int tamanho);
 
     /// A janela perdeu o foco (clique fora): o coordenador decide se fecha.
     public event Action? PerdeuFoco;
@@ -64,13 +74,73 @@ internal sealed partial class JanelaPainel : Window
             var h = new WindowInteropHelper(this).Handle;
             SetLong(h, GwlExStyle, (IntPtr)((long)GetLong(h, GwlExStyle) | WsExToolWindow)); // fora do Alt+Tab
         };
-        Deactivated += (_, _) => PerdeuFoco?.Invoke();
+        Deactivated += (_, _) => { if (_vigiaMenu is null) PerdeuFoco?.Invoke(); };
+        Activated += (_, _) => PararVigia();
+        Closed += (_, _) => PararVigia();
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key != Key.Escape) return;
             e.Handled = true;
             PediuFechar?.Invoke();
         };
+    }
+
+    /// Clique direito num ícone da bandeja: o menu do app tira o foco do painel, que fica aberto enquanto o menu existir.
+    public void SegurarDuranteMenu()
+    {
+        PararVigia();
+        _inicioMenu = DateTime.Now;
+        _vistoMenu = false;
+        _vigiaMenu = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        _vigiaMenu.Tick += (_, _) => VigiarMenu();
+        _vigiaMenu.Start();
+    }
+
+    private void VigiarMenu()
+    {
+        if (IsActive) { PararVigia(); return; }
+        bool menu = MenuVisivel();
+        _vistoMenu |= menu;
+        switch (MenuDoIcone.Decidir(menu, _vistoMenu, DateTime.Now - _inicioMenu, OutraJanelaNaFrente()))
+        {
+            case DecisaoMenu.Esperar: return;
+            case DecisaoMenu.Reativar:
+                PararVigia();
+                Activate();
+                if (!IsActive) PerdeuFoco?.Invoke(); // o Windows não devolveu o foco: fecha como antes
+                return;
+            default:
+                PararVigia();
+                PerdeuFoco?.Invoke();
+                return;
+        }
+    }
+
+    private void PararVigia()
+    {
+        _vigiaMenu?.Stop();
+        _vigiaMenu = null;
+    }
+
+    /// Menu do Windows ("#32768") visível em algum lugar.
+    private static bool MenuVisivel()
+    {
+        for (var h = FindWindowEx(IntPtr.Zero, IntPtr.Zero, "#32768", null); h != IntPtr.Zero; h = FindWindowEx(IntPtr.Zero, h, "#32768", null))
+            if (IsWindowVisible(h)) return true;
+        return false;
+    }
+
+    /// Uma janela visível de outro app está na frente (o app abriu algo pelo menu). A janela escondida que o app usa
+    /// para o menu não conta, nem a área de trabalho.
+    private static bool OutraJanelaNaFrente()
+    {
+        var h = GetForegroundWindow();
+        if (h == IntPtr.Zero || !IsWindowVisible(h)) return false;
+        GetWindowThreadProcessId(h, out var processo);
+        if (processo == (uint)Environment.ProcessId) return false;
+        var nome = new char[64];
+        var classe = new string(nome, 0, Math.Max(0, GetClassName(h, nome, nome.Length)));
+        return classe is not ("Progman" or "WorkerW" or "Shell_TrayWnd" or "#32768");
     }
 
     public object? Conteudo

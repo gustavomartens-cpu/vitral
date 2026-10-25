@@ -13,7 +13,11 @@ public partial class PainelIcones : UserControl
     private void Icone_Clique(object sender, MouseButtonEventArgs e)
     {
         if (DataContext is not PainelIconesViewModel vm || (sender as FrameworkElement)?.DataContext is not IconeBandeja icone) return;
-        if (e.ChangedButton == MouseButton.Right) vm.ClicarDireitoCommand.Execute(icone);
+        if (e.ChangedButton == MouseButton.Right)
+        {
+            (Window.GetWindow(this) as JanelaPainel)?.SegurarDuranteMenu();
+            vm.ClicarDireitoCommand.Execute(icone);
+        }
         else if (e.ChangedButton == MouseButton.Left) vm.ClicarEsquerdoCommand.Execute(icone);
         e.Handled = true;
     }
