@@ -11,5 +11,6 @@ public sealed record BarraTopoPerfil(bool Visivel, IlhasBarra? Ilhas = null)
 {
     public static BarraTopoPerfil Desligada { get; } = new(false);
 
+    [System.Text.Json.Serialization.JsonIgnore] // calculada: não vai para perfil, config nem retrato
     public IlhasBarra IlhasEfetivas => Ilhas ?? IlhasBarra.Todas;
 }

@@ -145,6 +145,11 @@
                         </Border>
                         <Border Style="{StaticResource CartaoVidro}" IsEnabled="{Binding IlhasHabilitadas}">
                             <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger></Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
                                 <TextBlock Text="Ilhas" Margin="0,0,0,8" />
                                 <CheckBox Content="Mídia tocando" IsChecked="{Binding Midia}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
                                 <CheckBox Content="Relógio" IsChecked="{Binding Relogio}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />

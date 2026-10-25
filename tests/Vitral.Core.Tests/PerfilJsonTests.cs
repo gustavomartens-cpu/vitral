@@ -85,6 +85,13 @@ public class PerfilJsonTests
     }
 
     [Fact]
+    public void Ilhas_efetivas_nao_vao_para_o_arquivo()
+    {
+        string json = PerfilJson.Escrever(new Perfil(2, "A", null, null, new BarraTopoPerfil(true)));
+        Assert.DoesNotContain("ilhasEfetivas", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Esquema1_le_com_barra_nula()
     {
         var p = PerfilJson.Ler("""{ "esquema": 1, "nome": "A", "nativo": {} }""");
