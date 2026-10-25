@@ -24,6 +24,10 @@ public sealed partial class PrincipalViewModel : ObservableObject
     private readonly IRelogio _relogio;
 
     public ObservableCollection<string> Perfis { get; } = [];
+
+    /// Linhas da lista com gema e marca de ativo; sincronizada com <see cref="Perfis"/> e <see cref="PerfilAtivo"/>.
+    public ObservableCollection<ItemPerfil> ItensPerfis { get; } = [];
+
     public EditorNativoViewModel Editor { get; } = new();
 
     [ObservableProperty] private string? _selecionado;
@@ -55,7 +59,43 @@ public sealed partial class PrincipalViewModel : ObservableObject
             if (existente >= 0) Perfis.Move(existente, i);
             else Perfis.Insert(i, nomes[i]);
         }
+        SincronizarItens();
         if (selecionar is not null && selecionar != Selecionado) Selecionado = selecionar;
+    }
+
+    partial void OnPerfilAtivoChanged(string? value) => SincronizarItens();
+
+    /// Atualiza as linhas sem Reset: troca só as que mudaram (cor ou ativo), insere e remove pontualmente.
+    private void SincronizarItens()
+    {
+        var novos = Perfis.Select(n => new ItemPerfil(n, CorDe(n), string.Equals(n, PerfilAtivo, StringComparison.OrdinalIgnoreCase))).ToList();
+        while (ItensPerfis.Count > novos.Count) ItensPerfis.RemoveAt(ItensPerfis.Count - 1);
+        for (int i = 0; i < novos.Count; i++)
+        {
+            if (i >= ItensPerfis.Count) ItensPerfis.Add(novos[i]);
+            else if (ItensPerfis[i] != novos[i]) ItensPerfis[i] = novos[i];
+        }
+    }
+
+    private string CorDe(string perfil)
+    {
+        try { return _perfis.Carregar(perfil).Nativo?.CorDestaque ?? ItemPerfil.CorPadrao; }
+        catch (Exception e) when (e is not OutOfMemoryException) { return ItemPerfil.CorPadrao; }
+    }
+
+    [RelayCommand]
+    private void Descartar()
+    {
+        if (Selecionado is null) { _dialogos.Avisar("Escolha um perfil primeiro."); return; }
+        try
+        {
+            Editor.Carregar(_perfis.Carregar(Selecionado).Nativo);
+            Mensagem = "Alterações descartadas.";
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            _dialogos.Avisar(e.Message);
+        }
     }
 
     /// Perfis para o menu da bandeja, sem tocar na lista nem no editor da janela.
@@ -92,7 +132,9 @@ public sealed partial class PrincipalViewModel : ObservableObject
             catch (FormatException e) { _dialogos.Avisar(e.Message); return false; }
         }
         string nome = Selecionado;
-        return Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, Environment.OSVersion.Version.ToString(), ajustes)); return true; });
+        bool ok = Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, Environment.OSVersion.Version.ToString(), ajustes)); return true; });
+        if (ok) SincronizarItens(); // a gema acompanha a cor salva
+        return ok;
     }
 
     [RelayCommand]
