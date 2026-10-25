@@ -129,5 +129,40 @@ public sealed partial class DocaViewModel : ObservableObject, IDisposable
         Atualizar();
     }
 
+    /// Menu do botão direito (spec da doca §5): fixar ou desafixar; nova janela, se houver atalho ou executável;
+    /// fechar a janela, ou todas quando são várias.
+    public IReadOnlyList<ItemMenu> Menu(BotaoAppViewModel b)
+    {
+        var itens = new List<ItemMenu>
+        {
+            b.Fixado is null ? new("Fixar", () => Fixar(b)) : new("Desafixar", () => Desafixar(b)),
+        };
+        if (b.Fixado is not null || ExecutavelDe(b) is not null) itens.Add(new("Abrir nova janela", () => NovaJanela(b)));
+        if (b.Janelas.Count == 1) itens.Add(new("Fechar janela", () => FecharJanela(b.Janelas[0])));
+        else if (b.Janelas.Count > 1) itens.Add(new("Fechar todas", () => FecharTodas(b)));
+        return itens;
+    }
+
+    private static string? ExecutavelDe(BotaoAppViewModel b) => b.Janelas.Select(j => j.Executavel).FirstOrDefault(e => e.Length > 0);
+
+    /// Abrir nova janela (também o clique do meio): pelo atalho do fixado, senão pelo executável da janela.
+    [RelayCommand]
+    private void NovaJanela(BotaoAppViewModel? b)
+    {
+        if (b?.Fixado is { } f) _atalhos.Abrir(f);
+        else if (b is not null && ExecutavelDe(b) is { } exe) _atalhos.NovaJanela(exe);
+    }
+
+    [RelayCommand] private void FecharJanela(JanelaApp? j) { if (j is not null) _janelas.Fechar(j.Handle); }
+
+    [RelayCommand]
+    private void FecharTodas(BotaoAppViewModel? b)
+    {
+        foreach (var j in b?.Janelas ?? []) _janelas.Fechar(j.Handle);
+    }
+
+    /// Clique numa miniatura.
+    [RelayCommand] private void EscolherJanela(JanelaApp? j) { if (j is not null) _janelas.Ativar(j.Handle); }
+
     public void Dispose() => _janelas.Mudou -= Atualizar;
 }

@@ -222,3 +222,69 @@ public sealed class FixadosDocaTests
         Assert.True(botao.Aberto);
     }
 }
+
+public sealed class MenuDocaTests
+{
+    private static JanelaApp J(int h, string titulo, string? appId, string exe) => new(h, titulo, appId, exe, false, false, null);
+
+    private readonly JanelasFalsas _janelas = new();
+    private readonly FixadosFalsos _fixados = new();
+    private readonly AtalhosFalsos _atalhos = new();
+    private readonly DialogosFalsos _dialogos = new();
+
+    private DocaViewModel Criar() => new(_janelas, _fixados, _atalhos, _dialogos);
+
+    [Fact]
+    public void Menu_de_fixado_aberto_com_uma_janela()
+    {
+        _fixados.Lista = [new(@"C:\l\Spotify.lnk", "Spotify", "Spotify")];
+        _janelas.Janelas = [J(8, "Música", "Spotify", @"C:\s\Spotify.exe")];
+        var vm = Criar();
+        Assert.Equal(["Desafixar", "Abrir nova janela", "Fechar janela"], vm.Menu(vm.Botoes[0]).Select(i => i.Texto));
+    }
+
+    [Fact]
+    public void Menu_de_app_nao_fixado_com_duas_janelas()
+    {
+        _janelas.Janelas = [J(1, "a", "B", @"C:\b\b.exe"), J(2, "b", "B", @"C:\b\b.exe")];
+        var vm = Criar();
+        Assert.Equal(["Fixar", "Abrir nova janela", "Fechar todas"], vm.Menu(vm.Botoes[0]).Select(i => i.Texto));
+    }
+
+    [Fact]
+    public void Menu_sem_executavel_nao_oferece_nova_janela()
+    {
+        _janelas.Janelas = [J(3, "x", null, "")];
+        var vm = Criar();
+        Assert.DoesNotContain("Abrir nova janela", vm.Menu(vm.Botoes[0]).Select(i => i.Texto));
+    }
+
+    [Fact]
+    public void Fechar_todas_fecha_cada_janela()
+    {
+        _janelas.Janelas = [J(1, "a", "B", @"C:\b\b.exe"), J(2, "b", "B", @"C:\b\b.exe")];
+        var vm = Criar();
+        vm.FecharTodasCommand.Execute(vm.Botoes[0]);
+        Assert.Equal(["fechar:1", "fechar:2"], _janelas.Acoes);
+    }
+
+    [Fact]
+    public void Escolher_janela_ativa()
+    {
+        _janelas.Janelas = [J(1, "a", "B", @"C:\b\b.exe"), J(2, "b", "B", @"C:\b\b.exe")];
+        var vm = Criar();
+        vm.EscolherJanelaCommand.Execute(_janelas.Janelas[1]);
+        Assert.Equal(["ativar:2"], _janelas.Acoes);
+    }
+
+    [Fact]
+    public void Nova_janela_usa_o_atalho_do_fixado_ou_o_executavel()
+    {
+        _fixados.Lista = [new(@"C:\l\Spotify.lnk", "Spotify", "Spotify")];
+        _janelas.Janelas = [J(1, "a", "B", @"C:\b\b.exe")];
+        var vm = Criar();
+        vm.NovaJanelaCommand.Execute(vm.Botoes[0]);
+        vm.NovaJanelaCommand.Execute(vm.Botoes[1]);
+        Assert.Equal(["abrir:Spotify", @"nova:C:\b\b.exe"], _atalhos.Chamadas);
+    }
+}

@@ -42,3 +42,6 @@ public static class GrupoApps
         _ => new AcaoClique(TipoAcao.Escolher, IntPtr.Zero),
     };
 }
+
+/// Um item do menu do botão direito da doca.
+public sealed record ItemMenu(string Texto, Action Acao);
