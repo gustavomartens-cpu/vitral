@@ -135,11 +135,11 @@ public sealed partial class DocaViewModel : ObservableObject, IDisposable
     {
         var itens = new List<ItemMenu>
         {
-            b.Fixado is null ? new("Fixar", () => Fixar(b)) : new("Desafixar", () => Desafixar(b)),
+            b.Fixado is null ? new("Fixar", () => Fixar(b), "") : new("Desafixar", () => Desafixar(b), ""),
         };
-        if (b.Fixado is not null || ExecutavelDe(b) is not null) itens.Add(new("Abrir nova janela", () => NovaJanela(b)));
-        if (b.Janelas.Count == 1) itens.Add(new("Fechar janela", () => FecharJanela(b.Janelas[0])));
-        else if (b.Janelas.Count > 1) itens.Add(new("Fechar todas", () => FecharTodas(b)));
+        if (b.Fixado is not null || ExecutavelDe(b) is not null) itens.Add(new("Abrir nova janela", () => NovaJanela(b), ""));
+        if (b.Janelas.Count == 1) itens.Add(new("Fechar janela", () => FecharJanela(b.Janelas[0]), "", Perigo: true));
+        else if (b.Janelas.Count > 1) itens.Add(new("Fechar todas", () => FecharTodas(b), "", Perigo: true));
         return itens;
     }
 

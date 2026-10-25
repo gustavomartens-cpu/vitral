@@ -40,3 +40,14 @@ public sealed class MovimentoTests
         Assert.Equal(d, TempoMovimento.Duracao(d, ligado: true));
     }
 }
+
+public sealed class MenuForaTests
+{
+    [Theory]
+    [InlineData(false, true, false, true)]   // apertou fora: fecha
+    [InlineData(false, true, true, false)]   // apertou dentro do menu: escolhe o item, não fecha por aqui
+    [InlineData(true, true, false, false)]   // já estava apertado (o clique que abriu): espera soltar
+    [InlineData(false, false, false, false)] // nada apertado
+    public void Fecha_so_num_clique_novo_fora_do_menu(bool antes, bool agora, bool noMenu, bool fecha) =>
+        Assert.Equal(fecha, MenuFora.DeveFechar(antes, agora, noMenu));
+}

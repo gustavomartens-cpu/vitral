@@ -7,7 +7,6 @@
     <barra:BytesParaImagem x:Key="BytesParaImagem" />
     <barra:LarguraPreenchida x:Key="LarguraPreenchida" />
     <barra:SinalParaIcone x:Key="SinalParaIcone" />
-    <FontFamily x:Key="FonteIcones">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <!-- Item clicável de uma ilha (spec do ajuste visual §4.2): pílula clara no hover e afunda no clique -->
     <Style x:Key="ItemIlha" TargetType="Border">

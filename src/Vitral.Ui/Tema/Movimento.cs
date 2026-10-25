@@ -31,3 +31,11 @@ public static class TempoMovimento
 {
     public static TimeSpan Duracao(TimeSpan normal, bool ligado) => ligado ? normal : TimeSpan.Zero;
 }
+
+/// Menu aberto a partir de uma janela que não rouba o foco (a doca): o Windows não avisa o clique em outro app, então
+/// quem abriu confere os botões do mouse e fecha o menu num clique novo fora dele.
+public static class MenuFora
+{
+    /// <paramref name="antes"/>/<paramref name="agora"/>: algum botão apertado na conferência anterior e nesta.
+    public static bool DeveFechar(bool antes, bool agora, bool cursorNoMenu) => !antes && agora && !cursorNoMenu;
+}

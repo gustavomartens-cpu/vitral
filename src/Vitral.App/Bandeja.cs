@@ -21,7 +21,7 @@ internal sealed class Bandeja : IDisposable
             IconSource = BitmapFrame.Create(new Uri("pack://application:,,,/Recursos/vitral.ico")),
             ContextMenu = new ContextMenu(),
         };
-        _icone.ContextMenu.Opened += (_, _) => MontarMenu();
+        _icone.ContextMenu.Opened += (_, _) => { MontarMenu(); Assentar(); };
         _icone.TrayLeftMouseUp += (_, _) => _app.MostrarJanela();
         _icone.ForceCreate(false);
     }
@@ -36,11 +36,21 @@ internal sealed class Bandeja : IDisposable
         foreach (var item in MenuBandeja.Montar(vm.NomesParaMenu(), vm.PerfilAtivo)) // não mexe na janela (editor não salvo)
         {
             if (item.Separador) { menu.Items.Add(new Separator()); continue; }
-            var mi = new MenuItem { Header = item.Texto, IsCheckable = false, IsChecked = item.Marcado };
+            var mi = new MenuItem { Header = item.Texto, IsCheckable = false, IsChecked = item.Marcado, Icon = item.Icone };
             string acao = item.Acao;
             mi.Click += (_, _) => Executar(acao);
             menu.Items.Add(mi);
         }
+    }
+
+    /// O ícone fica no topo com a doca ligada e embaixo, na barra do Windows, com ela desligada: o menu desce na metade
+    /// de cima do monitor e sobe na de baixo.
+    private void Assentar()
+    {
+        var cursor = System.Windows.Forms.Control.MousePosition;
+        var tela = System.Windows.Forms.Screen.FromPoint(cursor).Bounds;
+        var de = cursor.Y < tela.Top + tela.Height / 2 ? Tema.AssentarDe.Cima : Tema.AssentarDe.Baixo;
+        Tema.Efeitos.Assentar(_icone.ContextMenu!, de, cascata: false);
     }
 
     private void Executar(string acao)

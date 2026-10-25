@@ -321,3 +321,19 @@ public sealed class DocaRevisaoTests
         Assert.DoesNotContain(nameof(BotaoAppViewModel.Janelas), mudancas);
     }
 }
+
+public sealed class MenuDocaIconesTests
+{
+    [Fact]
+    public void Menu_da_doca_tem_icones_e_perigo()
+    {
+        var janelas = new JanelasFalsas { Janelas = [new(8, "Música", "Spotify", @"C:\s\Spotify.exe", false, false, null)] };
+        var fixados = new FixadosFalsos { Lista = [new(@"C:\l\Spotify.lnk", "Spotify", "Spotify")] };
+        var vm = new DocaViewModel(janelas, fixados, new AtalhosFalsos(), new DialogosFalsos());
+
+        var menu = vm.Menu(vm.Botoes[0]);
+
+        Assert.Equal(["\uE718", "\uE710", "\uE711"], menu.Select(i => i.Icone));
+        Assert.Equal([false, false, true], menu.Select(i => i.Perigo));
+    }
+}
