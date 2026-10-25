@@ -102,13 +102,14 @@
 
     <Style x:Key="AbaVitral" TargetType="TabItem">
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
-        <Setter Property="Foreground" Value="{StaticResource TextoSecundario}" />
+        <Setter Property="Foreground" Value="{StaticResource Texto}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
+                    <!-- Cor só no cabeçalho: o conteúdo da aba herda o Foreground do TabItem -->
                     <Grid Margin="0,0,20,0" Background="Transparent">
-                        <ContentPresenter ContentSource="Header" Margin="0,4,0,9" />
+                        <ContentPresenter x:Name="Cabecalho" ContentSource="Header" Margin="0,4,0,9" TextElement.Foreground="{StaticResource TextoSecundario}" />
                         <Border x:Name="Sublinhado" Height="2" VerticalAlignment="Bottom" CornerRadius="1" Background="{StaticResource Ambar}" Visibility="Hidden">
                             <Border.Effect><DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="8" ShadowDepth="0" Opacity="0.6" /></Border.Effect>
                         </Border>
@@ -116,7 +117,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="Sublinhado" Property="Visibility" Value="Visible" />
-                            <Setter Property="Foreground" Value="{StaticResource Ambar}" />
+                            <Setter TargetName="Cabecalho" Property="TextElement.Foreground" Value="{StaticResource Ambar}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
                     </ControlTemplate.Triggers>
