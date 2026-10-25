@@ -10,6 +10,7 @@ $env:NUGET_PLUGINS_CACHE_PATH    = 'G:\dev\nuget\plugins'
 $extra = @(
     'G:\dev\dotnet',
     'G:\dev\toolchains\llvm-mingw-20260922-ucrt-x86_64\bin',
-    'G:\dev\toolchains\cppwinrt\bin'
+    'G:\dev\toolchains\cppwinrt\bin',
+    'G:\dev\dotnet-tools'
 )
 $env:PATH = (($extra + ($env:PATH -split ';')) | Where-Object { $_ } | Select-Object -Unique) -join ';'
