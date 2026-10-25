@@ -6,6 +6,11 @@
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
     <UseWPF>true</UseWPF>
+    <!-- O TasksService da ManagedShell usa o System.Windows.Forms (NativeWindow): sem isto o instalador, que leva o
+         .NET junto, fica sem a DLL e a doca perde a bandeja e as janelas. Só a referência, sem os usings implícitos. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- O DPI do manifesto é do WPF; o aviso do WinForms (WFO0003) não se aplica -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <AssemblyName>Vitral</AssemblyName>
     <RootNamespace>Vitral.App</RootNamespace>
     <ApplicationIcon>Recursos\vitral.ico</ApplicationIcon>
@@ -15,6 +20,11 @@
     <!-- ThemeMode (Fluent) ainda é marcado como experimental no WPF -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Main próprio (Program.cs) para o Velopack rodar antes do WPF -->

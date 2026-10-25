@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Input;
 using System.Windows.Threading;
 using ManagedShell;
+using ManagedShell.WindowsTasks;
 using ManagedShell.WindowsTray;
 using Vitral.App.Barra;
 using Vitral.Ui.Barra;
@@ -28,7 +29,18 @@ internal sealed partial class FonteBandeja(Dispatcher ui) : IFonteBandeja, IDisp
 
     private ShellManager? _shell;
 
+    // Lista de janelas da doca. O TasksService registra uma DependencyProperty no construtor de instância, então só
+    // pode existir um por processo: é criado uma vez e religado (Initialize) a cada vez que a doca liga.
+    private TasksService? _servicoTarefas;
+    private Tasks? _tarefas;
+    private bool _tarefasLigadas;
+
     public ShellManager? Shell => _shell;
+
+    /// As janelas para a doca; null com a doca desligada ou se o serviço não subiu.
+    public Tasks? Tarefas => _tarefasLigadas ? _tarefas : null;
+
+    public TasksService? ServicoTarefas => _tarefasLigadas ? _servicoTarefas : null;
     public bool Disponivel => _shell is { NotificationArea.IsFailed: false };
     public event Action? Mudou;
 
@@ -43,8 +55,7 @@ internal sealed partial class FonteBandeja(Dispatcher ui) : IFonteBandeja, IDisp
         try
         {
             var config = ShellManager.DefaultShellConfig;
-            config.EnableTasksService = true;
-            config.AutoStartTasksService = true;
+            config.EnableTasksService = false; // o nosso, abaixo
             _shell = new ShellManager(config);
             _shell.NotificationArea.TrayIcons.CollectionChanged += AoMudar;
             if (_shell.NotificationArea.IsFailed) LogBarra.Info("A bandeja não iniciou (ManagedShell IsFailed).");
@@ -54,11 +65,26 @@ internal sealed partial class FonteBandeja(Dispatcher ui) : IFonteBandeja, IDisp
             LogBarra.Erro("Bandeja.Ligar", e);
             _shell = null;
         }
+        try
+        {
+            _servicoTarefas ??= new TasksService();
+            _tarefas ??= new Tasks(_servicoTarefas);
+            _tarefas.Initialize(false);
+            _tarefasLigadas = true;
+        }
+        catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("Bandeja.Tarefas", e); }
         Mudou?.Invoke();
     }
 
     public void Desligar()
     {
+        if (_tarefasLigadas)
+        {
+            _tarefasLigadas = false;
+            Mudou?.Invoke(); // a doca larga a lista antes de ela ser esvaziada
+            try { _servicoTarefas?.Dispose(); } // desfaz os ganchos; o mesmo serviço religa na próxima vez
+            catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("Bandeja.Tarefas", e); }
+        }
         if (_shell is null) return;
         try
         {
