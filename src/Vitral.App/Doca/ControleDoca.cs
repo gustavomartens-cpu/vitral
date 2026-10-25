@@ -4,6 +4,7 @@ using Vitral.App.Barra;
 using Vitral.Core.Barra;
 using Vitral.Core.Perfis;
 using Vitral.Ui.Barra;
+using Vitral.Ui.Doca;
 
 namespace Vitral.App.Doca;
 
@@ -14,6 +15,8 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja ban
     private ReservaFaixa? _reserva;
     private JanelaDoca? _janela;
     private bool _telaCheia;
+    private FonteJanelas? _fonteJanelas;
+    private DocaViewModel? _vm;
 
     public void Aplicar(BarraBaixoPerfil estado)
     {
@@ -40,18 +43,21 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja ban
         if (!_reserva.Registrar()) avisar("Não foi possível reservar o espaço da doca.");
         if (_janela is null)
         {
-            _janela = new JanelaDoca { Conteudo = ConteudoInicial() };
+            _janela = new JanelaDoca { Conteudo = new ConteudoDoca() };
             _janela.SizeChanged += (_, _) => Posicionar();
             _janela.DpiChanged += (_, _) => Reajustar();
         }
         bandeja.Ligar(); // o Vitral assume a bandeja enquanto a barra do Windows está escondida
+        if (_vm is null)
+        {
+            // As janelas vêm do mesmo ShellManager da bandeja; os fixados chegam na Task 5.
+            _fonteJanelas = new FonteJanelas(bandeja, _janela.Dispatcher);
+            _vm = new DocaViewModel(_fonteJanelas, new FixadosVazios(), new AtalhosDoca(), new DialogosWpf());
+            ((FrameworkElement)_janela.Conteudo!).DataContext = _vm;
+        }
         if (!_telaCheia) _janela.Show();
         Posicionar();
     }
-
-    /// Conteúdo provisório (Task 2): só o logo; os apps entram na Task 4.
-    private static FrameworkElement ConteudoInicial() =>
-        new Image { Source = (System.Windows.Media.ImageSource)Application.Current.Resources["Logo"], Width = 22, Height = 22, VerticalAlignment = VerticalAlignment.Center };
 
     public void Posicionar()
     {
@@ -93,6 +99,10 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja ban
 
     private void Fechar()
     {
+        _vm?.Dispose();
+        _vm = null;
+        _fonteJanelas?.Dispose();
+        _fonteJanelas = null;
         bandeja.Desligar();
         _janela?.Close();
         _janela = null;

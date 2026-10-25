@@ -17,6 +17,20 @@ internal static partial class Atalhos
     /// Win+A: configurações rápidas (Wi-Fi, volume, bateria).
     public static void ConfiguracoesRapidas() => WinMais((byte)'A');
 
+    /// Win sozinha: menu Iniciar (doca).
+    public static void Win()
+    {
+        try
+        {
+            keybd_event(VkWin, 0, 0, UIntPtr.Zero);
+            keybd_event(VkWin, 0, SoltarTecla, UIntPtr.Zero);
+        }
+        catch (Exception e) { LogBarra.Erro("Atalhos.Win", e); }
+    }
+
+    /// Win+S: pesquisa (doca).
+    public static void Pesquisa() => WinMais((byte)'S');
+
     public static void GerenciadorDeTarefas()
     {
         try { Process.Start(new ProcessStartInfo("taskmgr.exe") { UseShellExecute = true }); }
