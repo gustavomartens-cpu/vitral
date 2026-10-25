@@ -26,4 +26,9 @@ public partial class IlhaStatus : UserControl, IPedePainel
     private void Bateria_Clique(object sender, MouseButtonEventArgs e) => Pediu?.Invoke(Painel.Bateria);
 
     private void Desempenho_Clique(object sender, MouseButtonEventArgs e) => Atalhos.GerenciadorDeTarefas();
+
+    private void Icones_Clique(object sender, MouseButtonEventArgs e) => Pediu?.Invoke(Painel.Icones);
+
+    /// A setinha ^ só aparece com a bandeja do Vitral disponível (doca ligada).
+    public void MostrarSetinha(bool mostrar) => Setinha.Visibility = mostrar ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
 }

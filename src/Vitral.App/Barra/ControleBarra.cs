@@ -8,7 +8,7 @@ namespace Vitral.App.Barra;
 
 /// A barra do topo de verdade: a reserva, as três ilhas e as fontes de dados. Nunca lança (contrato de
 /// <see cref="IControleBarra"/>): erro vai para o log e, se a reserva falhar, as ilhas aparecem mesmo assim com um aviso.
-internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
+internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja) : IControleBarra
 {
     private ReservaFaixa? _reserva;
     private Fontes? _fontes;
@@ -26,6 +26,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
     private PainelWifiViewModel? _vmWifi;
     private readonly List<IDisposable> _vmsPaineis = [];
     private bool _coordenadorLigado;
+    private IlhaStatus? _conteudoStatus;
 
     /// As fontes vivem enquanto a barra está ligada (COM e WinRT são soltos ao desligar).
     private sealed class Fontes : IDisposable
@@ -80,6 +81,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         {
             _coordenador.PropertyChanged += AoMudarPainel;
             _coordenadorLigado = true;
+            bandeja.Mudou += AoMudarBandeja;
         }
         _coordenador.FecharTodos(); // as ilhas podem ter mudado
 
@@ -112,6 +114,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         {
             var conteudo = criar();
             if (conteudo is IPedePainel pede) pede.Pediu += p => _coordenador.Alternar(p, DateTime.Now);
+            if (conteudo is IlhaStatus status) { _conteudoStatus = status; status.MostrarSetinha(bandeja.Disponivel); }
             janela = new JanelaIlha(nome, presaNaBorda: nome == "Relógio") { Conteudo = conteudo };
             janela.SizeChanged += (_, _) => Posicionar();
             janela.DpiChanged += (_, _) => Reajustar(); // troca de escala nem sempre manda WM_DISPLAYCHANGE
@@ -143,6 +146,13 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         if (janela is null) return;
         if (visivel && !janela.IsVisible) janela.Show();
         else if (!visivel && janela.IsVisible) janela.Hide();
+    }
+
+    /// A doca ligou ou desligou a bandeja do Vitral: a setinha acompanha; sem bandeja, o painel de ícones fecha.
+    private void AoMudarBandeja()
+    {
+        _conteudoStatus?.MostrarSetinha(bandeja.Disponivel);
+        if (!bandeja.Disponivel && _coordenador.Aberto == Painel.Icones) _coordenador.FecharTodos();
     }
 
     private void AoMudarPainel(object? s, PropertyChangedEventArgs e)
@@ -207,6 +217,9 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
                 _vmWifi = Guardar(new PainelWifiViewModel(_fontes.Wifi));
                 nova = new JanelaPainel("Wi-Fi", 280) { Conteudo = new PainelWifi(), DataContext = _vmWifi };
                 _ = _vmWifi.AbrirAsync();
+                break;
+            case Painel.Icones:
+                nova = new JanelaPainel("Ícones", 280) { Conteudo = new PainelIcones(), DataContext = Guardar(new PainelIconesViewModel(bandeja)) };
                 break;
             case Painel.Midia when _fontes is not null:
                 nova = new JanelaPainel("Mídia", 260)

@@ -9,7 +9,7 @@ namespace Vitral.App.Doca;
 
 /// A doca de verdade: a reserva de 62 px embaixo e a janela centralizada no monitor principal.
 /// Nunca lança (contrato de <see cref="IControleDoca"/>): erro vai para o log.
-internal sealed class ControleDoca(BarraDoWindows barraWindows, Action<string> avisar) : IControleDoca
+internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja bandeja, Action<string> avisar) : IControleDoca
 {
     private ReservaFaixa? _reserva;
     private JanelaDoca? _janela;
@@ -44,6 +44,7 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, Action<string> a
             _janela.SizeChanged += (_, _) => Posicionar();
             _janela.DpiChanged += (_, _) => Reajustar();
         }
+        bandeja.Ligar(); // o Vitral assume a bandeja enquanto a barra do Windows está escondida
         if (!_telaCheia) _janela.Show();
         Posicionar();
     }
@@ -92,6 +93,7 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, Action<string> a
 
     private void Fechar()
     {
+        bandeja.Desligar();
         _janela?.Close();
         _janela = null;
         _telaCheia = false;

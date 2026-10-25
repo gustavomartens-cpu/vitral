@@ -34,6 +34,8 @@
   <ItemGroup>
     <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />
     <PackageReference Include="Velopack" Version="1.2.161" />
+    <!-- Bandeja de ícones e lista de janelas da doca (Apache-2.0, ver THIRD-PARTY-NOTICES.md) -->
+    <PackageReference Include="ManagedShell" Version="0.0.374" />
   </ItemGroup>
 
 </Project>

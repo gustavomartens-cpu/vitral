@@ -32,6 +32,7 @@ public partial class App : Application
     private EstadoDoca? _estadoDoca;
     private Doca.ControleDoca? _doca;
     private Doca.BarraDoWindows? _barraWindows;
+    private Doca.FonteBandeja? _bandejaApps;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -48,11 +49,12 @@ public partial class App : Application
         var registro = new RegistroWindows();
         var config = new ServicoConfig(System.IO.Path.Combine(Pastas.Raiz, "config.json"));
         _notificador = new NotificadorEmSegundoPlano(new NotificadorWindows()); // ver comentário da classe
-        _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m));
+        _bandejaApps = new Doca.FonteBandeja(Dispatcher);
+        _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m), _bandejaApps);
         _estadoBarra = new EstadoBarra(_barra, config, registro, _notificador); // também cuida do relógio de baixo
         var estadoIcones = new EstadoIcones(config);
         _barraWindows = new Doca.BarraDoWindows(registro, _notificador);
-        _doca = new Doca.ControleDoca(_barraWindows, m => _bandeja?.Avisar("Vitral", m));
+        _doca = new Doca.ControleDoca(_barraWindows, _bandejaApps, m => _bandeja?.Avisar("Vitral", m));
         _estadoDoca = new EstadoDoca(_doca, _barraWindows, config);
         // Travamento fatal com a doca ligada: a barra do Windows volta antes de o processo sumir.
         AppDomain.CurrentDomain.UnhandledException += (_, _) => _barraWindows?.Mostrar();
@@ -101,6 +103,7 @@ public partial class App : Application
         _estadoBarra?.Encerrar(); // sem a barra do topo, o relógio de baixo volta
         _estadoDoca?.Encerrar(); // sem a doca, a barra do Windows volta
         _barraWindows?.Dispose();
+        _bandejaApps?.Dispose(); // devolve os ícones ao Windows
         _observadorIcones?.Dispose();
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));
         _bandeja?.Dispose();
