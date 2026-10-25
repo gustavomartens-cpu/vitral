@@ -8,6 +8,10 @@ public static class PosicaoIlhas
 {
     public const double Topo = 8, Borda = 12, Altura = 30, Reserva = 46;
 
+    /// Notch do relógio (spec v2 §3.1): a janela começa 10 px acima da borda, para os cantos de cima (que o DWM
+    /// arredonda junto com os de baixo) ficarem fora da tela; 34 px visíveis.
+    public const double NotchSobra = 10, NotchAltura = 44;
+
     /// Retângulo de um monitor em pixels para DIPs, pela escala do próprio monitor (não a da inicialização do app).
     public static Retangulo ParaDips(int x, int y, int largura, int altura, uint dpi)
     {
@@ -21,7 +25,7 @@ public static class PosicaoIlhas
         double y = monitor.Y + Topo;
         return (
             new Retangulo(monitor.X + Borda, y, larguraMidia, Altura),
-            new Retangulo(monitor.X + (monitor.Largura - larguraRelogio) / 2, y, larguraRelogio, Altura),
+            new Retangulo(monitor.X + (monitor.Largura - larguraRelogio) / 2, monitor.Y - NotchSobra, larguraRelogio, NotchAltura),
             new Retangulo(monitor.X + monitor.Largura - Borda - larguraStatus, y, larguraStatus, Altura));
     }
 }

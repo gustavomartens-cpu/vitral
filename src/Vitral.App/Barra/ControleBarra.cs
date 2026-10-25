@@ -90,7 +90,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         }
         if (janela is null)
         {
-            janela = new JanelaIlha(nome) { Conteudo = criar() };
+            janela = new JanelaIlha(nome, presaNaBorda: nome == "Relógio") { Conteudo = criar() };
             janela.SizeChanged += (_, _) => Posicionar();
             janela.DpiChanged += (_, _) => Reajustar(); // troca de escala nem sempre manda WM_DISPLAYCHANGE
         }
