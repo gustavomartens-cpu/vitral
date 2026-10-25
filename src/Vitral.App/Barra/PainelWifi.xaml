@@ -1,0 +1,84 @@
+<UserControl x:Class="Vitral.App.Barra.PainelWifi"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Raiz">
+    <!-- Painel de Wi-Fi (spec v2 §3.3 e §6). DataContext: PainelWifiViewModel. -->
+    <StackPanel>
+        <DockPanel Margin="0,0,0,6">
+            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ChaveVidro}" IsChecked="{Binding Ligado}" ToolTip="Ligar ou desligar o Wi-Fi"
+                          Visibility="{Binding TemAdaptador, Converter={StaticResource BoolParaVisivel}}" />
+            <TextBlock Text="WI-FI" Style="{StaticResource TituloPainel}" VerticalAlignment="Center" Margin="0" />
+        </DockPanel>
+
+        <TextBlock Text="Este PC não tem Wi-Fi." Foreground="{StaticResource TextoSecundario}" Margin="0,4,0,8"
+                   Visibility="{Binding SemAdaptador, Converter={StaticResource BoolParaVisivel}}" />
+
+        <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Redes}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <Button x:Name="Linha" Style="{StaticResource LinhaPainel}" Margin="0,1"
+                                    Command="{Binding DataContext.EscolherCommand, ElementName=Raiz}" CommandParameter="{Binding}">
+                                <DockPanel>
+                                    <TextBlock x:Name="Estado" DockPanel.Dock="Right" Text="&#xE72E;" FontFamily="{StaticResource FonteIcones}"
+                                               Foreground="{StaticResource TextoSecundario}" VerticalAlignment="Center" Visibility="Collapsed" />
+                                    <TextBlock Text="{Binding Sinal, Converter={StaticResource SinalParaIcone}}" FontFamily="{StaticResource FonteIcones}"
+                                               VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </Button>
+                        </StackPanel>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Protegida}" Value="True"><Setter TargetName="Estado" Property="Visibility" Value="Visible" /></DataTrigger>
+                            <DataTrigger Binding="{Binding Conectada}" Value="True">
+                                <Setter TargetName="Estado" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="Estado" Property="Text" Value="Conectado" />
+                                <Setter TargetName="Estado" Property="FontFamily" Value="{StaticResource FonteCorpo}" />
+                                <Setter TargetName="Estado" Property="Foreground" Value="{StaticResource Ambar}" />
+                                <Setter TargetName="Linha" Property="Background" Value="{StaticResource Selecao}" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Senha da rede escolhida: caixa única fora da lista, para o texto sobreviver às atualizações da lista -->
+        <StackPanel Margin="0,8,0,0">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Style.Triggers><DataTrigger Binding="{Binding PedindoSenha}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <TextBlock FontSize="11" Foreground="{StaticResource TextoSecundario}" Margin="0,0,0,4">
+                <Run Text="Senha de " /><Run Text="{Binding PedindoSenha.Nome, Mode=OneWay}" />
+            </TextBlock>
+            <PasswordBox x:Name="CaixaSenha" PasswordChanged="Senha_Mudou" KeyDown="Senha_Tecla"
+                         Background="{StaticResource Superficie}" Foreground="{StaticResource Texto}"
+                         BorderBrush="{StaticResource Borda}" Padding="8,5" />
+            <Button Content="Conectar" Style="{StaticResource BotaoPrimario}" HorizontalAlignment="Right" Margin="0,6,0,0"
+                    Command="{Binding ConectarComSenhaCommand}" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding Mensagem}" Foreground="{StaticResource Ambar}" TextWrapping="Wrap" Margin="0,6,0,0">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Style.Triggers><DataTrigger Binding="{Binding Mensagem}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <StackPanel Margin="0,8,0,0" Visibility="{Binding AvisoLocalizacao, Converter={StaticResource BoolParaVisivel}}">
+            <TextBlock Text="Para ver redes por perto, permita a localização para apps da área de trabalho" TextWrapping="Wrap"
+                       Foreground="{StaticResource TextoSecundario}" FontSize="11" />
+            <TextBlock FontSize="11" Margin="0,4,0,0">
+                <Hyperlink Command="{Binding AbrirLocalizacaoCommand}" Foreground="{StaticResource Ambar}" TextDecorations="None">Abrir configurações</Hyperlink>
+            </TextBlock>
+        </StackPanel>
+
+        <TextBlock FontSize="11" Margin="0,10,0,0">
+            <Hyperlink Command="{Binding AbrirMaisCommand}" Foreground="{StaticResource TextoSecundario}" TextDecorations="None">Mais configurações de rede…</Hyperlink>
+        </TextBlock>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,47 @@
+<UserControl x:Class="Vitral.App.Barra.PainelCalendario"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Calendário do notch (spec v2 §3.3): só o mês. DataContext: CalendarioViewModel. -->
+    <StackPanel>
+        <DockPanel Margin="0,0,0,10">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Style="{StaticResource BotaoIlha}" Content="&#xE76B;" Command="{Binding AnteriorCommand}" ToolTip="Mês anterior" />
+                <Button Style="{StaticResource BotaoIlha}" Content="&#xE76C;" Command="{Binding ProximoCommand}" ToolTip="Próximo mês" />
+            </StackPanel>
+            <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+        </DockPanel>
+        <UniformGrid Columns="7" Margin="0,0,0,4">
+            <UniformGrid.Resources>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Foreground" Value="{StaticResource TextoSecundario}" />
+                    <Setter Property="FontSize" Value="10" />
+                    <Setter Property="HorizontalAlignment" Value="Center" />
+                </Style>
+            </UniformGrid.Resources>
+            <TextBlock Text="D" /><TextBlock Text="S" /><TextBlock Text="T" /><TextBlock Text="Q" />
+            <TextBlock Text="Q" /><TextBlock Text="S" /><TextBlock Text="S" />
+        </UniformGrid>
+        <ItemsControl ItemsSource="{Binding Dias}" Focusable="False">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" Rows="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border x:Name="Dia" CornerRadius="6" Margin="2" Height="26">
+                        <TextBlock x:Name="Numero" Text="{Binding Numero}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding DoMes}" Value="False"><Setter TargetName="Numero" Property="Opacity" Value="0.3" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Hoje}" Value="True">
+                            <Setter TargetName="Dia" Property="Background" Value="{StaticResource Ambar}" />
+                            <Setter TargetName="Numero" Property="Foreground" Value="{StaticResource TextoSobreAmbar}" />
+                            <Setter TargetName="Numero" Property="FontWeight" Value="SemiBold" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBlock Margin="0,10,0,0" FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap">
+            <Run Text="{Binding DataPorExtenso, Mode=OneWay}" /><Run Text=" · " />
+            <Hyperlink Command="{Binding HojeCommand}" Foreground="{StaticResource Ambar}" TextDecorations="None">Hoje</Hyperlink>
+        </TextBlock>
+    </StackPanel>
+</UserControl>

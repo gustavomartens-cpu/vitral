@@ -18,6 +18,15 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
     private IlhaStatusViewModel? _vmStatus;
     private BarraTopoPerfil _estado = BarraTopoPerfil.Desligada;
 
+    // Painéis próprios (spec v2): um por vez, decidido pelo coordenador; as janelas nascem na primeira abertura.
+    private readonly CoordenadorPaineis _coordenador = new();
+    private readonly Dictionary<Painel, JanelaPainel> _paineis = [];
+    private CalendarioViewModel? _vmCalendario;
+    private PainelBateriaViewModel? _vmBateria;
+    private PainelWifiViewModel? _vmWifi;
+    private readonly List<IDisposable> _vmsPaineis = [];
+    private bool _coordenadorLigado;
+
     /// As fontes vivem enquanto a barra está ligada (COM e WinRT são soltos ao desligar).
     private sealed class Fontes : IDisposable
     {
@@ -25,6 +34,9 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         public FonteVolumeWindows Volume { get; } = new(Application.Current.Dispatcher);
         public FonteRedeWindows Rede { get; } = new(Application.Current.Dispatcher);
         public FonteBateriaWindows Bateria { get; } = new(Application.Current.Dispatcher);
+        public FonteDispositivosAudioWindows Dispositivos { get; } = new(Application.Current.Dispatcher);
+        public FonteModoEnergiaWindows ModoEnergia { get; } = new();
+        public FonteWifiWindows Wifi { get; } = new(Application.Current.Dispatcher);
         public FonteDesempenhoWindows Desempenho { get; } = new();
         public RelogioDoSistema Agora { get; } = new();
 
@@ -34,6 +46,8 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
             Volume.Dispose();
             Rede.Dispose();
             Bateria.Dispose();
+            Dispositivos.Dispose();
+            Wifi.Dispose();
         }
     }
 
@@ -62,6 +76,12 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         }
         if (!_reserva.Registrar()) avisar("Não foi possível reservar o espaço da barra do topo.");
         _fontes ??= new Fontes();
+        if (!_coordenadorLigado)
+        {
+            _coordenador.PropertyChanged += AoMudarPainel;
+            _coordenadorLigado = true;
+        }
+        _coordenador.FecharTodos(); // as ilhas podem ter mudado
 
         // Conteúdo refeito a cada aplicação: as ilhas (e CPU/MEM) podem ter mudado no perfil.
         DescartarViewModels();
@@ -90,7 +110,9 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         }
         if (janela is null)
         {
-            janela = new JanelaIlha(nome) { Conteudo = criar() };
+            var conteudo = criar();
+            if (conteudo is IPedePainel pede) pede.Pediu += p => _coordenador.Alternar(p, DateTime.Now);
+            janela = new JanelaIlha(nome, presaNaBorda: nome == "Relógio") { Conteudo = conteudo };
             janela.SizeChanged += (_, _) => Posicionar();
             janela.DpiChanged += (_, _) => Reajustar(); // troca de escala nem sempre manda WM_DISPLAYCHANGE
         }
@@ -100,7 +122,10 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
 
     private void AoMudarMidia(object? s, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(IlhaMidiaViewModel.Visivel)) AtualizarVisibilidadeMidia();
+        if (e.PropertyName != nameof(IlhaMidiaViewModel.Visivel)) return;
+        // Nada mais tocando: a ilha some e o painel da mídia, se aberto, não pode ficar flutuando sem ela.
+        if (_vmMidia?.Visivel != true && _coordenador.Aberto == Painel.Midia) _coordenador.FecharTodos();
+        AtualizarVisibilidadeMidia();
     }
 
     private bool _telaCheia;
@@ -120,8 +145,106 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         else if (!visivel && janela.IsVisible) janela.Hide();
     }
 
+    private void AoMudarPainel(object? s, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CoordenadorPaineis.Aberto)) return;
+        try
+        {
+            var aberto = _coordenador.Aberto;
+            foreach (var (painel, janela) in _paineis)
+                if (painel != aberto && janela.IsVisible) janela.Hide();
+            if (aberto == Painel.Nenhum) return;
+
+            var janelaPainel = JanelaDoPainel(aberto);
+            var ilha = aberto switch { Painel.Calendario => _relogio, Painel.Midia => _midia, _ => _status };
+            if (janelaPainel is null || ilha is null)
+            {
+                _coordenador.FecharTodos(); // painel ainda não existe nesta versão
+                return;
+            }
+            var alinhamento = aberto switch
+            {
+                Painel.Calendario => AlinhamentoPainel.Centro,
+                Painel.Midia => AlinhamentoPainel.Esquerda,
+                _ => AlinhamentoPainel.Direita,
+            };
+            var p = MonitorPrincipal.Ler();
+            var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
+            var ret = new Retangulo(ilha.Left, ilha.Top, ilha.ActualWidth, ilha.ActualHeight);
+            janelaPainel.Mostrar(PosicaoIlhas.Painel(ret, janelaPainel.Width, janelaPainel.ActualHeight, alinhamento, monitor));
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            LogBarra.Erro("ControleBarra.Painel", ex);
+        }
+    }
+
+    /// A janela do painel, criada na primeira abertura; null se o painel ainda não existe.
+    private JanelaPainel? JanelaDoPainel(Painel painel)
+    {
+        if (_paineis.TryGetValue(painel, out var existente))
+        {
+            if (painel == Painel.Calendario) _vmCalendario?.Reabrir();
+            if (painel == Painel.Bateria) _vmBateria?.Abrir();
+            if (painel == Painel.Wifi) _ = _vmWifi?.AbrirAsync();
+            return existente;
+        }
+        JanelaPainel? nova = null;
+        switch (painel)
+        {
+            case Painel.Calendario when _fontes is not null:
+                _vmCalendario = new CalendarioViewModel(_fontes.Agora);
+                nova = new JanelaPainel("Calendário", 248) { Conteudo = new PainelCalendario(), DataContext = _vmCalendario };
+                break;
+            case Painel.Volume when _fontes is not null:
+                nova = new JanelaPainel("Volume", 280) { Conteudo = new PainelVolume(), DataContext = Guardar(new PainelVolumeViewModel(_fontes.Volume, _fontes.Dispositivos)) };
+                break;
+            case Painel.Bateria when _fontes is not null:
+                _vmBateria = Guardar(new PainelBateriaViewModel(_fontes.Bateria, _fontes.ModoEnergia));
+                nova = new JanelaPainel("Bateria", 320) { Conteudo = new PainelBateria(), DataContext = _vmBateria };
+                break;
+            case Painel.Wifi when _fontes is not null:
+                _vmWifi = Guardar(new PainelWifiViewModel(_fontes.Wifi));
+                nova = new JanelaPainel("Wi-Fi", 280) { Conteudo = new PainelWifi(), DataContext = _vmWifi };
+                _ = _vmWifi.AbrirAsync();
+                break;
+            case Painel.Midia when _fontes is not null:
+                nova = new JanelaPainel("Mídia", 260)
+                {
+                    Conteudo = new PainelMidia(),
+                    DataContext = Guardar(new PainelMidiaViewModel(_fontes.Midia, new RelogioWpf(), _fontes.Agora)),
+                };
+                break;
+        }
+        if (nova is null) return null;
+        nova.PerdeuFoco += () => _coordenador.FecharPorFoco(painel, DateTime.Now);
+        nova.PediuFechar += _coordenador.FecharTodos;
+        _paineis[painel] = nova;
+        return nova;
+    }
+
+    private T Guardar<T>(T vm) where T : IDisposable
+    {
+        _vmsPaineis.Add(vm);
+        return vm;
+    }
+
+    private void FecharPaineis()
+    {
+        _coordenador.FecharTodos();
+        foreach (var janela in _paineis.Values) janela.Close();
+        _paineis.Clear();
+        _vmCalendario = null;
+        _vmBateria = null;
+        _vmWifi = null;
+        foreach (var vm in _vmsPaineis) vm.Dispose();
+        _vmsPaineis.Clear();
+    }
+
     private void AoMudarTelaCheia(bool telaCheia)
     {
+        LogBarra.Info($"Tela cheia: {telaCheia}");
+        if (telaCheia) _coordenador.FecharTodos();
         _telaCheia = telaCheia;
         AtualizarVisibilidadeMidia();
     }
@@ -184,6 +307,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
     {
         try
         {
+            FecharPaineis();
             _midia?.Close();
             _relogio?.Close();
             _status?.Close();

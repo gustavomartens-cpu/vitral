@@ -17,11 +17,11 @@
 
         <!-- Rede -->
         <TextBlock Text="{Binding Rede, Converter={StaticResource RedeParaIcone}}" FontFamily="{StaticResource FonteIcones}" FontSize="13"
-                   VerticalAlignment="Center" Cursor="Hand" ToolTip="Configurações rápidas" MouseLeftButtonUp="Rapidas_Clique" />
+                   VerticalAlignment="Center" Cursor="Hand" ToolTip="Wi-Fi" MouseLeftButtonUp="Rede_Clique" />
 
         <!-- Volume: roda ±2, clique = mudo -->
         <StackPanel Orientation="Horizontal" Background="Transparent" Margin="12,0,0,0" Cursor="Hand"
-                    ToolTip="Roda do mouse: volume. Clique: mudo" MouseWheel="Volume_Roda" MouseLeftButtonUp="Volume_Clique">
+                    ToolTip="Roda do mouse: volume. Clique: painel de volume" MouseWheel="Volume_Roda" MouseLeftButtonUp="Volume_Clique">
             <TextBlock FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
@@ -34,8 +34,8 @@
         </StackPanel>
 
         <!-- Bateria (só com bateria) -->
-        <StackPanel Orientation="Horizontal" Margin="12,0,0,0" Background="Transparent" Cursor="Hand" ToolTip="Configurações rápidas"
-                    MouseLeftButtonUp="Rapidas_Clique" Visibility="{Binding BateriaVisivel, Converter={StaticResource BoolParaVisivel}}">
+        <StackPanel Orientation="Horizontal" Margin="12,0,0,0" Background="Transparent" Cursor="Hand" ToolTip="Bateria e energia"
+                    MouseLeftButtonUp="Bateria_Clique" Visibility="{Binding BateriaVisivel, Converter={StaticResource BoolParaVisivel}}">
             <TextBlock Text="&#xE83F;" FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center" />
             <TextBlock Text="{Binding Bateria}" Margin="5,0,0,0" VerticalAlignment="Center" />
         </StackPanel>

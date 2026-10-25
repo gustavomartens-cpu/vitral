@@ -12,7 +12,7 @@
             </Border>
         </Grid>
         <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center" MaxWidth="260" TextTrimming="CharacterEllipsis"
-                   Cursor="Hand" MouseLeftButtonUp="Titulo_Clique" ToolTip="Mostrar o app que está tocando" />
+                   Cursor="Hand" MouseLeftButtonUp="Titulo_Clique" ToolTip="Mais da mídia" />
         <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
             <Button Style="{StaticResource BotaoIlha}" Content="&#xE892;" Command="{Binding AnteriorCommand}" ToolTip="Anterior" />
             <Button Command="{Binding TocarPausarCommand}" ToolTip="Tocar ou pausar">

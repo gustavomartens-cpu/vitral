@@ -74,13 +74,22 @@ internal sealed class FonteBateriaWindows : IFonteBateria, IDisposable
         {
             Atual = PowerManager.BatteryStatus == BatteryStatus.NotPresent
                 ? null
-                : new EstadoBateria(PowerManager.RemainingChargePercent, PowerManager.PowerSupplyStatus != PowerSupplyStatus.NotPresent);
+                : new EstadoBateria(PowerManager.RemainingChargePercent, PowerManager.PowerSupplyStatus != PowerSupplyStatus.NotPresent,
+                    TempoRestante());
         }
         catch (Exception e)
         {
             LogBarra.Erro("Bateria.Ler", e);
             Atual = null;
         }
+    }
+
+    /// Null carregando ou quando o Windows ainda não estimou (zero ou "infinito").
+    private static TimeSpan? TempoRestante()
+    {
+        if (PowerManager.PowerSupplyStatus != PowerSupplyStatus.NotPresent) return null;
+        var t = PowerManager.RemainingDischargeTime;
+        return t <= TimeSpan.Zero || t == TimeSpan.MaxValue || t.TotalDays > 7 ? null : t;
     }
 
     public void Dispose()

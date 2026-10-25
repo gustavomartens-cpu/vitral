@@ -1,0 +1,51 @@
+<UserControl x:Class="Vitral.App.Barra.PainelMidia"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Mídia expandida (spec v2 §3.3). DataContext: PainelMidiaViewModel. -->
+    <StackPanel>
+        <Grid Height="120" Margin="0,0,0,10">
+            <Border CornerRadius="8" Background="{StaticResource Superficie}">
+                <TextBlock Text="&#xE8D6;" FontFamily="{StaticResource FonteIcones}" FontSize="28" Foreground="{StaticResource TextoSecundario}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <Border CornerRadius="8">
+                <Border.Background>
+                    <ImageBrush ImageSource="{Binding Capa, Converter={StaticResource BytesParaImagem}, ConverterParameter=260}" Stretch="UniformToFill" />
+                </Border.Background>
+            </Border>
+        </Grid>
+        <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="{Binding Subtitulo}" Foreground="{StaticResource TextoSecundario}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+        <StackPanel Visibility="{Binding MostrarProgresso, Converter={StaticResource BoolParaVisivel}}" Margin="0,8,0,0">
+            <Grid Height="3">
+                <Border Background="{StaticResource Linha}" CornerRadius="2" />
+                <Border Background="{StaticResource Ambar}" CornerRadius="2" RenderTransformOrigin="0,0.5">
+                    <Border.RenderTransform><ScaleTransform ScaleX="{Binding Fracao}" /></Border.RenderTransform>
+                </Border>
+            </Grid>
+            <DockPanel Margin="0,4,0,0">
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Total}" FontSize="10" Foreground="{StaticResource TextoSecundario}" />
+                <TextBlock Text="{Binding Decorrido}" FontSize="10" Foreground="{StaticResource TextoSecundario}" />
+            </DockPanel>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,6,0,4">
+            <Button Style="{StaticResource BotaoIlha}" FontSize="15" Content="&#xE892;" Command="{Binding AnteriorCommand}" ToolTip="Anterior" Margin="8,0" />
+            <Button Command="{Binding TocarPausarCommand}" ToolTip="Tocar ou pausar" Margin="8,0">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource BotaoIlha}">
+                        <Setter Property="FontSize" Value="15" />
+                        <Setter Property="Foreground" Value="{StaticResource Ambar}" />
+                        <Setter Property="Content" Value="&#xE768;" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Tocando}" Value="True"><Setter Property="Content" Value="&#xE769;" /></DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button Style="{StaticResource BotaoIlha}" FontSize="15" Content="&#xE893;" Command="{Binding ProximaCommand}" ToolTip="Próxima" Margin="8,0" />
+        </StackPanel>
+        <TextBlock HorizontalAlignment="Center" FontSize="11" Margin="0,4,0,0">
+            <Hyperlink Command="{Binding AbrirAppCommand}" Foreground="{StaticResource Ambar}" TextDecorations="None">Abrir o app</Hyperlink>
+        </TextBlock>
+    </StackPanel>
+</UserControl>

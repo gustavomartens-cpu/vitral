@@ -4,9 +4,11 @@ using Vitral.Ui.Barra;
 
 namespace Vitral.App.Barra;
 
-public partial class IlhaStatus : UserControl
+public partial class IlhaStatus : UserControl, IPedePainel
 {
     public IlhaStatus() => InitializeComponent();
+
+    public event Action<Painel>? Pediu;
 
     private IlhaStatusViewModel? Vm => DataContext as IlhaStatusViewModel;
 
@@ -17,9 +19,11 @@ public partial class IlhaStatus : UserControl
         e.Handled = true;
     }
 
-    private void Volume_Clique(object sender, MouseButtonEventArgs e) => Vm?.AlternarMudoCommand.Execute(null);
+    private void Volume_Clique(object sender, MouseButtonEventArgs e) => Pediu?.Invoke(Painel.Volume);
 
-    private void Rapidas_Clique(object sender, MouseButtonEventArgs e) => Atalhos.ConfiguracoesRapidas();
+    private void Rede_Clique(object sender, MouseButtonEventArgs e) => Pediu?.Invoke(Painel.Wifi);
+
+    private void Bateria_Clique(object sender, MouseButtonEventArgs e) => Pediu?.Invoke(Painel.Bateria);
 
     private void Desempenho_Clique(object sender, MouseButtonEventArgs e) => Atalhos.GerenciadorDeTarefas();
 }

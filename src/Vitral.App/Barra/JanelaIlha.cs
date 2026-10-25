@@ -17,7 +17,9 @@ internal sealed partial class JanelaIlha : Window
 
     private readonly Border _casca;
 
-    public JanelaIlha(string nome)
+    /// <param name="presaNaBorda">Notch: a janela sobe <see cref="Ui.Barra.PosicaoIlhas.NotchSobra"/> px além da borda
+    /// (os cantos de cima ficam fora da tela) e o conteúdo fica nos 34 px visíveis.</param>
+    public JanelaIlha(string nome, bool presaNaBorda = false)
     {
         Title = $"Vitral · {nome}";
         WindowStyle = WindowStyle.None;
@@ -40,6 +42,13 @@ internal sealed partial class JanelaIlha : Window
         };
         Content = _casca;
         VidroIlha.Preparar(this, _casca);
+        if (presaNaBorda)
+        {
+            Height = Ui.Barra.PosicaoIlhas.NotchAltura;
+            _casca.Padding = new Thickness(18, Ui.Barra.PosicaoIlhas.NotchSobra, 18, 0);
+            _casca.CornerRadius = new CornerRadius(0, 0, 9, 9);
+            _casca.BorderThickness = new Thickness(1, 0, 1, 1);
+        }
         // Transparência do Windows ligada/desligada com a barra aberta: troca entre acrílico e sólido.
         Microsoft.Win32.UserPreferenceChangedEventHandler aoMudar = (_, e) =>
         {

@@ -15,6 +15,10 @@ public static class Opcoes
     public static IReadOnlyList<Opcao<Escolha>> Ligada { get; } =
         [new("Não mexer", Escolha.NaoMexer), new("Ligada", Escolha.Sim), new("Desligada", Escolha.Nao)];
 
+    /// Modo de energia do painel de bateria (sem "Não mexer": é uma ação direta, não um ajuste de perfil).
+    public static IReadOnlyList<Opcao<Barra.ModoEnergia>> ModosEnergia { get; } =
+        [new("Economia", Barra.ModoEnergia.Economia), new("Equilibrado", Barra.ModoEnergia.Equilibrado), new("Desempenho", Barra.ModoEnergia.Desempenho)];
+
     public static IReadOnlyList<Opcao<AlinhamentoOpcional>> Alinhamentos { get; } =
         [new("Não mexer", AlinhamentoOpcional.NaoMexer), new("Centro", AlinhamentoOpcional.Centro), new("Esquerda", AlinhamentoOpcional.Esquerda)];
 }

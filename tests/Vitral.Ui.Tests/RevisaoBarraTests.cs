@@ -26,3 +26,27 @@ public sealed class RevisaoBarraTests
         Assert.Equal(new Retangulo(dx, dy, dl, da), PosicaoIlhas.ParaDips(x, y, largura, altura, dpi));
     }
 }
+
+public sealed class TelaCheiaTests
+{
+    private static readonly Retangulo Monitor = new(0, 0, 2560, 1440);
+
+    [Theory]
+    [InlineData("Progman")]
+    [InlineData("WorkerW")]
+    [InlineData("Shell_TrayWnd")]
+    public void Area_de_trabalho_nao_e_tela_cheia(string classe) =>
+        Assert.False(TelaCheia.EhDeVerdade(classe, Monitor, Monitor));
+
+    [Fact]
+    public void Janela_que_cobre_o_monitor_e_tela_cheia() =>
+        Assert.True(TelaCheia.EhDeVerdade("Chrome_WidgetWin_1", new Retangulo(0, 0, 2560, 1440), Monitor));
+
+    [Fact]
+    public void Janela_maximizada_comum_nao_e_tela_cheia() =>
+        Assert.False(TelaCheia.EhDeVerdade("Chrome_WidgetWin_1", new Retangulo(-8, 46, 2576, 1354), Monitor));
+
+    [Fact]
+    public void Tela_cheia_no_outro_monitor_nao_conta() =>
+        Assert.False(TelaCheia.EhDeVerdade("UnityWndClass", new Retangulo(-1080, -477, 1080, 1920), Monitor));
+}
