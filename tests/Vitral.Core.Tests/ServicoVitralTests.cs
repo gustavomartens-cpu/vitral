@@ -29,6 +29,7 @@ public sealed class ServicoVitralTests : IDisposable
     {
         public void AvisarMudancaDeTema() { }
         public void AvisarMudancaDaBarra() { }
+        public void AvisarOcultarAutomatico(bool ligado) { }
     }
 
     private RepositorioPerfis Perfis() => new(Path.Combine(_raiz, "perfis"));

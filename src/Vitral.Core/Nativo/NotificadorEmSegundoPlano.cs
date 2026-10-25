@@ -13,6 +13,8 @@ public sealed class NotificadorEmSegundoPlano(INotificador interno) : INotificad
 
     public void AvisarMudancaDaBarra() => Enfileirar(interno.AvisarMudancaDaBarra);
 
+    public void AvisarOcultarAutomatico(bool ligado) => Enfileirar(() => interno.AvisarOcultarAutomatico(ligado));
+
     /// Espera os avisos pendentes (para testes e para sair do app sem perder um aviso).
     public bool Aguardar(TimeSpan prazo)
     {

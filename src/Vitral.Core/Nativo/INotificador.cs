@@ -5,4 +5,7 @@ public interface INotificador
 {
     void AvisarMudancaDeTema();
     void AvisarMudancaDaBarra();
+
+    /// Liga ou desliga o "ocultar automaticamente" da barra de tarefas na hora (ABM_SETSTATE).
+    void AvisarOcultarAutomatico(bool ligado);
 }

@@ -116,6 +116,7 @@ public sealed class AplicadorTests : IDisposable
         public int Barra { get; private set; }
         public void AvisarMudancaDeTema() => Tema++;
         public void AvisarMudancaDaBarra() => Barra++;
+        public void AvisarOcultarAutomatico(bool ligado) { }
     }
 
     /// Delega ao registro real em memória, mas lança IOException na N-ésima gravação.

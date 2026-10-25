@@ -133,5 +133,6 @@ public sealed class BarraTopoTests : IDisposable
     {
         public void AvisarMudancaDeTema() { }
         public void AvisarMudancaDaBarra() { }
+        public void AvisarOcultarAutomatico(bool ligado) { }
     }
 }

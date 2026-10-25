@@ -19,7 +19,7 @@ public sealed class ServicoRetratosTests : IDisposable
     {
         var servico = new ServicoRetratos(_registro, _pasta);
         var r = servico.Tirar(null);
-        Assert.Equal(AjustesNativos.Controlados.Count, r.Valores.Count);
+        Assert.Equal(AjustesNativos.Controlados.Count + BarraDeTarefas.Controlados.Count, r.Valores.Count);
         Assert.All(r.Valores, v => Assert.True(v.Ausente));
     }
 

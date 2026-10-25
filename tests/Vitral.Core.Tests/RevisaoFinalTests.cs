@@ -24,6 +24,7 @@ public sealed class RevisaoFinalTests : IDisposable
     {
         public void AvisarMudancaDeTema() { }
         public void AvisarMudancaDaBarra() { }
+        public void AvisarOcultarAutomatico(bool ligado) { }
     }
 
     private (Aplicador, ServicoRetratos) Criar()

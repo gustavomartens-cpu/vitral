@@ -11,7 +11,6 @@ namespace Vitral.Core.Aplicacao;
 /// do perfil (e a do retrato, ao reverter) também é aplicada; sem ele (CLI), a barra não é tocada.
 public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INotificador notificador, EstadoBarra? barra = null)
 {
-    private const string Advanced = @"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
 
     public Resultado Aplicar(Perfil p)
     {
@@ -19,9 +18,18 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         var anterior = retratos.Tirar(p.Nome);
         string arquivoAnterior = retratos.Salvar(anterior);
 
-        var valores = p.Nativo is null ? [] : AjustesNativos.Calcular(p.Nativo);
+        var valores = new List<ValorRegistro>(p.Nativo is null ? [] : AjustesNativos.Calcular(p.Nativo));
         var aplicados = new List<ValorRegistro>();
         var naoAplicados = new List<(ValorRegistro, string)>();
+        if (p.BarraTarefas is { } barraTarefas)
+        {
+            var stuck = registro.Ler(BarraDeTarefas.StuckRects, "Settings", TipoValor.Binario).Dado as byte[];
+            valores.AddRange(BarraDeTarefas.Calcular(barraTarefas, stuck));
+            if (barraTarefas.OcultarAutomaticamente is not null && BarraDeTarefas.OcultarAutomatico(stuck) is null)
+                naoAplicados.Add((new ValorRegistro(BarraDeTarefas.StuckRects, "Settings", TipoValor.Binario, null),
+                    "Configuração da barra não encontrada."));
+        }
+        if (BarraDeTarefas.Relogio(p.BarraTopo) is { } relogio) valores.Add(relogio);
         try
         {
             foreach (var v in valores)
@@ -44,7 +52,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         }
 
         barra?.Aplicar(p.BarraTopo);
-        Avisar(mudouBarra: aplicados.Any(EhAlinhamento));
+        Avisar(aplicados);
         return new Resultado(naoAplicados.Count == 0, aplicados, naoAplicados, anterior, arquivoAnterior);
     }
 
@@ -72,7 +80,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
                 naoVoltou.Add((v, e.Message));
             }
         }
-        Avisar(mudouBarra: r.Valores.Any(EhAlinhamento));
+        Avisar(r.Valores);
         return naoVoltou;
     }
 
@@ -84,13 +92,14 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         return Reverter(alvo);
     }
 
-    private void Avisar(bool mudouBarra)
+    /// Tema sempre; "TraySettings" se mudou algo da barra; e o aviso de ocultar automaticamente quando o StuckRects3
+    /// foi gravado (o Explorer não relê o registro sozinho e, ao desligar, nem regrava o byte — teste de 25/10).
+    private void Avisar(IEnumerable<ValorRegistro> gravados)
     {
         notificador.AvisarMudancaDeTema();
-        if (mudouBarra) notificador.AvisarMudancaDaBarra();
+        if (gravados.Any(BarraDeTarefas.EhDaBarra)) notificador.AvisarMudancaDaBarra();
+        if (gravados.FirstOrDefault(BarraDeTarefas.EhStuckRects) is { } stuck
+            && BarraDeTarefas.OcultarAutomatico(stuck.Dado as byte[]) is { } ocultar)
+            notificador.AvisarOcultarAutomatico(ocultar);
     }
-
-    private static bool EhAlinhamento(ValorRegistro v) =>
-        string.Equals(v.Chave, Advanced, StringComparison.OrdinalIgnoreCase) &&
-        string.Equals(v.Nome, "TaskbarAl", StringComparison.OrdinalIgnoreCase);
 }

@@ -10,6 +10,7 @@ public class NotificadorEmSegundoPlanoTests
         public readonly ManualResetEventSlim Liberar = new(true);
         public void AvisarMudancaDeTema() { Liberar.Wait(); lock (Chamadas) Chamadas.Add(("tema", Environment.CurrentManagedThreadId)); }
         public void AvisarMudancaDaBarra() { Liberar.Wait(); lock (Chamadas) Chamadas.Add(("barra", Environment.CurrentManagedThreadId)); }
+        public void AvisarOcultarAutomatico(bool ligado) { }
     }
 
     [Fact]
