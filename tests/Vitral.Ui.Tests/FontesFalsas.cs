@@ -61,3 +61,13 @@ internal sealed class DispositivosFalsos : IFonteDispositivosAudio
     public void TornarPadrao(string id) => Tornados.Add(id);
     public void Disparar() => Mudou?.Invoke();
 }
+
+internal sealed class ModoEnergiaFalso : IFonteModoEnergia
+{
+    public ModoEnergia? Atual { get; set; } = ModoEnergia.Equilibrado;
+    public event Action? Mudou;
+    public List<ModoEnergia> Definidos { get; } = [];
+    public int Relidas { get; private set; }
+    public void Definir(ModoEnergia modo) { Definidos.Add(modo); Atual = modo; Mudou?.Invoke(); }
+    public void Reler() => Relidas++;
+}

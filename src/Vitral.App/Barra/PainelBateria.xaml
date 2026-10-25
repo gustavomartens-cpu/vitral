@@ -1,0 +1,23 @@
+<UserControl x:Class="Vitral.App.Barra.PainelBateria"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:Vitral.Ui;assembly=Vitral.Ui">
+    <!-- Painel de bateria e energia (spec v2 §3.3). DataContext: PainelBateriaViewModel. -->
+    <StackPanel>
+        <TextBlock Text="BATERIA" Style="{StaticResource TituloPainel}" />
+        <TextBlock>
+            <Run Text="{Binding Porcentagem, Mode=OneWay}" FontSize="26" FontWeight="SemiBold" />
+            <Run Text="  " /><Run Text="{Binding Detalhe, Mode=OneWay}" Foreground="{StaticResource TextoSecundario}" />
+        </TextBlock>
+        <Grid Height="4" Margin="0,8,0,14">
+            <Border Background="{StaticResource Linha}" CornerRadius="2" />
+            <Border Background="{StaticResource AmbarGradiente}" CornerRadius="2" RenderTransformOrigin="0,0.5">
+                <Border.RenderTransform><ScaleTransform ScaleX="{Binding Fracao}" /></Border.RenderTransform>
+            </Border>
+        </Grid>
+        <StackPanel Visibility="{Binding MostrarModo, Converter={StaticResource BoolParaVisivel}}">
+            <TextBlock Text="MODO DE ENERGIA" Style="{StaticResource TituloPainel}" />
+            <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.ModosEnergia}" SelectedValue="{Binding Modo}" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

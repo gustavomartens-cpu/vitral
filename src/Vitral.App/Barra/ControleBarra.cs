@@ -22,6 +22,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
     private readonly CoordenadorPaineis _coordenador = new();
     private readonly Dictionary<Painel, JanelaPainel> _paineis = [];
     private CalendarioViewModel? _vmCalendario;
+    private PainelBateriaViewModel? _vmBateria;
     private readonly List<IDisposable> _vmsPaineis = [];
     private bool _coordenadorLigado;
 
@@ -33,6 +34,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         public FonteRedeWindows Rede { get; } = new(Application.Current.Dispatcher);
         public FonteBateriaWindows Bateria { get; } = new(Application.Current.Dispatcher);
         public FonteDispositivosAudioWindows Dispositivos { get; } = new(Application.Current.Dispatcher);
+        public FonteModoEnergiaWindows ModoEnergia { get; } = new();
         public FonteDesempenhoWindows Desempenho { get; } = new();
         public RelogioDoSistema Agora { get; } = new();
 
@@ -177,6 +179,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         if (_paineis.TryGetValue(painel, out var existente))
         {
             if (painel == Painel.Calendario) _vmCalendario?.Reabrir();
+            if (painel == Painel.Bateria) _vmBateria?.Abrir();
             return existente;
         }
         JanelaPainel? nova = null;
@@ -188,6 +191,10 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
                 break;
             case Painel.Volume when _fontes is not null:
                 nova = new JanelaPainel("Volume", 280) { Conteudo = new PainelVolume(), DataContext = Guardar(new PainelVolumeViewModel(_fontes.Volume, _fontes.Dispositivos)) };
+                break;
+            case Painel.Bateria when _fontes is not null:
+                _vmBateria = Guardar(new PainelBateriaViewModel(_fontes.Bateria, _fontes.ModoEnergia));
+                nova = new JanelaPainel("Bateria", 320) { Conteudo = new PainelBateria(), DataContext = _vmBateria };
                 break;
         }
         if (nova is null) return null;
@@ -209,6 +216,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         foreach (var janela in _paineis.Values) janela.Close();
         _paineis.Clear();
         _vmCalendario = null;
+        _vmBateria = null;
         foreach (var vm in _vmsPaineis) vm.Dispose();
         _vmsPaineis.Clear();
     }

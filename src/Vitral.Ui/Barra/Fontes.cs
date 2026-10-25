@@ -34,7 +34,8 @@ public interface IFonteRede
     event Action? Mudou;
 }
 
-public sealed record EstadoBateria(int Porcentagem, bool Carregando);
+/// TempoRestante: null carregando ou quando o Windows não sabe.
+public sealed record EstadoBateria(int Porcentagem, bool Carregando, TimeSpan? TempoRestante = null);
 
 public interface IFonteBateria
 {
@@ -67,4 +68,16 @@ public interface IFonteDispositivosAudio
     bool PodeTrocar { get; }
     event Action? Mudou;
     void TornarPadrao(string id);
+}
+
+public enum ModoEnergia { Economia, Equilibrado, Desempenho }
+
+/// Modo de energia do Windows 11 (spec v2 §5). Atual null = indisponível (o seletor some). Usa uma chamada não
+/// documentada do Windows; Reler é chamado ao abrir o painel (o Windows não avisa a troca feita por fora).
+public interface IFonteModoEnergia
+{
+    ModoEnergia? Atual { get; }
+    event Action? Mudou;
+    void Definir(ModoEnergia modo);
+    void Reler();
 }
