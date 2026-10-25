@@ -16,3 +16,7 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 - Atalho para o Claude no notch: avisos do Claude Code (tarefa terminada, pergunta esperando resposta) e, se possível,
   responder por ali; ou um chat pela API da Anthropic.
 - Cantos curvos ("orelhas") ligando o notch à borda de cima; provavelmente exige notch escuro sólido, sem acrílico.
+
+## Logo em preto e branco (25/10/2026)
+
+O Gustavo não gosta do azul com âmbar no logo do Vitral (doca e topo). Quer um logo preto e branco, ou só preto. Mudar junto com o próximo ajuste visual.
