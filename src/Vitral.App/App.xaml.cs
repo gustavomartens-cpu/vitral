@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using Vitral.Core.Aplicacao;
 using Vitral.Core.Configuracao;
+using Vitral.Core.Nativo;
 using Vitral.Core.Perfis;
 using Vitral.Core.Retratos;
 using Vitral.Core.Servicos;
@@ -21,6 +22,7 @@ public partial class App : Application
     internal Inicializacao Inicializacao { get; private set; } = null!;
 
     private InstanciaUnica? _instancia;
+    private NotificadorEmSegundoPlano? _notificador;
     private Bandeja? _bandeja;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -37,7 +39,8 @@ public partial class App : Application
         var registro = new RegistroWindows();
         var retratos = new ServicoRetratos(registro, Pastas.Retratos);
         var perfis = new RepositorioPerfis(Pastas.Perfis);
-        Servico = new ServicoVitral(new Aplicador(registro, retratos, new NotificadorWindows()), retratos, perfis,
+        _notificador = new NotificadorEmSegundoPlano(new NotificadorWindows()); // ver comentário da classe
+        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador), retratos, perfis,
             new ServicoConfig(System.IO.Path.Combine(Pastas.Raiz, "config.json")));
         Inicializacao = new Inicializacao(registro);
 
@@ -67,6 +70,7 @@ public partial class App : Application
         // Sair no meio de um teste volta ao anterior, como se a contagem tivesse acabado.
         Principal.Contagem?.VoltarCommand.Execute(null);
         _janelaContagem?.Close();
+        _notificador?.Aguardar(TimeSpan.FromSeconds(5));
         _bandeja?.Dispose();
         _instancia?.Dispose();
         Shutdown();
