@@ -23,6 +23,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
     private readonly Dictionary<Painel, JanelaPainel> _paineis = [];
     private CalendarioViewModel? _vmCalendario;
     private PainelBateriaViewModel? _vmBateria;
+    private PainelWifiViewModel? _vmWifi;
     private readonly List<IDisposable> _vmsPaineis = [];
     private bool _coordenadorLigado;
 
@@ -35,6 +36,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         public FonteBateriaWindows Bateria { get; } = new(Application.Current.Dispatcher);
         public FonteDispositivosAudioWindows Dispositivos { get; } = new(Application.Current.Dispatcher);
         public FonteModoEnergiaWindows ModoEnergia { get; } = new();
+        public FonteWifiWindows Wifi { get; } = new(Application.Current.Dispatcher);
         public FonteDesempenhoWindows Desempenho { get; } = new();
         public RelogioDoSistema Agora { get; } = new();
 
@@ -45,6 +47,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
             Rede.Dispose();
             Bateria.Dispose();
             Dispositivos.Dispose();
+            Wifi.Dispose();
         }
     }
 
@@ -180,6 +183,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         {
             if (painel == Painel.Calendario) _vmCalendario?.Reabrir();
             if (painel == Painel.Bateria) _vmBateria?.Abrir();
+            if (painel == Painel.Wifi) _ = _vmWifi?.AbrirAsync();
             return existente;
         }
         JanelaPainel? nova = null;
@@ -195,6 +199,11 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
             case Painel.Bateria when _fontes is not null:
                 _vmBateria = Guardar(new PainelBateriaViewModel(_fontes.Bateria, _fontes.ModoEnergia));
                 nova = new JanelaPainel("Bateria", 320) { Conteudo = new PainelBateria(), DataContext = _vmBateria };
+                break;
+            case Painel.Wifi when _fontes is not null:
+                _vmWifi = Guardar(new PainelWifiViewModel(_fontes.Wifi));
+                nova = new JanelaPainel("Wi-Fi", 280) { Conteudo = new PainelWifi(), DataContext = _vmWifi };
+                _ = _vmWifi.AbrirAsync();
                 break;
             case Painel.Midia when _fontes is not null:
                 nova = new JanelaPainel("Mídia", 260)
@@ -224,6 +233,7 @@ internal sealed class ControleBarra(Action<string> avisar) : IControleBarra
         _paineis.Clear();
         _vmCalendario = null;
         _vmBateria = null;
+        _vmWifi = null;
         foreach (var vm in _vmsPaineis) vm.Dispose();
         _vmsPaineis.Clear();
     }

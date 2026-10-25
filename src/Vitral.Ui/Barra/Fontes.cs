@@ -84,3 +84,24 @@ public interface IFonteModoEnergia
     void Definir(ModoEnergia modo);
     void Reler();
 }
+
+/// Uma rede por perto. Sinal de 0 a 4 barras; Salva = o Windows já tem o perfil (conecta sem senha);
+/// Corporativa = 802.1X (abre as configurações do Windows).
+public sealed record RedeWifi(string Nome, int Sinal, bool Protegida, bool Salva, bool Conectada, bool Corporativa);
+
+/// PermissaoLocalizacao false: o Windows não mostra as redes por perto (só a atual).
+public sealed record EstadoWifi(bool TemAdaptador, bool RadioLigado, bool PermissaoLocalizacao, IReadOnlyList<RedeWifi> Redes);
+
+public sealed record ResultadoConexao(bool Ok, string? Mensagem);
+
+/// Wi-Fi (spec v2 §5): adaptador, rádio, redes por perto, conectar e desconectar.
+public interface IFonteWifi
+{
+    EstadoWifi? Atual { get; }
+    event Action? Mudou;
+    Task AtualizarAsync();
+    Task<ResultadoConexao> ConectarAsync(string rede, string? senha);
+    void Desconectar();
+    Task LigarAsync(bool ligado);
+    void AbrirConfiguracoes(string uri);
+}

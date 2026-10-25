@@ -71,3 +71,28 @@ internal sealed class ModoEnergiaFalso : IFonteModoEnergia
     public void Definir(ModoEnergia modo) { Definidos.Add(modo); Atual = modo; Mudou?.Invoke(); }
     public void Reler() => Relidas++;
 }
+
+internal sealed class WifiFalso : IFonteWifi
+{
+    public EstadoWifi? Atual { get; set; } = new(true, true, true,
+    [
+        new("Vizinho", 2, true, false, false, false),
+        new("Casa", 4, true, true, true, false),
+        new("Casa 2.4", 3, true, true, false, false),
+        new("Escritorio", 4, true, false, false, true),
+        new("Aberta", 1, false, false, false, false),
+    ]);
+    public event Action? Mudou;
+    public int Atualizacoes { get; private set; }
+    public List<(string Rede, string? Senha)> Conexoes { get; } = [];
+    public ResultadoConexao Resposta { get; set; } = new(true, null);
+    public int Desconexoes { get; private set; }
+    public List<bool> Ligacoes { get; } = [];
+    public List<string> Abertos { get; } = [];
+
+    public Task AtualizarAsync() { Atualizacoes++; Mudou?.Invoke(); return Task.CompletedTask; }
+    public Task<ResultadoConexao> ConectarAsync(string rede, string? senha) { Conexoes.Add((rede, senha)); return Task.FromResult(Resposta); }
+    public void Desconectar() => Desconexoes++;
+    public Task LigarAsync(bool ligado) { Ligacoes.Add(ligado); return Task.CompletedTask; }
+    public void AbrirConfiguracoes(string uri) => Abertos.Add(uri);
+}

@@ -5,6 +5,8 @@
     <barra:RedeParaIcone x:Key="RedeParaIcone" />
     <barra:BytesParaImagem x:Key="BytesParaImagem" />
     <barra:LarguraPreenchida x:Key="LarguraPreenchida" />
+    <barra:SinalParaIcone x:Key="SinalParaIcone" />
+    <barra:MesmoObjeto x:Key="MesmoObjeto" />
     <FontFamily x:Key="FonteIcones">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <Style x:Key="BotaoIlha" TargetType="Button">
@@ -96,6 +98,29 @@
                             </Track.Thumb>
                         </Track>
                     </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Chave liga/desliga: âmbar ligada, apagada desligada -->
+    <Style x:Key="ChaveVidro" TargetType="ToggleButton">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Trilho" Width="32" Height="18" CornerRadius="9" Background="{StaticResource Linha}"
+                            BorderBrush="{StaticResource Borda}" BorderThickness="1">
+                        <Ellipse x:Name="Bolinha" Width="12" Height="12" Margin="3,0" HorizontalAlignment="Left" Fill="{StaticResource Texto}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Trilho" Property="Background" Value="{StaticResource Ambar}" />
+                            <Setter TargetName="Bolinha" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="Bolinha" Property="Fill" Value="{StaticResource TextoSobreAmbar}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
