@@ -20,9 +20,19 @@ public partial class App : Application
     internal ServicoVitral Servico { get; private set; } = null!;
     internal Inicializacao Inicializacao { get; private set; } = null!;
 
+    private InstanciaUnica? _instancia;
+    private Bandeja? _bandeja;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        _instancia = new InstanciaUnica(() => Dispatcher.BeginInvoke(MostrarJanela));
+        if (!_instancia.EhPrimeira)
+        {
+            Shutdown(); // a outra instância vai mostrar a janela
+            return;
+        }
 
         var registro = new RegistroWindows();
         var retratos = new ServicoRetratos(registro, Pastas.Retratos);
@@ -39,7 +49,9 @@ public partial class App : Application
         if (estado.TesteCancelado) Principal.Mensagem = "Um teste ficou aberto da última vez; o visual voltou ao anterior.";
         if (estado.Aviso is not null) Principal.Mensagem = estado.Aviso;
 
+        _bandeja = new Bandeja(this);
         if (!peloWindows) MostrarJanela();
+        else if (estado.Aviso is not null || estado.TesteCancelado) _bandeja.Avisar("Vitral", Principal.Mensagem ?? "");
     }
 
     internal void MostrarJanela()
@@ -52,7 +64,11 @@ public partial class App : Application
 
     internal void Sair()
     {
+        // Sair no meio de um teste volta ao anterior, como se a contagem tivesse acabado.
+        Principal.Contagem?.VoltarCommand.Execute(null);
         _janelaContagem?.Close();
+        _bandeja?.Dispose();
+        _instancia?.Dispose();
         Shutdown();
     }
 

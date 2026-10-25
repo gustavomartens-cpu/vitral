@@ -83,11 +83,24 @@ public sealed partial class PrincipalViewModel : ObservableObject
     private void Testar()
     {
         if (Contagem is not null || !SalvarEditor()) return;
-        string perfil = Selecionado!;
+        IniciarTeste(Selecionado!, SegundosDoTeste);
+    }
+
+    public const int SegundosDaBandeja = 12;
+
+    /// Troca rápida pela bandeja: testa o perfil salvo (não o editor) com contagem de 12 s.
+    public void TrocarPelaBandeja(string perfil)
+    {
+        if (Contagem is not null) return;
+        IniciarTeste(perfil, SegundosDaBandeja);
+    }
+
+    private void IniciarTeste(string perfil, int segundos)
+    {
         var resultado = Executar(() => _servico.IniciarTeste(perfil));
         if (resultado is null) return;
         Mensagem = Descrever(resultado, $"Testando \"{perfil}\".");
-        Contagem = new ContagemViewModel(SegundosDoTeste, _relogio,
+        Contagem = new ContagemViewModel(segundos, _relogio,
             manter: () =>
             {
                 _servico.ConfirmarTeste();
