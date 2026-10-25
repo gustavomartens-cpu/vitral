@@ -59,6 +59,12 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
                         <StackPanel DataContext="{Binding Editor}"
                                     IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
+                            <!-- Sem perfil escolhido, o editor todo fica apagado (pílulas e cores não têm estado desabilitado próprio) -->
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger></Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
 
                             <Border Style="{StaticResource CartaoVidro}">
                                 <Grid>

@@ -22,8 +22,9 @@ public sealed class IdentidadeTests : IDisposable
         _amb.Perfis.Salvar(Novo("Vermelho", "#E81123"));
         _amb.Perfis.Salvar(Novo("Sem cor"));
         var vm = Criar();
-        Assert.Contains(new ItemPerfil("Vermelho", "#E81123", false), vm.ItensPerfis);
-        Assert.Contains(new ItemPerfil("Sem cor", "#4C7DF0", false), vm.ItensPerfis);
+        Assert.Equal("#E81123", vm.ItensPerfis.Single(i => i.Nome == "Vermelho").CorGema);
+        Assert.Equal("#4C7DF0", vm.ItensPerfis.Single(i => i.Nome == "Sem cor").CorGema);
+        Assert.DoesNotContain(vm.ItensPerfis, i => i.Ativo);
     }
 
     [Fact]
@@ -114,5 +115,56 @@ public sealed class IdentidadeTests : IDisposable
         Assert.Equal(["Não mexer", "Ligada", "Desligada"], Opcoes.Ligada.Select(o => o.Rotulo));
         Assert.Equal([Escolha.NaoMexer, Escolha.Sim, Escolha.Nao], Opcoes.Ligada.Select(o => o.Valor));
         Assert.Equal(["Não mexer", "Centro", "Esquerda"], Opcoes.Alinhamentos.Select(o => o.Rotulo));
+    }
+
+    /// Imita a ListBox (SelectedValuePath=Nome): se a linha selecionada é trocada ou removida, a seleção vira null.
+    private static void ComoListBox(PrincipalViewModel vm) =>
+        vm.ItensPerfis.CollectionChanged += (_, e) =>
+        {
+            if (e.Action is NotifyCollectionChangedAction.Replace or NotifyCollectionChangedAction.Remove or NotifyCollectionChangedAction.Reset
+                && e.OldItems?.Cast<ItemPerfil>().Any(i => i.Nome == vm.Selecionado) != false)
+                vm.Selecionado = null;
+        };
+
+    [Fact]
+    public void Aplicar_com_cor_nova_mantem_a_selecao_e_aplica()
+    {
+        _amb.Perfis.Salvar(Novo("A"));
+        _amb.Perfis.Salvar(Novo("B"));
+        var vm = Criar();
+        ComoListBox(vm);
+        vm.Selecionado = "B";
+        vm.Editor.CorDestaque = "#107C10";
+
+        vm.AplicarCommand.Execute(null);
+
+        Assert.Empty(_dialogos.Avisos);
+        Assert.Equal("B", vm.Selecionado);
+        Assert.Equal("B", vm.PerfilAtivo);
+        Assert.Equal("#107C10", vm.Editor.CorDestaque);
+    }
+
+    [Fact]
+    public void Linhas_existentes_sao_atualizadas_no_lugar()
+    {
+        _amb.Perfis.Salvar(Novo("A"));
+        _amb.Perfis.Salvar(Novo("C"));
+        var vm = Criar();
+        var linhaA = vm.ItensPerfis[0];
+        var linhaC = vm.ItensPerfis[1];
+        var acoes = new List<NotifyCollectionChangedAction>();
+        vm.ItensPerfis.CollectionChanged += (_, e) => acoes.Add(e.Action);
+
+        _amb.Perfis.Salvar(Novo("B"));
+        vm.AtualizarLista();
+        vm.Selecionado = "A";
+        vm.Editor.CorDestaque = "#107C10";
+        vm.AplicarCommand.Execute(null);
+
+        Assert.Equal([NotifyCollectionChangedAction.Add], acoes);
+        Assert.Same(linhaA, vm.ItensPerfis[0]);
+        Assert.Same(linhaC, vm.ItensPerfis[2]);
+        Assert.Equal("#107C10", linhaA.CorGema);
+        Assert.True(linhaA.Ativo);
     }
 }

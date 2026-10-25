@@ -67,6 +67,10 @@ internal static partial class Vidro
         }
         else
         {
+            // Desfaz o vidro se a transparência foi desligada com a janela aberta
+            if (fonte?.CompositionTarget is { } alvo) alvo.BackgroundColor = (Color)Application.Current.Resources["CorNoite"];
+            var m = new Margens();
+            DwmExtendFrameIntoClientArea(hwnd, ref m);
             int nenhum = DwmsbtNone;
             DwmSetWindowAttribute(hwnd, DwmwaSystemBackdropType, ref nenhum, sizeof(int));
             janela.Background = (Brush)Application.Current.Resources["Noite"];

@@ -65,15 +65,23 @@ public sealed partial class PrincipalViewModel : ObservableObject
 
     partial void OnPerfilAtivoChanged(string? value) => SincronizarItens();
 
-    /// Atualiza as linhas sem Reset: troca só as que mudaram (cor ou ativo), insere e remove pontualmente.
+    /// Casa as linhas com <see cref="Perfis"/> pelo nome: remove, move e insere pontualmente, e atualiza
+    /// cor e ativo na própria linha. Nunca troca uma linha existente (a ListBox soltaria a seleção).
     private void SincronizarItens()
     {
-        var novos = Perfis.Select(n => new ItemPerfil(n, CorDe(n), string.Equals(n, PerfilAtivo, StringComparison.OrdinalIgnoreCase))).ToList();
-        while (ItensPerfis.Count > novos.Count) ItensPerfis.RemoveAt(ItensPerfis.Count - 1);
-        for (int i = 0; i < novos.Count; i++)
+        for (int i = ItensPerfis.Count - 1; i >= 0; i--)
+            if (!Perfis.Contains(ItensPerfis[i].Nome, StringComparer.OrdinalIgnoreCase)) ItensPerfis.RemoveAt(i);
+        for (int i = 0; i < Perfis.Count; i++)
         {
-            if (i >= ItensPerfis.Count) ItensPerfis.Add(novos[i]);
-            else if (ItensPerfis[i] != novos[i]) ItensPerfis[i] = novos[i];
+            string nome = Perfis[i];
+            int existente = -1;
+            for (int j = i; j < ItensPerfis.Count; j++)
+                if (string.Equals(ItensPerfis[j].Nome, nome, StringComparison.OrdinalIgnoreCase)) { existente = j; break; }
+            bool ativo = string.Equals(nome, PerfilAtivo, StringComparison.OrdinalIgnoreCase);
+            if (existente < 0) { ItensPerfis.Insert(i, new ItemPerfil(nome, CorDe(nome), ativo)); continue; }
+            if (existente != i) ItensPerfis.Move(existente, i);
+            ItensPerfis[i].CorGema = CorDe(nome);
+            ItensPerfis[i].Ativo = ativo;
         }
     }
 
@@ -141,8 +149,9 @@ public sealed partial class PrincipalViewModel : ObservableObject
     private void Testar()
     {
         if (Contagem is not null) { Mensagem = AvisoTesteEmCurso; return; }
+        string? perfil = Selecionado; // guardado antes de salvar: salvar mexe na lista
         if (!SalvarEditor()) return;
-        IniciarTeste(Selecionado!, SegundosDoTeste);
+        IniciarTeste(perfil!, SegundosDoTeste);
     }
 
     /// Troca rápida pela bandeja: testa o perfil salvo (não o editor) com contagem de 12 s.
@@ -182,8 +191,9 @@ public sealed partial class PrincipalViewModel : ObservableObject
     private void Aplicar()
     {
         if (Contagem is not null) { Mensagem = AvisoTesteEmCurso; return; }
+        string? selecionado = Selecionado; // guardado antes de salvar: salvar mexe na lista
         if (!SalvarEditor()) return;
-        string perfil = Selecionado!;
+        string perfil = selecionado!;
         var resultado = Executar(() => _servico.Aplicar(perfil));
         if (resultado is null) return;
         PerfilAtivo = _servico.PerfilAtivo;

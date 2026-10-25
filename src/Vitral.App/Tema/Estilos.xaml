@@ -119,7 +119,7 @@
                             <Setter TargetName="Sublinhado" Property="Visibility" Value="Visible" />
                             <Setter TargetName="Cabecalho" Property="TextElement.Foreground" Value="{StaticResource Ambar}" />
                         </Trigger>
-                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4" /></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.6" /></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
