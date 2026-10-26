@@ -19,8 +19,8 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 
 ## Consertos pendentes
 
-- **Faixa vazia acima da doca (notebook, 25/10/2026): corrigido no ramo `conserto-tela-menor`, falta testar no
-  notebook.** Ao ligar, a bandeja do Vitral (ManagedShell) difunde "TaskbarCreated". A reserva achava que o Explorer
+- **Faixa vazia acima da doca (notebook, 25/10/2026): corrigido na 0.6.1 (ramo `conserto-tela-menor`),
+  conferido no notebook.** Ao ligar, a bandeja do Vitral (ManagedShell) difunde "TaskbarCreated". A reserva achava que o Explorer
   tinha reiniciado e tentava um ABM_NEW, que falhava porque o registro ainda existia. Desde então a reserva não se
   reposicionava mais. Ela ficou onde o primeiro ABM_QUERYPOS a pôs: acima da barra do Windows, que ainda não estava
   oculta. Resultado: 62 + 48 DIPs reservados embaixo. Agora o "TaskbarCreated" remove o registro antes de registrar
