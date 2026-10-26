@@ -214,6 +214,38 @@ public sealed class RespostaNotchTests
         e.SemNotch(R("1"));
         Assert.Equal(1, e.Pendencias.Quantas);
         Assert.Null(e.RespostaAtual);
-        Assert.Equal(ModoNotch.Normal, e.Modo);
+        Assert.True(e.Pendente); // o ponto de lembrete acende quando o notch voltar
+    }
+
+    [Fact]
+    public void Clicar_na_caixa_para_o_tempo()
+    {
+        var e = Criar();
+        var fim = Encerradas(e);
+        e.PediuResposta(R("1"));
+        Avancar(58, e);
+        e.Focou("1");
+        Assert.True(e.Digitando);
+        Avancar(5, e);
+        Assert.Empty(fim);
+        Assert.Equal(ModoNotch.Resposta, e.Modo);
+    }
+
+    [Fact]
+    public void Clique_no_aviso_de_atualizacao_reinicia_mesmo_com_pendencias()
+    {
+        var e = Criar();
+        e.SemNotch(R("1"));
+        e.Chegou(new AvisoClaude(TipoAviso.Atualizacao, "Vitral", "0.9.1 pronto"));
+        Assert.Equal(AcaoNotch.Reiniciar, e.Clicou());
+    }
+
+    [Fact]
+    public void Clique_no_aviso_do_Claude_abre_o_Claude_mesmo_com_pendencias()
+    {
+        var e = Criar();
+        e.SemNotch(R("1"));
+        e.Chegou(new AvisoClaude(TipoAviso.Terminou, "sic", "ok") { SessaoId = "s-outra" });
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou());
     }
 }

@@ -184,11 +184,13 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         var abrir = PedidoPerdido ? AcaoNotch.AbrirClaude
             : Pendencias.Quantas > 0 ? AcaoNotch.AbrirPendencias
             : Aviso?.Tipo == TipoAviso.Atualizacao && Pendente ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
+        // O clique no próprio aviso segue o aviso (a ordem das pendências vale só para a lateral).
+        var doAviso = Aviso?.Tipo == TipoAviso.Atualizacao ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         var acao = parte switch
         {
             ParteNotch.Esquerda => abrir,
             ParteNotch.Direita => AcaoNotch.AbrirNotificacoes,
-            _ => Modo == ModoNotch.Aviso ? abrir : AcaoNotch.AbrirCalendario,
+            _ => Modo == ModoNotch.Aviso ? doAviso : AcaoNotch.AbrirCalendario,
         };
         // O pedido perdido em cima de uma atualização pendente: abrir o Claude limpa só o pedido; o lembrete da
         // atualização continua.

@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -22,7 +23,7 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     /// A janela da frente não era do app do Claude quando o aviso saiu: um "esperando você" entra nas pendências.
     public bool ForaDoApp { get; init; }
 
-    private static readonly JsonSerializerOptions OpcoesLinha = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions OpcoesLinha = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// O id da sessão do Claude (session_id): descarta só os pedidos dessa mesma sessão, mesmo com outras na pasta.
     public string? SessaoId { get; init; }
@@ -109,7 +110,8 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     }
 
     [GeneratedRegex(@"(?m)^\s*#+\s*")] private static partial Regex Cabecalho();
-    [GeneratedRegex(@"^\s*(?:[-*+]|\d+\.)\s+")] private static partial Regex Marcador();
+    // Só os marcadores sem significado; "1." fica, para o "faz a 2" ter a que se referir.
+    [GeneratedRegex(@"^\s*[-*+]\s+")] private static partial Regex Marcador();
     [GeneratedRegex(@"\n{3,}")] private static partial Regex Paragrafos();
     [GeneratedRegex(@"\s+")] private static partial Regex Espacos();
 

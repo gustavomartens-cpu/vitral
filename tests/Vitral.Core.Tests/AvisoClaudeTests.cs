@@ -80,6 +80,20 @@ public sealed class AvisoClaudeTests
         Assert.Equal("Pronto\n\nUse isto:\na\nb", AvisoClaude.Completar("# Pronto\n\n\n\nUse **isto**:\n- a\n- b"));
 
     [Fact]
+    public void Completar_mantem_os_numeros_da_lista() =>
+        Assert.Equal("Qual?\n1. Refatorar X\n2. Só corrigir Y", AvisoClaude.Completar("Qual?\n1. **Refatorar** X\n2. Só corrigir Y"));
+
+    [Fact]
+    public void Linha_com_acentos_e_simbolos_cabe_inteira()
+    {
+        var a = new AvisoClaude(TipoAviso.Terminou, "x", "ok") { Completo = string.Concat(Enumerable.Repeat("ção─│→", 5000)) };
+        Assert.Equal(a, AvisoClaude.DeLinha(a.ParaLinha()));
+        var p = PedidoResposta.DeAviso(a, DateTime.Now)!;
+        Assert.Equal(p, PedidoResposta.DeLinha(p.ParaLinha()));
+        Assert.Equal("ção─│→", RespostaTexto.DaLinha(RespostaTexto.Linha("a", "ção─│→"), "a"));
+    }
+
+    [Fact]
     public void Completar_corta_em_32k()
     {
         var c = AvisoClaude.Completar(new string('x', 40_000));

@@ -49,13 +49,30 @@ public sealed class RespostaTests
     private const string Notificacao = """{"hook_event_name":"Notification","cwd":"G:\\dev\\vitral","message":"oi"}""";
 
     [Fact]
-    public void Nao_segura_com_o_Claude_na_frente() => Assert.False(Segurar.NoStop(Stop, claudeNaFrente: true));
+    public void Nao_segura_com_o_Claude_na_frente() => Assert.False(Segurar.NoStop(Stop, claudeNaFrente: true, sessaoComGente: true, ganchoComTempo: true));
 
     [Fact]
-    public void Segura_o_Stop_fora_do_app() => Assert.True(Segurar.NoStop(Stop, claudeNaFrente: false));
+    public void Segura_o_Stop_fora_do_app() => Assert.True(Segurar.NoStop(Stop, claudeNaFrente: false, sessaoComGente: true, ganchoComTempo: true));
 
     [Fact]
-    public void Notification_nunca_segura() => Assert.False(Segurar.NoStop(Notificacao, claudeNaFrente: false));
+    public void Notification_nunca_segura() => Assert.False(Segurar.NoStop(Notificacao, claudeNaFrente: false, sessaoComGente: true, ganchoComTempo: true));
+
+    [Fact]
+    public void Sessao_sem_gente_nao_segura() => // claude -p, tarefa agendada, SDK
+        Assert.False(Segurar.NoStop(Stop, claudeNaFrente: false, sessaoComGente: false, ganchoComTempo: true));
+
+    [Fact]
+    public void Gancho_sem_o_tempo_da_resposta_nao_segura() => // caixa ainda não religada depois da atualização
+        Assert.False(Segurar.NoStop(Stop, claudeNaFrente: false, sessaoComGente: true, ganchoComTempo: false));
+
+    [Theory]
+    [InlineData("claude-desktop", "1", true)]
+    [InlineData("claude-desktop", null, true)]
+    [InlineData("claude-desktop", "0", false)]
+    [InlineData("sdk-cli", "1", false)]
+    [InlineData(null, null, false)]
+    public void Sessao_com_gente_pelo_ambiente(string? entrada, string? atendida, bool esperado) =>
+        Assert.Equal(esperado, Segurar.SessaoComGente(entrada, atendida));
 
     [Fact]
     public void Espera_da_resposta_cabe_no_timeout_do_gancho() =>
