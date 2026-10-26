@@ -143,6 +143,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             notch.Pediu += p => _coordenador.Alternar(p, DateTime.Now);
             notch.PediuReiniciar += () => Reiniciar?.Invoke();
             notch.LarguraNormalMudou += Posicionar;
+            notch.SizeChanged += (_, _) => Posicionar(); // a HWND pode mudar de tamanho ao trocar de escala
             notch.DpiChanged += (_, _) => Reajustar();
             var esse = notch;
             esse.IsVisibleChanged += (_, e) =>
@@ -236,9 +237,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             };
             var p = MonitorPrincipal.Ler();
             var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
-            var ret = ilha is JanelaNotch notch ? notch.AreaDoRelogio : new Retangulo(ilha.Left, ilha.Top, ilha.ActualWidth, ilha.ActualHeight);
+            var ret = ilha is JanelaNotch notch ? notch.AreaDoRelogio(p.Dpi) : PosicaoNativa.Ler(ilha, p.Dpi);
             janelaPainel.Mostrar(PosicaoIlhas.Painel(ret, janelaPainel.Width, janelaPainel.ActualHeight, alinhamento, monitor),
-                ativar: !_coordenador.SemFoco);
+                p.Dpi, ativar: !_coordenador.SemFoco);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -359,18 +360,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             var p = MonitorPrincipal.Ler(); // as ilhas ficam no principal: DIPs pela escala atual dele
             var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
             var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0);
-            Colocar(_midia, m);
-            _relogio?.Colocar(r);
-            Colocar(_status, s);
+            if (_midia is not null) PosicaoNativa.Colocar(_midia, m.X, m.Y, p.Dpi);
+            _relogio?.Colocar(r, p.Dpi);
+            if (_status is not null) PosicaoNativa.Colocar(_status, s.X + s.Largura, s.Y, p.Dpi, ancora: 1);
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("ControleBarra.Posicionar", e); }
-    }
-
-    private static void Colocar(JanelaIlha? janela, Retangulo r)
-    {
-        if (janela is null) return;
-        janela.Left = r.X;
-        janela.Top = r.Y;
     }
 
     private void AoRecriar()

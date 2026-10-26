@@ -1,4 +1,14 @@
 # Ativa as ferramentas da fase 0 só neste processo (rode com ". .\spike\tools\env.ps1").
+# Fora do PC que tem o G:\dev, usa o .NET e as ferramentas que já estiverem no PATH.
+if (-not (Test-Path 'G:\dev\dotnet')) {
+    $usuario = Join-Path $env:LOCALAPPDATA 'Microsoft\dotnet'
+    if (Test-Path $usuario) { $env:DOTNET_ROOT = $usuario; $env:PATH = "$usuario;$env:PATH" }
+    $env:PATH = "$(Join-Path $env:USERPROFILE '.dotnet\tools');$env:PATH"
+    $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
+    $env:DOTNET_NOLOGO               = '1'
+    return
+}
+
 $env:DOTNET_ROOT                 = 'G:\dev\dotnet'
 $env:DOTNET_CLI_HOME             = 'G:\dev\dotnet-home'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
