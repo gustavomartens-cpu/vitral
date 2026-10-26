@@ -13,7 +13,7 @@ public sealed class AvisoClaudeTests
     {
         var a = AvisoClaude.DeGancho("""{"hook_event_name":"Stop","cwd":"G:\\dev\\vitral","transcript_path":"t"}""",
             caminho => caminho == "t" ? Usuario + "\n" + Assistente + "\n" : null);
-        Assert.Equal(new AvisoClaude(TipoAviso.Terminou, "vitral", "Pronto, fiz o commit."), a);
+        Assert.Equal(new AvisoClaude(TipoAviso.Terminou, "vitral", "Pronto, fiz o commit.") { Completo = "Pronto, fiz o commit." }, a);
     }
 
     [Fact]
@@ -68,6 +68,32 @@ public sealed class AvisoClaudeTests
         Assert.Equal("s9", AvisoClaude.DeGancho("""{"hook_event_name":"Notification","session_id":"s9","cwd":"C:\\x\\sic","message":"oi"}""", _ => null)!.SessaoId);
 
     [Fact]
-    public void Linha_maior_que_4k_e_null() =>
-        Assert.Null(AvisoClaude.DeLinha(new AvisoClaude(TipoAviso.Terminou, "x", new string('a', 5000)).ParaLinha()));
+    public void Linha_de_64k_passa_e_maior_nao()
+    {
+        var cabe = new AvisoClaude(TipoAviso.Terminou, "x", "ok") { Completo = new string('a', 60_000), ForaDoApp = true };
+        Assert.Equal(cabe, AvisoClaude.DeLinha(cabe.ParaLinha()));
+        Assert.Null(AvisoClaude.DeLinha(new AvisoClaude(TipoAviso.Terminou, "x", new string('a', 70_000)).ParaLinha()));
+    }
+
+    [Fact]
+    public void Completar_tira_markdown_e_mantem_paragrafos() =>
+        Assert.Equal("Pronto\n\nUse isto:\na\nb", AvisoClaude.Completar("# Pronto\n\n\n\nUse **isto**:\n- a\n- b"));
+
+    [Fact]
+    public void Completar_corta_em_32k()
+    {
+        var c = AvisoClaude.Completar(new string('x', 40_000));
+        Assert.Equal(32_768, c.Length);
+        Assert.EndsWith("…", c);
+    }
+
+    [Fact]
+    public void Stop_traz_o_completo_e_o_fora_do_app()
+    {
+        const string trecho = """{"type":"assistant","message":{"content":[{"type":"text","text":"# Feito\n\nTudo **certo** aqui, com uma resposta bem mais longa que oitenta caracteres para ver o corte do resumo."}]}}""";
+        var a = AvisoClaude.DeGancho("""{"hook_event_name":"Stop","cwd":"G:\\dev\\vitral","transcript_path":"t"}""", _ => trecho, foraDoApp: true)!;
+        Assert.Equal("Feito\n\nTudo certo aqui, com uma resposta bem mais longa que oitenta caracteres para ver o corte do resumo.", a.Completo);
+        Assert.True(a.ForaDoApp);
+        Assert.True(a.Texto.Length <= 80);
+    }
 }

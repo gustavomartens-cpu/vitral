@@ -12,6 +12,10 @@ public static class Canal
     /// antes (senão um clique no último segundo mostraria "Permitido" sem efeito). Cabe no timeout 75 do gancho.
     public const int EsperaPedidoMs = 62_000;
 
+    /// Quanto o mensageiro espera o texto de uma ficha de resposta: o notch decide (60 s, ou 15 min digitando); isto é
+    /// só o limite, abaixo do timeout 1200 do gancho Stop.
+    public const int EsperaRespostaMs = 1_140_000;
+
     /// Pedido de permissão (spec das permissões §3.5): conecta nos dois sentidos, escreve a linha e espera uma linha de
     /// resposta até <paramref name="esperaRespostaMs"/>. Qualquer falha ou prazo esgotado devolve null.
     public static string? Perguntar(string nomeCanal, string linha, int esperaRespostaMs, int esperaConexaoMs = 300)
