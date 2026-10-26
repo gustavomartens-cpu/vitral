@@ -262,9 +262,15 @@ public static class Efeitos
     private static void AoMudarDeslize(DependencyObject o, DependencyPropertyChangedEventArgs e)
     {
         if (o is not Selector s || !(bool)e.NewValue) return;
-        s.SelectionChanged += (_, a) => { if (ReferenceEquals(a.OriginalSource, s)) Deslizar(s, animar: true); };
+        // Depois do layout: a escolhida fica em negrito e muda de largura (e o seletor também) logo após o SelectionChanged.
+        s.SelectionChanged += (_, a) =>
+        {
+            if (ReferenceEquals(a.OriginalSource, s))
+                s.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => Deslizar(s, animar: true));
+        };
         s.Loaded += (_, _) => Deslizar(s, animar: false);
-        s.SizeChanged += (_, _) => Deslizar(s, animar: false);
+        // Com o indicador já na tela, o novo tamanho é seguido deslizando (não cancela o deslize em curso).
+        s.SizeChanged += (_, _) => Deslizar(s, animar: true);
         s.IsVisibleChanged += (_, _) => { if (s.IsVisible) Deslizar(s, animar: false); };
     }
 

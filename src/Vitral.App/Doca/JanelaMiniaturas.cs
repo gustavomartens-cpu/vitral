@@ -89,14 +89,16 @@ internal sealed partial class JanelaMiniaturas : Window
             Handles = botao.Janelas.Select(j => j.Handle).ToList();
             if (_handle == IntPtr.Zero) _handle = new WindowInteropHelper(this).EnsureHandle();
             foreach (var j in botao.Janelas) _linha.Children.Add(Celula(j, vm));
+            bool novo = !IsVisible; // trocar de ícone ou fechar uma janela com as miniaturas abertas não sobe de novo
             Show();
             UpdateLayout();
             var r = PosicaoIlhas.Miniaturas(doca, centroBotao, ActualWidth, ActualHeight, monitor);
             Left = r.X;
             // Sobe assentando (spec do ajuste visual §4.1). É a janela que se move, não o conteúdo: as miniaturas são
             // desenhadas pelo DWM por cima e acompanham a janela, não o RenderTransform do WPF.
-            BeginAnimation(TopProperty, new System.Windows.Media.Animation.DoubleAnimation(r.Y + 8, r.Y, Tema.Efeitos.Lenta)
-                { EasingFunction = Tema.Efeitos.Mola, FillBehavior = System.Windows.Media.Animation.FillBehavior.Stop });
+            if (novo)
+                BeginAnimation(TopProperty, new System.Windows.Media.Animation.DoubleAnimation(r.Y + 8, r.Y, Tema.Efeitos.Lenta)
+                    { EasingFunction = Tema.Efeitos.Mola, FillBehavior = System.Windows.Media.Animation.FillBehavior.Stop });
             Top = r.Y;
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("Miniaturas.Mostrar", e); Esconder(); }
