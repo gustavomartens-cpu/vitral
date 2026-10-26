@@ -20,7 +20,9 @@ internal sealed class FonteFalsa : IFonteAtualizacao
 
     public bool ReiniciarDaCerto { get; set; } = true;
 
-    public Task BaixarAsync() { Baixadas++; return Task.CompletedTask; }
+    public Exception? ErroBaixar { get; set; }
+
+    public Task BaixarAsync() { Baixadas++; return ErroBaixar is not null ? Task.FromException(ErroBaixar) : Task.CompletedTask; }
     public bool Reiniciar() { Reinicios++; return ReiniciarDaCerto; }
 }
 
@@ -70,6 +72,37 @@ public sealed class AtualizacaoTests
         await Passar(s, TimeSpan.FromHours(7));
         Assert.Equal(1, _fonte.Procuras);
         Assert.Single(prontas);
+    }
+
+    [Fact]
+    public async Task Procurar_passa_por_Procurando()
+    {
+        var s = Criar();
+        var estados = new List<EstadoAtualizacao>();
+        s.Mudou += () => estados.Add(s.Estado);
+        await s.ProcurarAgoraAsync();
+        Assert.Equal([EstadoAtualizacao.Procurando, EstadoAtualizacao.Atualizado], estados);
+    }
+
+    [Fact]
+    public async Task Falha_no_download_tem_texto_proprio()
+    {
+        _fonte.Nova = "0.7.3";
+        _fonte.ErroBaixar = new HttpRequestException("caiu");
+        var s = Criar();
+        await s.ProcurarAgoraAsync();
+        Assert.Equal(EstadoAtualizacao.FalhouBaixar, s.Estado);
+        Assert.Equal("Não foi possível baixar a versão 0.7.3", TextoAtualizacao.Para(s.Estado, s.Versao));
+    }
+
+    [Fact]
+    public async Task Assinante_do_Pronta_que_falha_nao_desfaz_o_Pronta()
+    {
+        _fonte.Nova = "0.7.3";
+        var s = Criar();
+        s.Pronta += _ => throw new InvalidOperationException("notch fechado");
+        await Assert.ThrowsAsync<InvalidOperationException>(s.ProcurarAgoraAsync);
+        Assert.Equal(EstadoAtualizacao.Pronta, s.Estado);
     }
 
     [Fact]
@@ -142,6 +175,7 @@ public sealed class AtualizacaoTests
     [Theory]
     [InlineData(EstadoAtualizacao.Desligada, null, "Atualização desligada (versão de desenvolvimento)")]
     [InlineData(EstadoAtualizacao.Atualizado, null, "Atualizado")]
+    [InlineData(EstadoAtualizacao.Procurando, null, "Procurando atualizações…")]
     [InlineData(EstadoAtualizacao.Baixando, "0.7.3", "Baixando a versão 0.7.3…")]
     [InlineData(EstadoAtualizacao.Pronta, "0.7.3", "Versão 0.7.3 pronta — reiniciar")]
     [InlineData(EstadoAtualizacao.Falhou, null, "Não foi possível procurar atualizações")]

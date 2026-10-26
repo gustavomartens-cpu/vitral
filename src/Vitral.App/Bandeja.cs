@@ -26,7 +26,13 @@ internal sealed class Bandeja : IDisposable
         _icone.ForceCreate(false);
     }
 
-    public void Avisar(string titulo, string mensagem) => _icone.ShowNotification(titulo, mensagem);
+    /// O balão do Windows; se ele falhar (o H.NotifyIcon lança "Show notification failed"), fica só no log, sem
+    /// interromper quem avisou (a doca recriando, por exemplo).
+    public void Avisar(string titulo, string mensagem)
+    {
+        try { _icone.ShowNotification(titulo, mensagem); }
+        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("Bandeja.Avisar", e); }
+    }
 
     private void MontarMenu()
     {

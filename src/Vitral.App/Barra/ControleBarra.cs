@@ -144,6 +144,13 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             notch.PediuReiniciar += () => Reiniciar?.Invoke();
             notch.LarguraNormalMudou += Posicionar;
             notch.DpiChanged += (_, _) => Reajustar();
+            var esse = notch;
+            esse.IsVisibleChanged += (_, e) =>
+            {
+                if (e.NewValue is not true || _atualizacaoGuardada is not { } guardado) return;
+                _atualizacaoGuardada = null;
+                esse.Avisar(guardado);
+            };
         }
         notch.DataContext = vm;
         return notch;
@@ -155,14 +162,21 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         return _relogio is { IsVisible: true } notch ? notch.Pedir(pedido) : Task.FromResult<Vitral.Core.Claude.EscolhaPermissao?>(null);
     }
 
+    /// O Claude largou o pedido (respondido no app): a ficha sai.
+    public void Desistir(string id) => _relogio?.Desistir(id);
+
     /// O clique no aviso de atualização (o App liga ao ServicoAtualizacao).
     public Action? Reiniciar { get; set; }
 
-    /// Aviso do Claude chegou pelo canal: vai para o notch; sem a barra do topo (ou sem o relógio), é descartado.
+    /// Aviso do Claude chegou pelo canal: vai para o notch; sem a barra do topo (ou sem o relógio), é descartado. O de
+    /// versão nova, que só vem uma vez, espera o notch voltar (tela cheia, barra desligada).
     public void Avisar(Vitral.Core.Claude.AvisoClaude aviso)
     {
         if (_relogio is { IsVisible: true } notch) notch.Avisar(aviso);
+        else if (aviso.Tipo == Vitral.Core.Claude.TipoAviso.Atualizacao) _atualizacaoGuardada = aviso;
     }
+
+    private Vitral.Core.Claude.AvisoClaude? _atualizacaoGuardada;
 
     private void AoMudarMidia(object? s, PropertyChangedEventArgs e)
     {

@@ -141,7 +141,7 @@ public static class RespostaPermissao
         try
         {
             var r = JsonSerializer.Deserialize<Resposta>(linha, Opcoes);
-            return r is not null && r.Id == idEsperado && Enum.TryParse<EscolhaPermissao>(r.EscolhaPermissao, out var e) ? e : null;
+            return r is not null && r.Id == idEsperado && Enum.TryParse<EscolhaPermissao>(r.Escolha, out var e) ? e : null;
         }
         catch (JsonException) { return null; }
     }
@@ -181,5 +181,5 @@ public static class RespostaPermissao
         return PedidoPermissao.Sempre(PedidoPermissao.Texto(raiz?["tool_name"]) ?? "?", raiz?["tool_input"])?.Regra;
     }
 
-    private sealed record Resposta(string? Id, string? EscolhaPermissao);
+    private sealed record Resposta(string? Id, string? Escolha);
 }
