@@ -11,14 +11,29 @@ internal static class Mensageiro
 {
     private const int Limite = 64 * 1024;
 
-    public static void Executar()
+    /// Pedido de permissão espera a resposta do notch (spec das permissões §3.4); o resto só entrega e sai.
+    public static bool EhPermissao(string entrada) => entrada.Contains("\"PermissionRequest\"", StringComparison.Ordinal);
+
+    public static string LerEntrada() => LerEntrada(TimeSpan.FromSeconds(2));
+
+    public static void Executar(string entrada)
     {
         try
         {
-            var entrada = LerEntrada(TimeSpan.FromSeconds(2));
-            if (AvisoClaude.DeGancho(entrada, LerFim) is not { } aviso) return;
             var sid = WindowsIdentity.GetCurrent().User?.Value;
-            if (sid is not null) Canal.Enviar(Canal.Nome(sid), aviso.ParaLinha());
+            if (sid is null) return;
+            if (PedidoPermissao.DeGancho(entrada) is { } pedido)
+            {
+                // Sem resposta (tempo, Vitral fechado): não escreve nada e o Claude segue o pedido normal dele.
+                var resposta = Canal.Perguntar(Canal.Nome(sid), pedido.ParaLinha(), 60_000);
+                if (RespostaPermissao.DaLinha(resposta, pedido.Id) is not { } escolha) return;
+                using var saida = Console.OpenStandardOutput();
+                var bytes = new UTF8Encoding(false).GetBytes(RespostaPermissao.ParaClaude(escolha, entrada));
+                saida.Write(bytes, 0, bytes.Length);
+                saida.Flush();
+                return;
+            }
+            if (AvisoClaude.DeGancho(entrada, LerFim) is { } aviso) Canal.Enviar(Canal.Nome(sid), aviso.ParaLinha());
         }
         catch (Exception) { /* o Claude segue, com ou sem aviso */ }
     }

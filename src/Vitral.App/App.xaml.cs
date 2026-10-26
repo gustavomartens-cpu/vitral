@@ -77,7 +77,8 @@ public partial class App : Application
         _estadoBarra.Mostrar(); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
         _estadoDoca.AoIniciar(); // liga a doca se estava ligada; senão garante a barra do Windows
         // Avisos do Claude Code (spec do notch vivo §4.4)
-        _canalAvisos = new Claude.CanalAvisos(Dispatcher, a => _barra?.Avisar(a));
+        _canalAvisos = new Claude.CanalAvisos(Dispatcher, a => _barra?.Avisar(a),
+            p => _barra?.Pedir(p) ?? Task.FromResult<Core.Claude.EscolhaPermissao?>(null));
         // Depois de AoIniciar: um teste que ficou aberto já voltou, e o observador começa com a lista certa.
         _observadorIcones = new BarraDeTarefas.ObservadorIcones(registro, estadoIcones, _notificador);
         // Monitores, resolução ou escala mudaram, ou o PC voltou da suspensão: reposiciona e relê a barra.

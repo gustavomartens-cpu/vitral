@@ -9,9 +9,14 @@ public static class Program
     public static void Main(string[] args)
     {
         // Gancho do Claude Code (spec do notch vivo §4.3): entrega o aviso e sai, sem Velopack nem interface.
-        // Prazo total de 1,5 s: o Claude nunca espera mais que isso, aconteça o que acontecer (as threads do pool morrem
-        // com o processo).
-        if (args is ["--aviso", ..]) { Task.Run(Claude.Mensageiro.Executar).Wait(1500); return; }
+        // Prazo total: 1,5 s nos avisos e 65 s no pedido de permissão, que espera a resposta do notch (spec das permissões
+        // §3.4). Aconteça o que acontecer, o Claude não espera mais que isso (as threads do pool morrem com o processo).
+        if (args is ["--aviso", ..])
+        {
+            var entrada = Claude.Mensageiro.LerEntrada();
+            Task.Run(() => Claude.Mensageiro.Executar(entrada)).Wait(Claude.Mensageiro.EhPermissao(entrada) ? 65_000 : 1_500);
+            return;
+        }
 
         // Desinstalar com a doca ligada não pode deixar o usuário sem barra de tarefas.
         VelopackApp.Build().OnBeforeUninstallFastCallback(_ => { Doca.SaidaDaDoca.AoDesinstalar(); Claude.ServicoGanchosClaude.DesligarAoDesinstalar(); }).Run();
