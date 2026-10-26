@@ -9,12 +9,10 @@ instalador. Os tokens do [Publicar](publicar.md) servem apenas a quem publica ve
 
 ## 1. Baixar o instalador
 
-O repositório é privado: você precisa de uma conta do GitHub com acesso a ele. Se ainda não tem, peça ao Gustavo para
-convidar você (ele faz isso em Settings → Collaborators do repositório) e aceite o convite que chega por e-mail.
+O repositório é público: não precisa de conta do GitHub nem de convite.
 
-1. Entre no GitHub com a sua conta.
-2. Abra <https://github.com/gustavomartens-cpu/vitral/releases/latest>.
-3. Em **Assets**, clique em **`VitralApp-win-Setup.exe`** para baixar.
+1. Abra <https://github.com/gustavomartens-cpu/vitral/releases/latest>.
+2. Em **Assets**, clique em **`VitralApp-win-Setup.exe`** para baixar.
 
 Use sempre a release marcada como **Latest**. Versões marcadas como **Pre-release** são testes.
 

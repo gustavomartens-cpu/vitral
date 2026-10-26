@@ -10,7 +10,8 @@ Cada perfil pode ser testado por 20 segundos antes de ser mantido, e o Vitral se
 
 - Windows 11, 64 bits.
 - Nada mais: o instalador traz o .NET junto e instala só para o seu usuário, sem pedir administrador.
-- Para baixar o instalador, uma conta do GitHub com acesso a este repositório (ele é privado).
+- O repositório é público: o instalador se baixa direto da [release mais nova](https://github.com/gustavomartens-cpu/vitral/releases/latest),
+  sem conta do GitHub. Só o dono do repositório pode alterá-lo (veja [Publicar](docs/publicar.md#quem-pode-alterar-o-repositório)).
 
 ## Guias
 

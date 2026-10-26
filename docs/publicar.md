@@ -102,10 +102,26 @@ O `build.ps1` para no passo que falhou e mostra a mensagem do `vpk` (por exemplo
 4. **Token de leitura:** publique uma versão nova. As instalações antigas têm o token velho dentro e não conseguem mais
    ler as releases (a janela delas mostra "acesso negado"): em cada uma, rode o Setup novo à mão uma vez.
 
+## Quem pode alterar o repositório
+
+O repositório é **público**: qualquer pessoa lê, baixa e instala, inclusive pelo Claude, sem conta nem convite. **Só o
+dono altera:** enviar código, mexer em releases e em configurações exige ser colaborador, e o único colaborador é
+`gustavomartens-cpu`.
+
+- **Não adicione colaboradores.** Numa conta pessoal do GitHub não existe colaborador "só leitura": todo colaborador
+  pode enviar código. Quem testa não precisa de acesso, porque o Setup e as atualizações vêm das releases públicas.
+- **O que os outros conseguem:** fazer uma cópia própria (fork) e propor mudanças por pull request, que só entram se o
+  dono aprovar.
+- **Para fechar até as propostas e os comentários:** Settings → Moderation options → **Interaction limits** →
+  "Limit to repository collaborators" (vale por até 6 meses; renove quando vencer).
+
 ## Cuidado
 
-- O **token de leitura vai dentro do app**. Quem tiver o instalador consegue extraí-lo e, com ele, ler o código do
-  repositório. Por isso ele só tem leitura e só deste repositório.
+- O **token de leitura vai dentro do app**. Quem tiver o instalador consegue extraí-lo. Como o repositório é público,
+  ele não dá acesso a nada que já não esteja aberto; mesmo assim, só tem leitura e só deste repositório.
+- **O token de leitura ainda vale para as instalações:** com o repositório público, o app nem precisaria dele, mas o
+  GitHub recusa um token vencido mesmo em repositório público. Quando ele vencer, siga a seção 5, ou passe a publicar
+  sem `VITRAL_TOKEN_ATUALIZACAO` (as instalações novas leem as releases sem token).
 - O **token de publicação nunca vai para o app**, nem para mensagens, prints ou arquivos. Se vazar, troque na hora
   (seção 5).
 - O `build.ps1` nunca imprime nenhum dos dois.
