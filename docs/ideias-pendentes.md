@@ -2,14 +2,10 @@
 
 Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conversa de desenho antes de virar plano.
 
-## Ler e responder ao Claude pelo notch (próxima fase, combinada em 26/10/2026)
+## Depois da resposta pelo notch (0.9.0)
 
-- **Ver a mensagem inteira:** o aviso "Claude terminou" mostra só o começo da resposta. Uma rolagem no próprio notch,
-  ou uma prévia da conversa, para ler tudo o que o Claude mandou.
-- **Responder por texto:** digitar a resposta no notch. Caminho conhecido: no `Stop`, o gancho devolve
-  `decision: "block"` com `reason` = o texto digitado. Ressalvas: a sessão aparece "trabalhando" enquanto o notch
-  espera, e o texto entra como retorno do gancho, não como mensagem do usuário. Não existe gancho para mandar uma
-  mensagem nova a qualquer momento.
+- Responder às pendências pelo próprio notch (hoje elas só abrem o app).
+- Abrir o app do Claude direto na conversa certa (o protocolo `claude://` existe, sem formato conhecido).
 
 ## Notch "vivo" (25/10/2026)
 
@@ -30,4 +26,4 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
 - Painéis próprios e notch (barra do topo v2), notch vivo com avisos do Claude, faixa da doca no notebook (0.7.1).
 - Barra do topo sem repetir bateria, volume e internet da barra de tarefas; logo novo.
 - Atualização automática pelo GitHub (0.7.2), permissões do Claude pelo notch (0.8.0), painel da mídia ao passar o
-  mouse (0.8.1).
+  mouse (0.8.1), consertos (0.8.2), ler e responder ao Claude pelo notch com lista de pendências (0.9.0).
