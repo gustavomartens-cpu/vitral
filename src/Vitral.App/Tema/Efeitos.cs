@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -242,10 +243,91 @@ public static class Efeitos
         return null;
     }
 
-    // ---- Marcas usadas pelos estilos (botão principal e itens de perigo nos menus) ------------------------------
+    // ---- Deslize: um indicador único desliza até o item escolhido (abas e pílulas) -----------------------------
 
+    /// No Selector cujo template tem um "PainelItens" (o painel dos itens) e um "Indicador" num Canvas por cima dele.
+    public static readonly DependencyProperty DeslizeProperty =
+        DependencyProperty.RegisterAttached("Deslize", typeof(bool), typeof(Efeitos), new PropertyMetadata(false, AoMudarDeslize));
+
+    public static bool GetDeslize(DependencyObject o) => (bool)o.GetValue(DeslizeProperty);
+    public static void SetDeslize(DependencyObject o, bool v) => o.SetValue(DeslizeProperty, v);
+
+    /// Quanto tirar da largura do item (a aba tem 20 px de folga à direita que o sublinhado não cobre).
+    public static readonly DependencyProperty DeslizeRecuoProperty =
+        DependencyProperty.RegisterAttached("DeslizeRecuo", typeof(double), typeof(Efeitos), new PropertyMetadata(0d));
+
+    public static double GetDeslizeRecuo(DependencyObject o) => (double)o.GetValue(DeslizeRecuoProperty);
+    public static void SetDeslizeRecuo(DependencyObject o, double v) => o.SetValue(DeslizeRecuoProperty, v);
+
+    private static void AoMudarDeslize(DependencyObject o, DependencyPropertyChangedEventArgs e)
+    {
+        if (o is not Selector s || !(bool)e.NewValue) return;
+        s.SelectionChanged += (_, a) => { if (ReferenceEquals(a.OriginalSource, s)) Deslizar(s, animar: true); };
+        s.Loaded += (_, _) => Deslizar(s, animar: false);
+        s.SizeChanged += (_, _) => Deslizar(s, animar: false);
+        s.IsVisibleChanged += (_, _) => { if (s.IsVisible) Deslizar(s, animar: false); };
+    }
+
+    private static void Deslizar(Selector s, bool animar)
+    {
+        s.ApplyTemplate();
+        if (s.Template?.FindName("Indicador", s) is not FrameworkElement indicador
+            || s.Template.FindName("PainelItens", s) is not FrameworkElement painel) return;
+        var item = s.SelectedIndex < 0 ? null : s.ItemContainerGenerator.ContainerFromIndex(s.SelectedIndex) as FrameworkElement;
+        if (item is null || item.ActualWidth <= 0 || !item.IsDescendantOf(painel))
+        {
+            indicador.Visibility = Visibility.Hidden;
+            // O item ainda não foi medido (aba nova, janela restaurada): tenta de novo depois do layout.
+            if (item is not null) s.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => Deslizar(s, animar: false));
+            return;
+        }
+        var p = item.TransformToAncestor(painel).Transform(new Point(0, 0));
+        var (x, largura) = Deslize.Alvo(new Vitral.Ui.Barra.Retangulo(p.X, p.Y, item.ActualWidth, item.ActualHeight),
+            new Vitral.Ui.Barra.Retangulo(0, 0, painel.ActualWidth, painel.ActualHeight));
+        largura = Math.Max(0, largura - GetDeslizeRecuo(s));
+        // Indicador sem altura fixa (a pílula) acompanha a altura do item; o sublinhado tem altura própria.
+        if (double.IsNaN(indicador.Height) || indicador.Tag as string == "AlturaDoItem")
+        {
+            indicador.Tag = "AlturaDoItem";
+            indicador.Height = item.ActualHeight;
+            Canvas.SetTop(indicador, p.Y);
+        }
+        bool primeira = indicador.Visibility != Visibility.Visible || indicador.ActualWidth <= 0;
+        indicador.Visibility = Visibility.Visible;
+        if (!animar || primeira)
+        {
+            indicador.BeginAnimation(Canvas.LeftProperty, null);
+            indicador.BeginAnimation(FrameworkElement.WidthProperty, null);
+            Canvas.SetLeft(indicador, x);
+            indicador.Width = largura;
+            return;
+        }
+        indicador.BeginAnimation(Canvas.LeftProperty, new DoubleAnimation(x, Media) { EasingFunction = Mola });
+        indicador.BeginAnimation(FrameworkElement.WidthProperty, new DoubleAnimation(largura, Media) { EasingFunction = Mola });
+    }
+
+    // ---- Brilho: uma faixa clara atravessa o botão principal a cada entrada do mouse ----------------------------
+
+    /// No botão cujo template tem uma "Faixa" (Border com o gradiente e um TranslateTransform relativo).
     public static readonly DependencyProperty BrilhoProperty =
-        DependencyProperty.RegisterAttached("Brilho", typeof(bool), typeof(Efeitos), new PropertyMetadata(false));
+        DependencyProperty.RegisterAttached("Brilho", typeof(bool), typeof(Efeitos), new PropertyMetadata(false, AoMudarBrilho));
+
+    private static void AoMudarBrilho(DependencyObject o, DependencyPropertyChangedEventArgs e)
+    {
+        if (o is not Control c) return;
+        c.MouseEnter -= Brilhar;
+        if ((bool)e.NewValue) c.MouseEnter += Brilhar;
+    }
+
+    private static void Brilhar(object sender, MouseEventArgs e)
+    {
+        if (!Movimento.Ligado || sender is not Control c || c.Template?.FindName("Faixa", c) is not Border faixa
+            || faixa.Background is not GradientBrush pincel) return;
+        if (pincel.IsFrozen) faixa.Background = pincel = pincel.Clone();
+        if (pincel.RelativeTransform is not TranslateTransform { IsFrozen: false } t)
+            pincel.RelativeTransform = t = new TranslateTransform(-1, 0);
+        t.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(-1, 1.2, TempoBrilho) { EasingFunction = Suave });
+    }
 
     public static bool GetBrilho(DependencyObject o) => (bool)o.GetValue(BrilhoProperty);
     public static void SetBrilho(DependencyObject o, bool v) => o.SetValue(BrilhoProperty, v);

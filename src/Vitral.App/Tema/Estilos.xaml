@@ -34,6 +34,7 @@
 
     <!-- Botões -->
     <Style x:Key="BotaoBase" TargetType="Button">
+        <Setter Property="tema:Efeitos.Afundar" Value="True" />
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
         <Setter Property="FontFamily" Value="{StaticResource FonteCorpo}" />
         <Setter Property="FontSize" Value="13" />
@@ -45,15 +46,29 @@
     <Style x:Key="BotaoPrimario" TargetType="Button" BasedOn="{StaticResource BotaoBase}">
         <Setter Property="Foreground" Value="{StaticResource TextoSobreAmbar}" />
         <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="tema:Efeitos.Brilho" Value="True" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{StaticResource AmbarGradiente}" Padding="{TemplateBinding Padding}">
-                        <Border.Effect>
-                            <DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="18" ShadowDepth="0" Opacity="0.45" />
-                        </Border.Effect>
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
-                    </Border>
+                    <Grid>
+                        <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{StaticResource AmbarGradiente}" Padding="{TemplateBinding Padding}">
+                            <Border.Effect>
+                                <DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="18" ShadowDepth="0" Opacity="0.45" />
+                            </Border.Effect>
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
+                        </Border>
+                        <!-- Brilho (spec do ajuste visual §3.3): faixa diagonal que atravessa o botão; os cantos recortam o pincel -->
+                        <Border x:Name="Faixa" CornerRadius="{StaticResource RaioBotao}" IsHitTestVisible="False">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0.6">
+                                    <LinearGradientBrush.RelativeTransform><TranslateTransform X="-1" /></LinearGradientBrush.RelativeTransform>
+                                    <GradientStop Offset="0.35" Color="#00FFFFFF" />
+                                    <GradientStop Offset="0.5" Color="#8CFFFFFF" />
+                                    <GradientStop Offset="0.65" Color="#00FFFFFF" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Opacity" Value="0.92" /></Trigger>
                         <Trigger Property="IsPressed" Value="True"><Setter TargetName="Fundo" Property="Opacity" Value="0.8" /></Trigger>
@@ -82,17 +97,26 @@
         </Setter>
     </Style>
 
-    <!-- Abas: sublinhado âmbar com brilho na ativa -->
+    <!-- Abas: um sublinhado âmbar com brilho que desliza até a ativa (spec do ajuste visual §4.4) -->
     <Style x:Key="AbasVitral" TargetType="TabControl">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="0,12,0,0" />
+        <Setter Property="tema:Efeitos.Deslize" Value="True" />
+        <Setter Property="tema:Efeitos.DeslizeRecuo" Value="20" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabControl">
                     <DockPanel>
                         <Border DockPanel.Dock="Top" BorderBrush="{StaticResource Linha}" BorderThickness="0,0,0,1">
-                            <TabPanel IsItemsHost="True" />
+                            <Grid>
+                                <TabPanel x:Name="PainelItens" IsItemsHost="True" />
+                                <Canvas IsHitTestVisible="False">
+                                    <Border x:Name="Indicador" Height="2" Canvas.Bottom="0" CornerRadius="1" Background="{StaticResource Ambar}" Visibility="Hidden">
+                                        <Border.Effect><DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="8" ShadowDepth="0" Opacity="0.6" /></Border.Effect>
+                                    </Border>
+                                </Canvas>
+                            </Grid>
                         </Border>
                         <ContentPresenter ContentSource="SelectedContent" Margin="{TemplateBinding Padding}" />
                     </DockPanel>
@@ -110,14 +134,11 @@
                 <ControlTemplate TargetType="TabItem">
                     <!-- Cor só no cabeçalho: o conteúdo da aba herda o Foreground do TabItem -->
                     <Grid Margin="0,0,20,0" Background="Transparent">
+                        <!-- O sublinhado é o Indicador das AbasVitral, que desliza entre as abas -->
                         <ContentPresenter x:Name="Cabecalho" ContentSource="Header" Margin="0,4,0,9" TextElement.Foreground="{StaticResource TextoSecundario}" />
-                        <Border x:Name="Sublinhado" Height="2" VerticalAlignment="Bottom" CornerRadius="1" Background="{StaticResource Ambar}" Visibility="Hidden">
-                            <Border.Effect><DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="8" ShadowDepth="0" Opacity="0.6" /></Border.Effect>
-                        </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Sublinhado" Property="Visibility" Value="Visible" />
                             <Setter TargetName="Cabecalho" Property="TextElement.Foreground" Value="{StaticResource Ambar}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.6" /></Trigger>
@@ -177,19 +198,45 @@
         <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}" />
         <Setter Property="Padding" Value="16,14" />
         <Setter Property="Margin" Value="0,0,0,12" />
+        <!-- Hover (spec do ajuste visual §3.3, item 6): sobe 2 px e a borda esquenta para âmbar -->
+        <Setter Property="RenderTransform"><Setter.Value><TranslateTransform /></Setter.Value></Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="#59F2B544" />
+                <Trigger.EnterActions>
+                    <BeginStoryboard>
+                        <Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" To="-2" Duration="0:0:0.12" /></Storyboard>
+                    </BeginStoryboard>
+                </Trigger.EnterActions>
+                <Trigger.ExitActions>
+                    <BeginStoryboard>
+                        <Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" To="0" Duration="0:0:0.12" /></Storyboard>
+                    </BeginStoryboard>
+                </Trigger.ExitActions>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
-    <!-- Seletor em pílula (ListBox horizontal, setas trocam a opção) -->
+    <!-- Seletor em pílula alta (ListBox horizontal, setas trocam a opção): a escolhida é um indicador âmbar que
+         desliza até ela (spec do ajuste visual §4.4; forma C, escolhida pelo Gustavo em 25/10) -->
     <Style x:Key="SeletorPilula" TargetType="ListBox">
         <Setter Property="SelectedValuePath" Value="Valor" />
         <Setter Property="DisplayMemberPath" Value="Rotulo" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="tema:Efeitos.Deslize" Value="True" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBox">
-                    <Border CornerRadius="{StaticResource RaioPilula}" BorderBrush="{StaticResource Linha}" BorderThickness="1" Background="{StaticResource Superficie}" Padding="2">
-                        <ItemsPresenter />
+                    <Border CornerRadius="{StaticResource RaioPilula}" BorderBrush="{StaticResource Linha}" BorderThickness="1" Background="{StaticResource Superficie}" Padding="3">
+                        <Grid>
+                            <Canvas IsHitTestVisible="False">
+                                <Border x:Name="Indicador" CornerRadius="{StaticResource RaioPilula}" Background="{StaticResource AmbarGradiente}" Visibility="Hidden">
+                                    <Border.Effect><DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="12" ShadowDepth="0" Opacity="0.35" /></Border.Effect>
+                                </Border>
+                            </Canvas>
+                            <ItemsPresenter x:Name="PainelItens" />
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -207,14 +254,16 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ListBoxItem">
-                                <Border x:Name="Pilula" CornerRadius="{StaticResource RaioPilula}" Padding="12,4" Background="Transparent">
+                                <Border x:Name="Pilula" CornerRadius="{StaticResource RaioPilula}" Padding="12,7" Background="Transparent">
                                     <ContentPresenter />
                                 </Border>
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Pilula" Property="Background" Value="{StaticResource SuperficieHover}" /></Trigger>
+                                    <!-- O fundo da escolhida é o Indicador do seletor; aqui só o texto muda -->
                                     <Trigger Property="IsSelected" Value="True">
-                                        <Setter TargetName="Pilula" Property="Background" Value="{StaticResource Ambar}" />
+                                        <Setter TargetName="Pilula" Property="Background" Value="Transparent" />
                                         <Setter Property="Foreground" Value="{StaticResource TextoSobreAmbar}" />
+                                        <Setter Property="FontWeight" Value="SemiBold" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
