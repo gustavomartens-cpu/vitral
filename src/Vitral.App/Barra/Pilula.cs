@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Vitral.App.Tema;
@@ -35,10 +36,22 @@ internal static class Pilula
         botao.MouseEnter += (_, _) => botao.Background = hover;
         botao.MouseLeave += (_, _) => botao.Background = fundo;
         Efeitos.SetAfundar(botao, true);
+        // O botão afunda (encolhe) ao ser apertado: perto da borda, o soltar cairia fora do desenho encolhido e o clique
+        // se perderia. Por isso o botão prende o mouse ao apertar e, ao soltar, confere a posição contra o tamanho
+        // normal dele.
+        botao.MouseLeftButtonDown += (_, e) =>
+        {
+            e.Handled = true;
+            botao.CaptureMouse();
+        };
         botao.MouseLeftButtonUp += (_, e) =>
         {
             e.Handled = true; // o clique é do botão, não do notch (que abriria o calendário)
-            if (botao.IsEnabled) aoClicar();
+            if (!botao.IsMouseCaptured) return;
+            botao.ReleaseMouseCapture();
+            if (VisualTreeHelper.GetParent(botao) is not UIElement pai) return;
+            var ponto = e.GetPosition(pai);
+            if (botao.IsEnabled && LayoutInformation.GetLayoutSlot(botao).Contains(ponto)) aoClicar();
         };
         return botao;
     }
