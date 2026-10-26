@@ -123,7 +123,9 @@ internal sealed partial class JanelaMiniaturas : Window
         var lugar = new Border { Width = Largura, Height = altura, CornerRadius = new CornerRadius(4), Background = (Brush)Application.Current.Resources["Linha"] };
         if (miniatura != IntPtr.Zero) _miniaturas.Add((lugar, miniatura));
 
-        var titulo = new TextBlock { Text = j.Titulo, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+        // O título corta com "…" na largura da miniatura (o inteiro fica na dica): um título longo não alarga a célula
+        // nem empurra as outras janelas para fora do card.
+        var titulo = new TextBlock { Text = j.Titulo, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, ToolTip = j.Titulo };
         var fechar = new Button
         {
             Content = "",
@@ -136,7 +138,7 @@ internal sealed partial class JanelaMiniaturas : Window
         cabecalho.Children.Add(fechar);
         cabecalho.Children.Add(titulo);
 
-        var conteudo = new StackPanel();
+        var conteudo = new StackPanel { Width = Largura };
         conteudo.Children.Add(cabecalho);
         conteudo.Children.Add(lugar);
         var celula = new Border
