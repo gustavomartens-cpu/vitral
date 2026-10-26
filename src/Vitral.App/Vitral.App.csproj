@@ -15,7 +15,7 @@
     <RootNamespace>Vitral.App</RootNamespace>
     <ApplicationIcon>Recursos\vitral.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.7.1</Version>
+    <Version>0.7.3</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- ThemeMode (Fluent) ainda é marcado como experimental no WPF -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
@@ -24,6 +24,12 @@
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <!-- Token de leitura das releases (spec da atualização §3): o build.ps1 passa -p:TokenAtualizacao a partir da variável
+       VITRAL_TOKEN_ATUALIZACAO; sem ela (builds de desenvolvimento), não há token e a atualização fica desligada. -->
+  <ItemGroup Condition="'$(TokenAtualizacao)' != ''">
+    <AssemblyMetadata Include="TokenAtualizacao" Value="$(TokenAtualizacao)" />
   </ItemGroup>
 
   <ItemGroup>

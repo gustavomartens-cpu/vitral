@@ -50,6 +50,9 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private readonly Grid _painelAviso = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 18, 0), Opacity = 0, Visibility = Visibility.Collapsed };
     private readonly TextBlock _titulo = new() { FontWeight = FontWeights.SemiBold, FontSize = 12 };
     private readonly TextBlock _detalhe = new() { FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis };
+    private readonly TextBlock _abrir = new() { FontSize = 11, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+    private readonly Grid _simbolo = new() { Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
+    private readonly Image _logoVitral = new() { Width = 22, Height = 22, Visibility = Visibility.Collapsed };
     private readonly Border _esquerda, _direita;
     private readonly TextBlock _esquerdaTitulo = new() { FontSize = 11, FontWeight = FontWeights.SemiBold };
     private readonly TextBlock _esquerdaSessao = new() { FontSize = 10, TextTrimming = TextTrimming.CharacterEllipsis };
@@ -57,6 +60,9 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private readonly DispatcherTimer _tique = new() { Interval = TimeSpan.FromMilliseconds(250) };
 
     public event Action<Painel>? Pediu;
+
+    /// Clique no aviso de atualização: reiniciar para a versão nova (spec da atualização §5.3).
+    public event Action? PediuReiniciar;
 
     /// A largura do corpo no estado normal mudou (o relógio cresceu ou encolheu): as outras ilhas se reposicionam.
     public event Action? LarguraNormalMudou;
@@ -140,18 +146,20 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
     private void MontarAviso()
     {
-        var icone = IconeClaude(22);
-        icone.Margin = new Thickness(0, 0, 10, 0);
+        // O símbolo do Claude, ou o logo do Vitral no aviso de atualização.
+        _simbolo.Children.Add(IconeClaude(22));
+        _logoVitral.Source = (ImageSource)Application.Current.Resources["Logo"];
+        _simbolo.Children.Add(_logoVitral);
         _detalhe.Foreground = (Brush)Application.Current.Resources["TextoSecundario"];
         var textos = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         textos.Children.Add(_titulo);
         textos.Children.Add(_detalhe);
-        var abrir = new TextBlock { Text = "abrir ›", FontSize = 11, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Foreground = (Brush)Application.Current.Resources["Ambar"] };
+        _abrir.Foreground = (Brush)Application.Current.Resources["Ambar"];
         var linha = new DockPanel();
-        DockPanel.SetDock(icone, Dock.Left);
-        DockPanel.SetDock(abrir, Dock.Right);
-        linha.Children.Add(icone);
-        linha.Children.Add(abrir);
+        DockPanel.SetDock(_simbolo, Dock.Left);
+        DockPanel.SetDock(_abrir, Dock.Right);
+        linha.Children.Add(_simbolo);
+        linha.Children.Add(_abrir);
         linha.Children.Add(textos);
         _painelAviso.Children.Add(linha);
     }
@@ -189,8 +197,18 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     /// Um aviso chegou pelo canal.
     public void Avisar(AvisoClaude aviso)
     {
-        _titulo.Text = aviso.Tipo == TipoAviso.Terminou ? "Claude terminou a tarefa" : "Claude está esperando você";
-        _detalhe.Text = string.IsNullOrEmpty(aviso.Texto) ? aviso.Sessao : $"{aviso.Sessao} · {aviso.Texto}";
+        bool atualizacao = aviso.Tipo == TipoAviso.Atualizacao;
+        _simbolo.Children[0].Visibility = atualizacao ? Visibility.Collapsed : Visibility.Visible;
+        _logoVitral.Visibility = atualizacao ? Visibility.Visible : Visibility.Collapsed;
+        _abrir.Text = atualizacao ? "reiniciar ›" : "abrir ›";
+        _titulo.Text = aviso.Tipo switch
+        {
+            TipoAviso.Terminou => "Claude terminou a tarefa",
+            TipoAviso.Atualizacao => $"Vitral {aviso.Texto}",
+            _ => "Claude está esperando você",
+        };
+        _detalhe.Text = atualizacao ? "clique para reiniciar e atualizar"
+            : string.IsNullOrEmpty(aviso.Texto) ? aviso.Sessao : $"{aviso.Sessao} · {aviso.Texto}";
         _estado.Chegou(aviso);
     }
 
@@ -222,6 +240,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             case AcaoNotch.AbrirClaude: Claude.AbrirClaude.Trazer(); break;
             case AcaoNotch.AbrirCalendario: Pediu?.Invoke(Painel.Calendario); break;
             case AcaoNotch.AbrirNotificacoes: Atalhos.CentralDeNotificacoes(); break;
+            case AcaoNotch.Reiniciar: PediuReiniciar?.Invoke(); break;
         }
     }
 
@@ -269,7 +288,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
     private void AtualizarEsquerda()
     {
-        if (_estado is { Pendente: true, Aviso: { } a })
+        if (_estado is { Pendente: true, Aviso.Tipo: TipoAviso.Atualizacao })
+        {
+            _esquerdaTitulo.Text = "Atualização pronta";
+            _esquerdaSessao.Visibility = Visibility.Collapsed;
+        }
+        else if (_estado is { Pendente: true, Aviso: { } a })
         {
             _esquerdaTitulo.Text = a.Tipo == TipoAviso.Terminou ? "Terminou" : "Esperando você";
             _esquerdaSessao.Text = a.Sessao;
