@@ -58,10 +58,14 @@ public sealed class AvisoClaudeTests
     [Fact]
     public void Linha_do_canal_ida_e_volta()
     {
-        var a = new AvisoClaude(TipoAviso.Esperando, "vitral", "Posso instalar?");
+        var a = new AvisoClaude(TipoAviso.Esperando, "vitral", "Posso instalar?") { SessaoId = "s1" };
         Assert.Equal(a, AvisoClaude.DeLinha(a.ParaLinha()));
         Assert.DoesNotContain('\n', a.ParaLinha());
     }
+
+    [Fact]
+    public void Aviso_leva_o_id_da_sessao() =>
+        Assert.Equal("s9", AvisoClaude.DeGancho("""{"hook_event_name":"Notification","session_id":"s9","cwd":"C:\\x\\sic","message":"oi"}""", _ => null)!.SessaoId);
 
     [Fact]
     public void Linha_maior_que_4k_e_null() =>

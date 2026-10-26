@@ -15,6 +15,9 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
 
     private static readonly JsonSerializerOptions OpcoesLinha = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
+    /// O id da sessão do Claude (session_id): descarta só os pedidos dessa mesma sessão, mesmo com outras na pasta.
+    public string? SessaoId { get; init; }
+
     /// O que o gancho recebe na entrada padrão. <paramref name="lerFimDoArquivo"/> devolve os últimos 64 KB da
     /// transcrição (ou null). Evento que não interessa, JSON vazio ou com defeito: null.
     public static AvisoClaude? DeGancho(string json, Func<string, string?> lerFimDoArquivo)
@@ -39,7 +42,7 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
             if (tipo == TipoAviso.Esperando) texto = Campo(raiz, "message") ?? "";
             else if (Campo(raiz, "transcript_path") is { } caminho && lerFimDoArquivo(caminho) is { } trecho)
                 texto = UltimaRespostaDoAssistente(trecho);
-            return new AvisoClaude(tipo.Value, sessao, Encurtar(texto));
+            return new AvisoClaude(tipo.Value, sessao, Encurtar(texto)) { SessaoId = Campo(raiz, "session_id") };
         }
         catch (JsonException) { return null; }
     }
@@ -81,7 +84,7 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     [GeneratedRegex(@"\s+")] private static partial Regex Espacos();
 
     /// A linha que viaja pelo canal.
-    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto), OpcoesLinha);
+    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId), OpcoesLinha);
 
     public static AvisoClaude? DeLinha(string? linha)
     {
@@ -90,10 +93,10 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
         {
             var l = JsonSerializer.Deserialize<Linha>(linha, OpcoesLinha);
             return l is { Sessao: not null, Texto: not null } && Enum.TryParse<TipoAviso>(l.Tipo, out var tipo)
-                ? new AvisoClaude(tipo, l.Sessao, l.Texto) : null;
+                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId } : null;
         }
         catch (JsonException) { return null; }
     }
 
-    private sealed record Linha(string? Tipo, string? Sessao, string? Texto);
+    private sealed record Linha(string? Tipo, string? Sessao, string? Texto, string? SessaoId);
 }

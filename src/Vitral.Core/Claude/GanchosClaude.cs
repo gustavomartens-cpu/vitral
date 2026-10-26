@@ -11,7 +11,10 @@ public static class GanchosClaude
     /// Um item é nosso quando algum comando dele tem este trecho.
     public const string Marca = "Vitral.exe\" --aviso";
 
-    private static readonly string[] Eventos = ["Stop", "Notification"];
+    private static readonly string[] Eventos = ["Stop", "Notification", "PermissionRequest"];
+
+    /// O pedido de permissão espera a resposta do notch por até 60 s (spec das permissões §3.1): o Claude não pode cortar antes.
+    private const int TempoPermissao = 75;
 
     private static readonly JsonDocumentOptions Leitura = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
     private static readonly JsonSerializerOptions Escrita = new() { WriteIndented = true };
@@ -36,7 +39,9 @@ public static class GanchosClaude
         {
             if (hooks[evento] is not JsonArray lista) hooks[evento] = lista = [];
             Remover(lista);
-            lista.Add(new JsonObject { ["hooks"] = new JsonArray(new JsonObject { ["type"] = "command", ["command"] = comando }) });
+            var item = new JsonObject { ["type"] = "command", ["command"] = comando };
+            if (evento == "PermissionRequest") item["timeout"] = TempoPermissao;
+            lista.Add(new JsonObject { ["hooks"] = new JsonArray(item) });
         }
         return raiz.ToJsonString(Escrita);
     }
