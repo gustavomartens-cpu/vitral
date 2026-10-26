@@ -105,4 +105,70 @@ public sealed class NotchTests
         e.Clicou();
         Assert.Equal([ModoNotch.Aviso, ModoNotch.Lembrete, ModoNotch.Normal], modos);
     }
+
+    [Fact]
+    public void Mouse_parado_250ms_abre_as_laterais()
+    {
+        var e = Criar();
+        int mudancas = 0;
+        e.Mudou += () => mudancas++;
+        e.MouseEntrou();
+        Avancar(0.2, e);
+        Assert.False(e.Laterais);
+        Avancar(0.1, e);
+        Assert.True(e.Laterais);
+        Assert.Equal(1, mudancas);
+    }
+
+    [Fact]
+    public void Sair_recolhe_as_laterais()
+    {
+        var e = Criar();
+        e.MouseEntrou();
+        Avancar(0.3, e);
+        e.MouseSaiu();
+        Assert.False(e.Laterais);
+    }
+
+    [Fact]
+    public void No_aviso_o_mouse_nao_abre_laterais()
+    {
+        var e = Criar();
+        e.Chegou(A1);
+        e.MouseEntrou();
+        Avancar(1, e);
+        Assert.False(e.Laterais);
+        Assert.Equal(ModoNotch.Aviso, e.Modo);
+    }
+
+    [Fact]
+    public void Clique_na_esquerda_abre_o_Claude_e_limpa_o_lembrete()
+    {
+        var e = Criar();
+        e.Chegou(A1);
+        Avancar(7, e);
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou(ParteNotch.Esquerda));
+        Assert.Equal(ModoNotch.Normal, e.Modo);
+        Assert.False(e.Pendente);
+    }
+
+    [Fact]
+    public void Clique_na_direita_abre_as_notificacoes()
+    {
+        var e = Criar();
+        Assert.Equal(AcaoNotch.AbrirNotificacoes, e.Clicou(ParteNotch.Direita));
+    }
+
+    [Fact]
+    public void Pendente_do_aviso_ate_abrir()
+    {
+        var e = Criar();
+        e.Chegou(A1);
+        Assert.True(e.Pendente);
+        Avancar(7, e);
+        Assert.True(e.Pendente);
+        e.Chegou(A2);
+        e.Clicou();
+        Assert.False(e.Pendente);
+    }
 }

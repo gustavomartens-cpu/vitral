@@ -57,6 +57,7 @@
     <Duration x:Key="DuracaoLenta">0:0:0.26</Duration>
     <Duration x:Key="DuracaoClique">0:0:0.06</Duration>
     <Duration x:Key="DuracaoBrilho">0:0:0.55</Duration>
+    <Duration x:Key="DuracaoNotch">0:0:0.32</Duration>
     <BackEase x:Key="CurvaMola" EasingMode="EaseOut" Amplitude="0.35" />
     <CubicEase x:Key="CurvaSuave" EasingMode="EaseOut" />
 </ResourceDictionary>
