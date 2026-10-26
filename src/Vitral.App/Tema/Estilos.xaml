@@ -5,6 +5,7 @@
 
     <local:CorParaPincel x:Key="CorParaPincel" />
     <local:TemValor x:Key="TemValor" />
+    <tema:MeiaAltura x:Key="MeiaAltura" />
     <BooleanToVisibilityConverter x:Key="BoolParaVisivel" />
 
     <!-- Foco de teclado sempre visível: contorno azul de 2 px -->
@@ -228,10 +229,10 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBox">
-                    <Border CornerRadius="{StaticResource RaioPilula}" BorderBrush="{StaticResource Linha}" BorderThickness="1" Background="{StaticResource Superficie}" Padding="3">
+                    <Border CornerRadius="{Binding ActualHeight, RelativeSource={RelativeSource Self}, Converter={StaticResource MeiaAltura}}" BorderBrush="{StaticResource Linha}" BorderThickness="1" Background="{StaticResource Superficie}" Padding="3">
                         <Grid>
                             <Canvas IsHitTestVisible="False">
-                                <Border x:Name="Indicador" CornerRadius="{StaticResource RaioPilula}" Background="{StaticResource AmbarGradiente}" Visibility="Hidden">
+                                <Border x:Name="Indicador" CornerRadius="{Binding ActualHeight, RelativeSource={RelativeSource Self}, Converter={StaticResource MeiaAltura}}" Background="{StaticResource AmbarGradiente}" Visibility="Hidden">
                                     <Border.Effect><DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="12" ShadowDepth="0" Opacity="0.35" /></Border.Effect>
                                 </Border>
                             </Canvas>
@@ -254,7 +255,7 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ListBoxItem">
-                                <Border x:Name="Pilula" CornerRadius="{StaticResource RaioPilula}" Padding="12,7" Background="Transparent">
+                                <Border x:Name="Pilula" CornerRadius="{Binding ActualHeight, RelativeSource={RelativeSource Self}, Converter={StaticResource MeiaAltura}}" Padding="12,7" Background="Transparent">
                                     <ContentPresenter />
                                 </Border>
                                 <ControlTemplate.Triggers>

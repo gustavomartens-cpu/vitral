@@ -33,6 +33,7 @@ public partial class App : Application
     private Doca.ControleDoca? _doca;
     private Doca.BarraDoWindows? _barraWindows;
     private Doca.FonteBandeja? _bandejaApps;
+    private Claude.CanalAvisos? _canalAvisos;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -75,6 +76,8 @@ public partial class App : Application
         var estado = Servico.AoIniciar(peloWindows);
         _estadoBarra.Mostrar(); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
         _estadoDoca.AoIniciar(); // liga a doca se estava ligada; senão garante a barra do Windows
+        // Avisos do Claude Code (spec do notch vivo §4.4)
+        _canalAvisos = new Claude.CanalAvisos(Dispatcher, a => _barra?.Avisar(a));
         // Depois de AoIniciar: um teste que ficou aberto já voltou, e o observador começa com a lista certa.
         _observadorIcones = new BarraDeTarefas.ObservadorIcones(registro, estadoIcones, _notificador);
         // Monitores, resolução ou escala mudaram, ou o PC voltou da suspensão: reposiciona e relê a barra.
@@ -111,6 +114,7 @@ public partial class App : Application
         _estadoBarra?.Encerrar(); // sem a barra do topo, o relógio de baixo volta
         _estadoDoca?.Encerrar(); // sem a doca, a barra do Windows volta
         _barraWindows?.Dispose();
+        _canalAvisos?.Dispose();
         _bandejaApps?.Dispose(); // devolve os ícones ao Windows
         _observadorIcones?.Dispose();
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));
