@@ -115,6 +115,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         miolo.Children.Add(_painelAviso);
         MontarPedido();
         miolo.Children.Add(_painelPedido);
+        MontarResposta();
+        miolo.Children.Add(_painelResposta);
         _meio.Child = miolo;
         _conteudo.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _conteudo.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -142,7 +144,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         };
         _tique.Tick += (_, _) => _estado.Tique();
         _conteudo.MouseEnter += (_, _) => { _estado.MouseEntrou(); _tique.Start(); };
-        _conteudo.MouseLeave += (_, _) => { _estado.MouseSaiu(); if (_estado.Modo is not (ModoNotch.Aviso or ModoNotch.Permissao)) _tique.Stop(); };
+        _conteudo.MouseLeave += (_, _) => { _estado.MouseSaiu(); if (_estado.Modo is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta)) _tique.Stop(); };
+        _estado.Pendencias.Mudou += () => { if (_estado.Laterais) AtualizarEsquerda(); };
         _meio.MouseLeftButtonUp += (_, _) => Clicou(ParteNotch.Meio);
         _esquerda.MouseLeftButtonUp += (_, _) => Clicou(ParteNotch.Esquerda);
         _direita.MouseLeftButtonUp += (_, _) => Clicou(ParteNotch.Direita);
@@ -153,7 +156,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             var h = new WindowInteropHelper(this).Handle;
             SetLong(h, GwlExStyle, (IntPtr)((long)GetLong(h, GwlExStyle) | WsExToolWindow | WsExNoActivate));
         };
-        Closed += (_, _) => { _tique.Stop(); SoltarPedidos(); };
+        Closed += (_, _) => { _tique.Stop(); SoltarPedidos(); SoltarRespostas(); };
     }
 
     /// Símbolo do Claude (a partícula com raios abertos), desenhado em vetor no laranja dele. Marca da Anthropic: uso
@@ -173,7 +176,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         return imagem;
     }
 
-    private static Image IconeClaude(double tamanho) => new()
+    internal static Image IconeClaude(double tamanho) => new()
     {
         Width = tamanho, Height = tamanho, Source = SimboloClaude, VerticalAlignment = VerticalAlignment.Center,
     };
@@ -275,12 +278,13 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             case AcaoNotch.AbrirCalendario: Pediu?.Invoke(Painel.Calendario); break;
             case AcaoNotch.AbrirNotificacoes: Atalhos.CentralDeNotificacoes(); break;
             case AcaoNotch.Reiniciar: PediuReiniciar?.Invoke(); break;
+            case AcaoNotch.AbrirPendencias: Pediu?.Invoke(Painel.Pendencias); break;
         }
     }
 
     private void AoMudarEstado()
     {
-        if (_estado.Modo is ModoNotch.Aviso or ModoNotch.Permissao || IsMouseOver) _tique.Start(); else _tique.Stop();
+        if (_estado.Modo is ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta || IsMouseOver) _tique.Start(); else _tique.Stop();
         Ajustar(animar: true);
     }
 
@@ -293,8 +297,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         return espera.Task;
     }
 
-    /// O Claude largou o pedido (respondido no app): sai da ficha ou da fila.
-    public void Desistir(string id) => _estado.Desistiu(id);
+    /// O Claude largou o pedido ou a ficha de resposta (o mensageiro fechou): sai da ficha ou da fila.
+    public void Desistir(string id)
+    {
+        _estado.Desistiu(id);
+        _estado.DesistiuResposta(id);
+    }
 
     /// Ao fechar, os pedidos que esperavam saem sem resposta (o Claude segue o pedido normal dele).
     private void SoltarPedidos()
@@ -340,38 +348,11 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _painelPedido.Children.Add(trilho);
     }
 
-    /// Botão em pílula da ficha, nas cores escolhidas pelo Gustavo em 26/10 (branco e vermelho): Permitir branco sólido,
-    /// Sempre com contorno claro, Negar com texto vermelho; afunda no clique.
-    private Border BotaoPedido(string texto, EscolhaPermissao escolha, bool principal = false, bool perigo = false)
-    {
-        static SolidColorBrush Cor(byte a, byte r, byte g, byte b) { var p = new SolidColorBrush(Color.FromArgb(a, r, g, b)); p.Freeze(); return p; }
-        var (fundo, hover, borda, corTexto) = (principal, perigo) switch
-        {
-            (true, _) => (Cor(0xFF, 0xF2, 0xF2, 0xF2), Cor(0xFF, 0xFF, 0xFF, 0xFF), Brushes.Transparent, Cor(0xFF, 0x11, 0x11, 0x11)),
-            (_, true) => ((Brush)Brushes.Transparent, Cor(0x29, 0xE8, 0x54, 0x54), Brushes.Transparent, Cor(0xFF, 0xFF, 0x8A, 0x8A)),
-            _ => (Brushes.Transparent, Cor(0x14, 0xFF, 0xFF, 0xFF), Cor(0x47, 0xFF, 0xFF, 0xFF), Cor(0xFF, 0xE6, 0xE6, 0xE6)),
-        };
-        var rotulo = new TextBlock
-        {
-            Text = texto, FontSize = 11.5, Foreground = corTexto, FontWeight = principal ? FontWeights.SemiBold : FontWeights.Normal,
-            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
-        };
-        var botao = new Border
-        {
-            Height = 28, CornerRadius = new CornerRadius(14), Padding = new Thickness(14, 0, 14, 0), Margin = new Thickness(3, 0, 3, 0),
-            Cursor = Cursors.Hand, Child = rotulo, Background = fundo, BorderBrush = borda, BorderThickness = new Thickness(1),
-        };
-        botao.MouseEnter += (_, _) => botao.Background = hover;
-        botao.MouseLeave += (_, _) => botao.Background = fundo;
-        Efeitos.SetAfundar(botao, true);
-        botao.MouseLeftButtonUp += (_, e) =>
-        {
-            e.Handled = true; // o clique é do botão, não do notch (que abriria o calendário)
-            // Para o pedido que está na tela; o estado recusa se outro acabou de tomar a ficha.
-            if (_pedidoMostrado is { } id) _estado.Respondeu(id, escolha);
-        };
-        return botao;
-    }
+    /// Botão da ficha de permissão. O clique vale para o pedido que está na tela; o estado recusa se outro acabou de
+    /// tomar a ficha.
+    private Border BotaoPedido(string texto, EscolhaPermissao escolha, bool principal = false, bool perigo = false) =>
+        Pilula.Criar(texto, principal ? Pilula.Estilo.Principal : perigo ? Pilula.Estilo.Perigo : Pilula.Estilo.Contorno,
+            () => { if (_pedidoMostrado is { } id) _estado.Respondeu(id, escolha); });
 
     /// Textos e barra do pedido atual; a barra esvazia no tempo que falta dos 60 s.
     private void AtualizarPedido()
@@ -422,6 +403,15 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             altura = NotchMedidas.AlturaPermissao;
             raio = NotchMedidas.RaioPermissao;
         }
+        else if (modo == ModoNotch.Resposta)
+        {
+            AtualizarResposta();
+            _painelResposta.Visibility = Visibility.Visible;
+            _painelResposta.Measure(new Size(NotchMedidas.LarguraResposta, double.PositiveInfinity));
+            largura = NotchMedidas.LarguraResposta;
+            altura = Math.Min(NotchMedidas.AlturaMaxResposta, Math.Ceiling(_painelResposta.DesiredSize.Height));
+            raio = NotchMedidas.RaioPermissao;
+        }
         else if (modo == ModoNotch.Aviso)
         {
             _painelAviso.Visibility = Visibility.Visible;
@@ -442,9 +432,11 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         if (laterais) AtualizarEsquerda();
         _ponto.Visibility = modo == ModoNotch.Lembrete ? Visibility.Visible : Visibility.Collapsed;
         if (modo != ModoNotch.Permissao) _pedidoMostrado = null;
+        if (modo != ModoNotch.Resposta) { _respostaMostrada = null; Desativar(); }
         Trocar(_painelPedido, mostrar: modo == ModoNotch.Permissao, animar);
+        Trocar(_painelResposta, mostrar: modo == ModoNotch.Resposta, animar);
         Trocar(_painelAviso, mostrar: modo == ModoNotch.Aviso, animar);
-        Trocar(_linhaRelogio, mostrar: modo is not (ModoNotch.Aviso or ModoNotch.Permissao), animar);
+        Trocar(_linhaRelogio, mostrar: modo is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta), animar);
         Trocar(_esquerda, mostrar: laterais, animar);
         Trocar(_direita, mostrar: laterais, animar);
 
@@ -460,6 +452,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         {
             _esquerdaTitulo.Text = "Pedido sem resposta";
             _esquerdaSessao.Visibility = Visibility.Collapsed;
+        }
+        else if (_estado.Pendencias.Quantas is > 0 and var n)
+        {
+            _esquerdaTitulo.Text = $"Pendências · {n}";
+            _esquerdaSessao.Text = n == 1 ? "1 sessão esperando" : $"{n} sessões esperando";
+            _esquerdaSessao.Visibility = Visibility.Visible;
         }
         else if (_estado is { Pendente: true, Aviso.Tipo: TipoAviso.Atualizacao })
         {

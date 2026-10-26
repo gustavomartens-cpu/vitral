@@ -6,10 +6,12 @@ namespace Vitral.Ui.Barra;
 public static class NotchMedidas
 {
     public const double AlturaNormal = 34, AlturaAviso = 52, LarguraMaxAviso = 360, RaioNormal = 16, RaioAviso = 22, ExtraLembrete = 14;
-    public const double LarguraLateral = 130, LarguraMaxCorpo = 440;
+    public const double LarguraLateral = 130, LarguraMaxCorpo = 460;
     public const double AlturaPermissao = 112, LarguraMaxPermissao = 420, RaioPermissao = 24;
+    /// Ficha de resposta (spec da resposta §4.2): largura fixa; a altura acompanha a mensagem, até o máximo.
+    public const double LarguraResposta = 460, AlturaMaxResposta = 300;
     public const double JanelaLargura = LarguraMaxCorpo + 2 * FormaNotch.Orelha;
-    public const double JanelaAltura = PosicaoIlhas.NotchSobra + AlturaPermissao;
+    public const double JanelaAltura = PosicaoIlhas.NotchSobra + AlturaMaxResposta;
 }
 
 /// O desenho do notch: o corpo com os cantos de baixo arredondados e as duas orelhas (quarto de círculo côncavo) que o

@@ -4,7 +4,7 @@ namespace Vitral.Ui.Barra;
 
 public enum ModoNotch { Normal, Aviso, Lembrete, Permissao, Resposta }
 
-public enum AcaoNotch { Nenhuma, AbrirClaude, AbrirCalendario, AbrirNotificacoes, Reiniciar }
+public enum AcaoNotch { Nenhuma, AbrirClaude, AbrirCalendario, AbrirNotificacoes, Reiniciar, AbrirPendencias }
 
 /// Onde o clique caiu: no meio (relógio ou aviso) ou numa das laterais (spec do notch vivo §3.4).
 public enum ParteNotch { Meio, Esquerda, Direita }
@@ -179,8 +179,11 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
     public AcaoNotch Clicou(ParteNotch parte = ParteNotch.Meio)
     {
         if (Modo is ModoNotch.Permissao or ModoNotch.Resposta) return AcaoNotch.Nenhuma; // nas fichas, só os botões respondem
-        // O aviso (ou o lembrete) de uma versão nova do Vitral reinicia; os do Claude (e o pedido perdido) abrem o Claude.
-        var abrir = Aviso?.Tipo == TipoAviso.Atualizacao && Pendente && !PedidoPerdido ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
+        // A lateral, nesta ordem: o pedido perdido abre o Claude; as pendências abrem a lista; o aviso (ou o lembrete) de
+        // uma versão nova do Vitral reinicia; os do Claude abrem o Claude.
+        var abrir = PedidoPerdido ? AcaoNotch.AbrirClaude
+            : Pendencias.Quantas > 0 ? AcaoNotch.AbrirPendencias
+            : Aviso?.Tipo == TipoAviso.Atualizacao && Pendente ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         var acao = parte switch
         {
             ParteNotch.Esquerda => abrir,
@@ -191,7 +194,8 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         // atualização continua.
         if (acao == AcaoNotch.AbrirClaude && PedidoPerdido && Aviso?.Tipo == TipoAviso.Atualizacao) PedidoPerdido = false;
         else if (acao is AcaoNotch.AbrirClaude or AcaoNotch.Reiniciar) { Pendente = false; PedidoPerdido = false; }
-        Ir(acao == AcaoNotch.AbrirClaude && Pendente ? ModoNotch.Lembrete : ModoNotch.Normal);
+        else if (acao == AcaoNotch.AbrirPendencias && Aviso?.Tipo != TipoAviso.Atualizacao) Pendente = false; // viu a lista
+        Ir(acao is AcaoNotch.AbrirClaude or AcaoNotch.AbrirPendencias && Pendente ? ModoNotch.Lembrete : ModoNotch.Normal);
         return acao;
     }
 

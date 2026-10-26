@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Vitral.Ui.Barra;
 
-public enum Painel { Nenhum, Calendario, Wifi, Volume, Bateria, Midia, Icones }
+public enum Painel { Nenhum, Calendario, Wifi, Volume, Bateria, Midia, Icones, Pendencias }
 
 /// Qual painel da barra do topo está aberto: um por vez (spec v2 §4).
 /// O clique na ilha tira o foco do painel antes de chegar como "alternar": por isso o mesmo painel fechado por

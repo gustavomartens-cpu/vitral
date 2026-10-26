@@ -162,6 +162,15 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         return _relogio is { IsVisible: true } notch ? notch.Pedir(pedido) : Task.FromResult<Vitral.Core.Claude.EscolhaPermissao?>(null);
     }
 
+    /// Uma sessão terminou fora do app (spec da resposta §4.3): vai para a ficha de resposta; sem notch visível, vai
+    /// direto para as pendências e a sessão é solta na hora.
+    public Task<string?> Responder(Vitral.Core.Claude.PedidoResposta pedido)
+    {
+        if (_relogio is { IsVisible: true } notch) return notch.Responder(pedido);
+        _relogio?.SemNotch(pedido);
+        return Task.FromResult<string?>(null);
+    }
+
     /// O Claude largou o pedido (respondido no app): a ficha sai.
     public void Desistir(string id) => _relogio?.Desistir(id);
 
@@ -222,7 +231,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             if (aberto == Painel.Nenhum) return;
 
             var janelaPainel = JanelaDoPainel(aberto);
-            Window? ilha = aberto switch { Painel.Calendario => _relogio, Painel.Midia => _midia, _ => _status };
+            Window? ilha = aberto switch { Painel.Calendario or Painel.Pendencias => _relogio, Painel.Midia => _midia, _ => _status };
             if (janelaPainel is null || ilha is null)
             {
                 _coordenador.FecharTodos(); // painel ainda não existe nesta versão
@@ -230,7 +239,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             }
             var alinhamento = aberto switch
             {
-                Painel.Calendario => AlinhamentoPainel.Centro,
+                Painel.Calendario or Painel.Pendencias => AlinhamentoPainel.Centro,
                 Painel.Midia => AlinhamentoPainel.Esquerda,
                 _ => AlinhamentoPainel.Direita,
             };
@@ -274,6 +283,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
                 _vmWifi = Guardar(new PainelWifiViewModel(_fontes.Wifi));
                 nova = new JanelaPainel("Wi-Fi", 280) { Conteudo = new PainelWifi(), DataContext = _vmWifi };
                 _ = _vmWifi.AbrirAsync();
+                break;
+            case Painel.Pendencias when _relogio is not null:
+                var lista = new PainelPendencias(_relogio.Pendencias);
+                lista.Vazia += () => { if (_coordenador.Aberto == Painel.Pendencias) _coordenador.FecharTodos(); };
+                nova = new JanelaPainel("Pendências", 460) { Conteudo = lista };
                 break;
             case Painel.Icones:
                 nova = new JanelaPainel("Ícones", 280) { Conteudo = new PainelIcones(), DataContext = Guardar(new PainelIconesViewModel(bandeja)) };

@@ -133,6 +133,7 @@ public sealed partial class EstadoNotch
             saiuAAtual |= f == atual;
             venceu = true;
             Encerrar(f, pendente: true);
+            Pendente = true; // o ponto de lembrete avisa que há sessão esperando
         }
         if (ConfirmandoResposta && (t - _confirmou).TotalSeconds >= TempoConfirmacao)
         {

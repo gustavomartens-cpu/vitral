@@ -183,6 +183,31 @@ public sealed class RespostaNotchTests
     }
 
     [Fact]
+    public void Ficha_que_venceu_deixa_o_lembrete_e_a_lateral_abre_a_lista()
+    {
+        var e = Criar();
+        e.PediuResposta(R("1"));
+        Avancar(60.1, e);
+        Assert.Equal(ModoNotch.Lembrete, e.Modo);
+        Assert.Equal(AcaoNotch.AbrirPendencias, e.Clicou(ParteNotch.Esquerda));
+        Assert.Equal(ModoNotch.Normal, e.Modo);
+        Assert.Equal(1, e.Pendencias.Quantas); // abrir a lista não tira nada dela
+    }
+
+    [Fact]
+    public void Pedido_sem_resposta_vem_antes_das_pendencias_na_lateral()
+    {
+        var e = Criar();
+        e.PediuResposta(R("1"));
+        Avancar(60.1, e);
+        e.Pediu(P("p"));
+        Avancar(60.1, e);
+        Assert.True(e.PedidoPerdido);
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou(ParteNotch.Esquerda));
+        Assert.Equal(AcaoNotch.AbrirPendencias, e.Clicou(ParteNotch.Esquerda));
+    }
+
+    [Fact]
     public void Sem_notch_visivel_vai_direto_para_as_pendencias()
     {
         var e = Criar();
