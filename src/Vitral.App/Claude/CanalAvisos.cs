@@ -9,23 +9,25 @@ using Vitral.Core.Claude;
 
 namespace Vitral.App.Claude;
 
-/// Lado do Vitral do canal (spec do notch vivo §4.4; spec das permissões §3.5): named pipe só do usuário atual, até 4
+/// Lado do Vitral do canal (spec do notch vivo §4.4; spec das permissões §3.5): named pipe só do usuário atual, até 8
 /// conexões ao mesmo tempo, uma linha de no máximo 4 KB. Aviso: entrega e fecha. Pedido de permissão: entrega ao notch,
-/// espera a escolha e responde na mesma conexão (ou fecha sem responder, se não houver escolha).
+/// espera a escolha e responde na mesma conexão (ou fecha sem responder, se não houver escolha). Se o mensageiro fechar
+/// antes (o Claude largou o gancho: respondido no app), a ficha sai.
 internal sealed class CanalAvisos : IDisposable
 {
-    private const int Instancias = 4;
+    private const int Instancias = 8, ErroCanalOcupado = 231; // ERROR_PIPE_BUSY
     private readonly CancellationTokenSource _parar = new();
 
-    public CanalAvisos(Dispatcher ui, Action<AvisoClaude> chegou, Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido)
+    public CanalAvisos(Dispatcher ui, Action<AvisoClaude> chegou, Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido,
+        Action<string> desistiu)
     {
         var sid = WindowsIdentity.GetCurrent().User;
         if (sid is null) return;
-        _ = Task.Run(() => Ouvir(Canal.Nome(sid.Value), sid, ui, chegou, chegouPedido, _parar.Token));
+        _ = Task.Run(() => Ouvir(Canal.Nome(sid.Value), sid, ui, chegou, chegouPedido, desistiu, _parar.Token));
     }
 
     private static async Task Ouvir(string nome, SecurityIdentifier sid, Dispatcher ui, Action<AvisoClaude> chegou,
-        Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido, CancellationToken parar)
+        Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido, Action<string> desistiu, CancellationToken parar)
     {
         var seguranca = new PipeSecurity();
         seguranca.AddAccessRule(new PipeAccessRule(sid, PipeAccessRights.FullControl, AccessControlType.Allow));
@@ -39,20 +41,21 @@ internal sealed class CanalAvisos : IDisposable
                 await servidor.WaitForConnectionAsync(parar);
                 var conexao = servidor;
                 servidor = null; // a conexão agora é do Atender; o laço já abre a próxima instância
-                _ = Task.Run(() => Atender(conexao, ui, chegou, chegouPedido, parar));
+                _ = Task.Run(() => Atender(conexao, ui, chegou, chegouPedido, desistiu, parar));
             }
             catch (OperationCanceledException) when (parar.IsCancellationRequested) { servidor?.Dispose(); return; }
             catch (Exception e) when (e is IOException or OperationCanceledException or UnauthorizedAccessException)
             {
                 servidor?.Dispose();
-                LogBarra.Erro("CanalAvisos", e); // inclui "todas as instâncias ocupadas" com 4 pedidos abertos
+                // Todas as instâncias ocupadas (8 pedidos abertos) é esperado: tenta de novo sem encher o log.
+                if ((e.HResult & 0xFFFF) != ErroCanalOcupado) LogBarra.Erro("CanalAvisos", e);
                 await Task.Delay(500, parar).ContinueWith(_ => { });
             }
         }
     }
 
     private static async Task Atender(NamedPipeServerStream conexao, Dispatcher ui, Action<AvisoClaude> chegou,
-        Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido, CancellationToken parar)
+        Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido, Action<string> desistiu, CancellationToken parar)
     {
         await using var posse = conexao; // fecha a conexão ao sair, com ou sem resposta
         try
@@ -63,8 +66,14 @@ internal sealed class CanalAvisos : IDisposable
             if (PedidoPermissao.DeLinha(linha) is { } pedido)
             {
                 // O notch decide na thread da interface; o prazo do pedido (60 s) é dele, aqui só um limite de segurança.
-                var escolha = await (await ui.InvokeAsync(() => chegouPedido(pedido))).WaitAsync(TimeSpan.FromSeconds(65), parar);
-                if (escolha is not { } e) return;
+                var decisao = await ui.InvokeAsync(() => chegouPedido(pedido));
+                var fechou = EsperarFechar(conexao, parar);
+                if (await Task.WhenAny(decisao, fechou).WaitAsync(TimeSpan.FromSeconds(65), parar) == fechou)
+                {
+                    _ = ui.BeginInvoke(desistiu, pedido.Id); // o mensageiro saiu sem esperar: o Claude largou o pedido
+                    return;
+                }
+                if (await decisao is not { } e) return;
                 var bytes = new UTF8Encoding(false).GetBytes(RespostaPermissao.Linha(pedido.Id, e) + "\n");
                 await conexao.WriteAsync(bytes, parar);
                 await conexao.FlushAsync(parar);
@@ -76,6 +85,17 @@ internal sealed class CanalAvisos : IDisposable
             // o mensageiro desistiu ou o Vitral está fechando: nada a responder
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("CanalAvisos.Atender", e); }
+    }
+
+    /// Termina quando o outro lado fecha a conexão (o mensageiro não escreve nada depois do pedido).
+    private static async Task EsperarFechar(Stream s, CancellationToken ct)
+    {
+        try
+        {
+            var b = new byte[1];
+            while (await s.ReadAsync(b, ct) > 0) { }
+        }
+        catch (Exception e) when (e is IOException or OperationCanceledException or ObjectDisposedException) { }
     }
 
     /// Até o "\n" ou o limite; linha maior que o limite volta inteira e o DeLinha a recusa.

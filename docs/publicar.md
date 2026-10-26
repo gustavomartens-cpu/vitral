@@ -67,8 +67,8 @@ As duas linhas devem dizer `True`.
    O script roda os testes, compila com o token de leitura dentro, baixa a release anterior (para gerar o pacote de
    diferença, que é menor), empacota e sobe tudo como a release `vX.Y.Z`, já publicada.
 
-Se faltar uma das variáveis, ele para logo no começo com "Defina VITRAL_TOKEN_... (veja docs/publicar.md)" e não
-publica nada.
+Ele para logo no começo, sem publicar nada, se faltar uma das variáveis ("Defina VITRAL_TOKEN_..."), se a versão não
+for dita, se houver mudanças sem commit ou se o commit ainda não estiver no GitHub.
 
 ## 4. Conferir a release
 
@@ -109,3 +109,5 @@ O `build.ps1` para no passo que falhou e mostra a mensagem do `vpk` (por exemplo
 - O **token de publicação nunca vai para o app**, nem para mensagens, prints ou arquivos. Se vazar, troque na hora
   (seção 5).
 - O `build.ps1` nunca imprime nenhum dos dois.
+- A compilação deixa o token de leitura em texto puro em `src\Vitral.App\obj\` (fora do git). Não compartilhe essa
+  pasta nem a de `artifacts\`.

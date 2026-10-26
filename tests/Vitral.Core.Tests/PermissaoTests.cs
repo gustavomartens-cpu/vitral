@@ -158,6 +158,7 @@ public sealed class PermissaoTests
     [Fact]
     public void Resposta_com_id_certo_e_errado()
     {
+        Assert.Contains("\"escolha\":\"Negar\"", RespostaPermissao.Linha("a", EscolhaPermissao.Negar)); // spec §3.4
         Assert.Equal(EscolhaPermissao.Negar, RespostaPermissao.DaLinha(RespostaPermissao.Linha("a", EscolhaPermissao.Negar), "a"));
         Assert.Null(RespostaPermissao.DaLinha(RespostaPermissao.Linha("a", EscolhaPermissao.Negar), "b"));
         Assert.Null(RespostaPermissao.DaLinha("{", "a"));

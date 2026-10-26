@@ -9,7 +9,9 @@ namespace Vitral.App.Claude;
 /// Claude manda, entrega ao Vitral pelo canal e sai. Nunca falha para o Claude: toda exceção é engolida.
 internal static class Mensageiro
 {
-    private const int Limite = 64 * 1024;
+    // A entrada inteira de um pedido de permissão pode ser grande (um Write com o arquivo todo): cortada, viraria JSON
+    // inválido e o pedido não chegaria ao notch. Da transcrição bastam os últimos 64 KB.
+    private const int LimiteEntrada = 8 * 1024 * 1024, Limite = 64 * 1024;
 
     /// Pedido de permissão espera a resposta do notch (spec das permissões §3.4); o resto só entrega e sai.
     public static bool EhPermissao(string entrada) => entrada.Contains("\"PermissionRequest\"", StringComparison.Ordinal);
@@ -25,7 +27,7 @@ internal static class Mensageiro
             if (PedidoPermissao.DeGancho(entrada) is { } pedido)
             {
                 // Sem resposta (tempo, Vitral fechado): não escreve nada e o Claude segue o pedido normal dele.
-                var resposta = Canal.Perguntar(Canal.Nome(sid), pedido.ParaLinha(), 60_000);
+                var resposta = Canal.Perguntar(Canal.Nome(sid), pedido.ParaLinha(), Canal.EsperaPedidoMs);
                 if (RespostaPermissao.DaLinha(resposta, pedido.Id) is not { } escolha) return;
                 using var saida = Console.OpenStandardOutput();
                 var bytes = new UTF8Encoding(false).GetBytes(RespostaPermissao.ParaClaude(escolha, entrada));
@@ -43,10 +45,11 @@ internal static class Mensageiro
         var leitura = Task.Run(() =>
         {
             using var leitor = new StreamReader(Console.OpenStandardInput(), Encoding.UTF8);
-            var buffer = new char[Limite];
-            int total = 0, lidos;
-            while (total < Limite && (lidos = leitor.Read(buffer, total, Limite - total)) > 0) total += lidos;
-            return new string(buffer, 0, total);
+            var texto = new StringBuilder();
+            var buffer = new char[64 * 1024];
+            int lidos;
+            while (texto.Length < LimiteEntrada && (lidos = leitor.Read(buffer, 0, buffer.Length)) > 0) texto.Append(buffer, 0, lidos);
+            return texto.ToString();
         });
         return leitura.Wait(espera) ? leitura.Result : "";
     }

@@ -22,6 +22,15 @@ if ($Publicar) {
             exit 1
         }
     }
+    # A release marca o commit compilado: a versão tem de ser dita, sem mudanças fora do commit, e o commit no GitHub.
+    $problema =
+        if (-not $PSBoundParameters.ContainsKey('Versao')) { 'Diga a versão: pwsh build.ps1 -Versao X.Y.Z -Publicar' }
+        elseif (git status --porcelain) { 'Há mudanças sem commit: faça o commit antes de publicar' }
+        elseif (-not (git branch -r --contains HEAD)) { 'O commit atual não está no GitHub: rode git push antes de publicar' }
+    if ($problema) {
+        Write-Host $problema -ForegroundColor Red
+        exit 1
+    }
 }
 
 $publish = Join-Path $PSScriptRoot 'artifacts\publish'

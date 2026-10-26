@@ -397,6 +397,64 @@ public sealed class NotchTests
     }
 
     [Fact]
+    public void Pedido_que_o_Claude_largou_sai_sem_marcar_perdido()
+    {
+        var e = Criar();
+        var encerrados = new List<EscolhaPermissao?>();
+        e.Encerrado += (_, x) => encerrados.Add(x);
+        e.Pediu(P("1"));
+        e.Pediu(P("2", "sic"));
+        e.Desistiu("1"); // respondido no app: o Claude fechou o gancho
+        Assert.Equal([(EscolhaPermissao?)null], encerrados);
+        Assert.Equal("2", e.PedidoAtual!.Id);
+        e.Desistiu("2");
+        Assert.Equal(ModoNotch.Normal, e.Modo);
+        Assert.False(e.PedidoPerdido);
+    }
+
+    [Fact]
+    public void Pedido_que_vence_durante_a_confirmacao_conta_como_sem_resposta()
+    {
+        var e = Criar();
+        e.Pediu(P("1"));
+        e.Pediu(P("2", "sic"));
+        Avancar(59.5, e);
+        e.Respondeu("1", EscolhaPermissao.Permitir);
+        Avancar(0.6, e); // o 2 vence durante a confirmação do 1
+        Avancar(1, e);
+        Assert.True(e.PedidoPerdido);
+        Assert.Equal(ModoNotch.Lembrete, e.Modo);
+    }
+
+    [Fact]
+    public void Aviso_novo_do_Claude_limpa_o_pedido_sem_resposta()
+    {
+        var e = Criar();
+        e.Pediu(P("1"));
+        Avancar(60.1, e);
+        Assert.True(e.PedidoPerdido);
+        e.Chegou(A1);
+        Assert.False(e.PedidoPerdido);
+    }
+
+    [Fact]
+    public void Clique_no_pedido_perdido_mantem_o_lembrete_da_atualizacao()
+    {
+        var e = Criar();
+        e.Chegou(Atualizacao);
+        e.Pediu(P("1"));
+        Avancar(60.1, e);
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou(ParteNotch.Esquerda));
+        Assert.True(e.Pendente);
+        Assert.Equal(ModoNotch.Lembrete, e.Modo);
+        Assert.Equal(AcaoNotch.Reiniciar, e.Clicou(ParteNotch.Esquerda));
+    }
+
+    [Fact]
+    public void Mensageiro_espera_mais_que_o_prazo_do_notch() =>
+        Assert.True(Canal.EsperaPedidoMs > EstadoNotch.TempoPedido * 1000 + 1000); // o notch decide antes de o mensageiro desistir
+
+    [Fact]
     public void Aviso_da_mesma_sessao_pelo_id_descarta()
     {
         var e = Criar();

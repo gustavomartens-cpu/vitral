@@ -293,6 +293,9 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         return espera.Task;
     }
 
+    /// O Claude largou o pedido (respondido no app): sai da ficha ou da fila.
+    public void Desistir(string id) => _estado.Desistiu(id);
+
     /// Ao fechar, os pedidos que esperavam saem sem resposta (o Claude segue o pedido normal dele).
     private void SoltarPedidos()
     {

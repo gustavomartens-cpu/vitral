@@ -22,6 +22,7 @@ public sealed class EstadoNotch(Func<DateTime> agora)
 
     private readonly List<(PedidoPermissao Pedido, DateTime Chegou)> _fila = [];
     private DateTime _inicio, _entrou, _confirmou, _mostrou;
+    private bool _perdeuNaConfirmacao;
     private bool _mouse;
 
     public ModoNotch Modo { get; private set; } = ModoNotch.Normal;
@@ -69,6 +70,7 @@ public sealed class EstadoNotch(Func<DateTime> agora)
         if (atual is not null && PedidoAtual is { } seguinte && seguinte != atual) _mostrou = agora(); // outro tomou a ficha
         Aviso = aviso;
         Pendente = true;
+        if (aviso.Tipo != TipoAviso.Atualizacao) PedidoPerdido = false; // a lateral passa a mostrar o aviso novo
         if (_fila.Count > 0 || Confirmando) { Mudou?.Invoke(); return; } // o pedido de outra sessão continua na frente
         Laterais = false;
         _inicio = agora();
@@ -105,7 +107,14 @@ public sealed class EstadoNotch(Func<DateTime> agora)
         bool perdeu = false;
         for (int i = _fila.Count - 1; i >= 0; i--)
             if ((t - _fila[i].Chegou).TotalSeconds >= TempoPedido) { Sair(i, null); perdeu = true; }
-        if (Confirmando && (t - _confirmou).TotalSeconds >= TempoConfirmacao) { Confirmando = false; perdeu = false; Avancar(semResposta: false); }
+        if (perdeu && Confirmando) _perdeuNaConfirmacao = true; // conta quando a confirmação acabar
+        if (Confirmando && (t - _confirmou).TotalSeconds >= TempoConfirmacao)
+        {
+            Confirmando = false;
+            var semResposta = _perdeuNaConfirmacao;
+            _perdeuNaConfirmacao = false;
+            Avancar(semResposta);
+        }
         else if (perdeu && !Confirmando) Avancar(semResposta: true);
         else if (perdeu) Mudou?.Invoke();
 
@@ -129,6 +138,17 @@ public sealed class EstadoNotch(Func<DateTime> agora)
             return;
         }
         Ir(Pendente ? ModoNotch.Lembrete : ModoNotch.Normal, forcar: true);
+    }
+
+    /// O Claude largou o pedido (respondido no app, o gancho fechou): sai da fila sem contar como sem resposta.
+    public void Desistiu(string id)
+    {
+        var i = _fila.FindIndex(x => x.Pedido.Id == id);
+        if (i < 0) return;
+        bool eraOAtual = PedidoAtual?.Id == id;
+        Sair(i, null);
+        if (eraOAtual) Avancar(semResposta: false);
+        else Mudou?.Invoke(); // o "+N"
     }
 
     private void Sair(int indice, EscolhaPermissao? escolha)
@@ -164,8 +184,11 @@ public sealed class EstadoNotch(Func<DateTime> agora)
             ParteNotch.Direita => AcaoNotch.AbrirNotificacoes,
             _ => Modo == ModoNotch.Aviso ? abrir : AcaoNotch.AbrirCalendario,
         };
-        if (acao is AcaoNotch.AbrirClaude or AcaoNotch.Reiniciar) { Pendente = false; PedidoPerdido = false; }
-        Ir(ModoNotch.Normal);
+        // O pedido perdido em cima de uma atualização pendente: abrir o Claude limpa só o pedido; o lembrete da
+        // atualização continua.
+        if (acao == AcaoNotch.AbrirClaude && PedidoPerdido && Aviso?.Tipo == TipoAviso.Atualizacao) PedidoPerdido = false;
+        else if (acao is AcaoNotch.AbrirClaude or AcaoNotch.Reiniciar) { Pendente = false; PedidoPerdido = false; }
+        Ir(acao == AcaoNotch.AbrirClaude && Pendente ? ModoNotch.Lembrete : ModoNotch.Normal);
         return acao;
     }
 

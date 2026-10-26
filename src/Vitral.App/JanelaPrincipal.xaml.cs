@@ -46,7 +46,7 @@ public partial class JanelaPrincipal : Window
                 linha.Add(new Run($"Versão {_atualizacao.Versao} pronta — "));
                 linha.Add(Link("reiniciar", _atualizacao.Reiniciar));
                 break;
-            case EstadoAtualizacao.Desligada or EstadoAtualizacao.Baixando:
+            case EstadoAtualizacao.Desligada or EstadoAtualizacao.Procurando or EstadoAtualizacao.Baixando:
                 linha.Add(new Run(TextoAtualizacao.Para(_atualizacao.Estado, _atualizacao.Versao)));
                 break;
             default:

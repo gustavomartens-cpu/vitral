@@ -17,7 +17,7 @@ public interface IFonteAtualizacao
     bool Reiniciar();
 }
 
-public enum EstadoAtualizacao { Desligada, Atualizado, Baixando, Pronta, Falhou, AcessoNegado }
+public enum EstadoAtualizacao { Desligada, Atualizado, Procurando, Baixando, Pronta, Falhou, FalhouBaixar, AcessoNegado }
 
 /// Quando procurar, baixar e avisar (spec da atualização §5.1): 1 min depois de abrir e a cada 6 h; uma versão nova é
 /// baixada em segundo plano e avisada uma vez; falha nunca avisa, só muda o estado e tenta no próximo ciclo.
@@ -54,20 +54,25 @@ public sealed class ServicoAtualizacao
         if (!_fonte.Ligada || Estado == EstadoAtualizacao.Pronta || _ocupado) return;
         _ocupado = true;
         _proxima = _agora() + Intervalo;
+        string? nova = null;
         try
         {
-            var nova = await _fonte.ProcurarAsync();
+            Ir(EstadoAtualizacao.Procurando, Versao); // o "Procurar agora" mostra que está trabalhando
+            nova = await _fonte.ProcurarAsync();
             if (nova is null) { Ir(EstadoAtualizacao.Atualizado, Versao); return; }
             Ir(EstadoAtualizacao.Baixando, nova);
             await _fonte.BaixarAsync();
             Ir(EstadoAtualizacao.Pronta, nova);
-            Pronta?.Invoke(nova);
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
-            Ir(AcessoNegado(e) ? EstadoAtualizacao.AcessoNegado : EstadoAtualizacao.Falhou, Versao);
+            Ir(AcessoNegado(e) ? EstadoAtualizacao.AcessoNegado : nova is null ? EstadoAtualizacao.Falhou : EstadoAtualizacao.FalhouBaixar,
+                nova ?? Versao);
+            return;
         }
         finally { _ocupado = false; }
+        // Fora do try: uma falha de quem avisa (o notch) não desfaz a versão pronta.
+        Pronta?.Invoke(nova);
     }
 
     /// A troca que não pôde ser agendada vira Falhou: a linha avisa, e a próxima conferência baixa de novo.
@@ -99,6 +104,8 @@ public static class TextoAtualizacao
     {
         EstadoAtualizacao.Desligada => "Atualização desligada (versão de desenvolvimento)",
         EstadoAtualizacao.Atualizado => "Atualizado",
+        EstadoAtualizacao.Procurando => "Procurando atualizações…",
+        EstadoAtualizacao.FalhouBaixar => $"Não foi possível baixar a versão {versao}",
         EstadoAtualizacao.Baixando => $"Baixando a versão {versao}…",
         EstadoAtualizacao.Pronta => $"Versão {versao} pronta — reiniciar",
         EstadoAtualizacao.AcessoNegado => "Não foi possível procurar atualizações (acesso negado: o token venceu?)",
