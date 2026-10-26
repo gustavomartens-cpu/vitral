@@ -149,11 +149,26 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         Closed += (_, _) => { _tique.Stop(); SoltarPedidos(); };
     }
 
-    private Border IconeClaude(double tamanho) => new()
+    /// Símbolo do Claude (a partícula com raios abertos), desenhado em vetor no laranja dele. Marca da Anthropic: uso
+    /// pessoal; se o Vitral for distribuído, trocar por um símbolo próprio (ideias-pendentes).
+    private static readonly DrawingImage SimboloClaude = CriarSimbolo();
+
+    private static DrawingImage CriarSimbolo()
     {
-        Width = tamanho, Height = tamanho, CornerRadius = new CornerRadius(tamanho * 0.27), VerticalAlignment = VerticalAlignment.Center,
-        Background = CorClaude,
-        Child = new TextBlock { Text = "C", Foreground = Brushes.White, FontWeight = FontWeights.Bold, FontSize = tamanho * 0.55, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center },
+        const string raios = "M0,-12 L0,-44 M0,12 L0,40 M-12,0 L-42,0 M12,0 L44,0 M8,-8 L30,-32 M-8,8 L-28,30 "
+                           + "M-8,-8 L-31,-29 M8,8 L32,27 M11,-4 L40,-17 M-11,4 L-39,15 M-4,-11 L-16,-41 M4,11 L15,38";
+        var caneta = new Pen(CorClaude, 9) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+        var grupo = new DrawingGroup();
+        grupo.Children.Add(new GeometryDrawing(Brushes.Transparent, null, new RectangleGeometry(new Rect(-50, -50, 100, 100))));
+        grupo.Children.Add(new GeometryDrawing(null, caneta, Geometry.Parse(raios)));
+        var imagem = new DrawingImage(grupo);
+        imagem.Freeze();
+        return imagem;
+    }
+
+    private static Image IconeClaude(double tamanho) => new()
+    {
+        Width = tamanho, Height = tamanho, Source = SimboloClaude, VerticalAlignment = VerticalAlignment.Center,
     };
 
     private void MontarAviso()
@@ -293,7 +308,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _botoes.Children.Add(BotaoPedido("Negar", EscolhaPermissao.Negar, perigo: true));
 
         var trilho = new Border { Height = 2, Margin = new Thickness(0, 9, 0, 0), CornerRadius = new CornerRadius(1), Background = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)) };
-        trilho.Child = new Border { Background = (Brush)Application.Current.Resources["Ambar"], CornerRadius = new CornerRadius(1), RenderTransform = _tempoRestante, RenderTransformOrigin = new Point(0, 0.5) };
+        trilho.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(0xE6, 0xE6, 0xE6)), CornerRadius = new CornerRadius(1), RenderTransform = _tempoRestante, RenderTransformOrigin = new Point(0, 0.5) };
 
         _painelPedido.Children.Add(linha);
         _painelPedido.Children.Add(_botoes);
@@ -301,27 +316,29 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _painelPedido.Children.Add(trilho);
     }
 
-    /// Botão em pílula da ficha (spec §4.1): âmbar no principal, vermelho no hover do perigo; afunda no clique.
+    /// Botão em pílula da ficha, nas cores escolhidas pelo Gustavo em 26/10 (branco e vermelho): Permitir branco sólido,
+    /// Sempre com contorno claro, Negar com texto vermelho; afunda no clique.
     private Border BotaoPedido(string texto, EscolhaPermissao escolha, bool principal = false, bool perigo = false)
     {
-        var neutro = new SolidColorBrush(Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF));
-        var rotulo = new TextBlock { Text = texto, FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        static SolidColorBrush Cor(byte a, byte r, byte g, byte b) { var p = new SolidColorBrush(Color.FromArgb(a, r, g, b)); p.Freeze(); return p; }
+        var (fundo, hover, borda, corTexto) = (principal, perigo) switch
+        {
+            (true, _) => (Cor(0xFF, 0xF2, 0xF2, 0xF2), Cor(0xFF, 0xFF, 0xFF, 0xFF), Brushes.Transparent, Cor(0xFF, 0x11, 0x11, 0x11)),
+            (_, true) => ((Brush)Brushes.Transparent, Cor(0x29, 0xE8, 0x54, 0x54), Brushes.Transparent, Cor(0xFF, 0xFF, 0x8A, 0x8A)),
+            _ => (Brushes.Transparent, Cor(0x14, 0xFF, 0xFF, 0xFF), Cor(0x47, 0xFF, 0xFF, 0xFF), Cor(0xFF, 0xE6, 0xE6, 0xE6)),
+        };
+        var rotulo = new TextBlock
+        {
+            Text = texto, FontSize = 11.5, Foreground = corTexto, FontWeight = principal ? FontWeights.SemiBold : FontWeights.Normal,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+        };
         var botao = new Border
         {
             Height = 28, CornerRadius = new CornerRadius(14), Padding = new Thickness(14, 0, 14, 0), Margin = new Thickness(3, 0, 3, 0),
-            Cursor = Cursors.Hand, Child = rotulo, Background = principal ? (Brush)Application.Current.Resources["AmbarGradiente"] : neutro,
+            Cursor = Cursors.Hand, Child = rotulo, Background = fundo, BorderBrush = borda, BorderThickness = new Thickness(1),
         };
-        if (principal)
-        {
-            rotulo.Foreground = (Brush)Application.Current.Resources["TextoSobreAmbar"];
-            rotulo.FontWeight = FontWeights.SemiBold;
-        }
-        else
-        {
-            var hover = perigo ? new SolidColorBrush(Color.FromArgb(0x38, 0xE8, 0x54, 0x54)) : new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF));
-            botao.MouseEnter += (_, _) => { botao.Background = hover; if (perigo) rotulo.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x8A)); };
-            botao.MouseLeave += (_, _) => { botao.Background = neutro; rotulo.ClearValue(TextBlock.ForegroundProperty); };
-        }
+        botao.MouseEnter += (_, _) => botao.Background = hover;
+        botao.MouseLeave += (_, _) => botao.Background = fundo;
         Efeitos.SetAfundar(botao, true);
         botao.MouseLeftButtonUp += (_, e) =>
         {

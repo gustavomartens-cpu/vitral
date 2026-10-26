@@ -55,3 +55,8 @@ Decisão pendente: o repositório do código é privado, e o app instalado não 
 credencial. Opções: (1, recomendada) um repositório público só com as releases (ex.: `vitral-releases`), com o código
 continuando privado; (2) tornar o repositório do código público; (3) token só de leitura embutido no app (vai junto
 em cada instalação e pode ser extraído).
+
+## Símbolo do Claude no notch (26/10/2026)
+
+O notch usa um desenho do símbolo do Claude (marca da Anthropic) no aviso, na lateral e na ficha de permissão. Para
+uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar por um símbolo próprio.
