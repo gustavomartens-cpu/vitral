@@ -82,7 +82,8 @@ public partial class App : Application
         _estadoDoca.AoIniciar(); // liga a doca se estava ligada; senão garante a barra do Windows
         // Avisos do Claude Code (spec do notch vivo §4.4)
         _canalAvisos = new Claude.CanalAvisos(Dispatcher, a => _barra?.Avisar(a),
-            p => _barra?.Pedir(p) ?? Task.FromResult<Core.Claude.EscolhaPermissao?>(null), id => _barra?.Desistir(id));
+            p => _barra?.Pedir(p) ?? Task.FromResult<Core.Claude.EscolhaPermissao?>(null),
+            r => _barra?.Responder(r) ?? Task.FromResult<string?>(null), id => _barra?.Desistir(id));
         // Atualização automática pelas releases do GitHub (spec da atualização §5): confere 1 min depois de abrir e a
         // cada 6 h; a versão baixada é avisada no notch e entra com o clique (ou na próxima vez que o Vitral abrir).
         var fonte = new Atualizacao.FonteVelopack(Vitral.Core.Atualizacao.TokenEmbutido.Ler(typeof(App).Assembly), LimparParaSair);

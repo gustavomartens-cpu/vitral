@@ -11,7 +11,16 @@ public enum TipoAviso { Terminou, Esperando, Atualizacao }
 /// como uma linha JSON.
 public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string Texto)
 {
-    public const int MaximoLinha = 4096;
+    /// Cabe a mensagem inteira do Claude (até 32 KB de texto, com folga para o escape do JSON).
+    public const int MaximoLinha = 65536;
+
+    public const int MaximoCompleto = 32_768;
+
+    /// A última resposta inteira do Claude, legível (spec da resposta §3.2); null sem transcrição.
+    public string? Completo { get; init; }
+
+    /// A janela da frente não era do app do Claude quando o aviso saiu: um "esperando você" entra nas pendências.
+    public bool ForaDoApp { get; init; }
 
     private static readonly JsonSerializerOptions OpcoesLinha = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -20,7 +29,7 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
 
     /// O que o gancho recebe na entrada padrão. <paramref name="lerFimDoArquivo"/> devolve os últimos 64 KB da
     /// transcrição (ou null). Evento que não interessa, JSON vazio ou com defeito: null.
-    public static AvisoClaude? DeGancho(string json, Func<string, string?> lerFimDoArquivo)
+    public static AvisoClaude? DeGancho(string json, Func<string, string?> lerFimDoArquivo, bool foraDoApp = false)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
         try
@@ -38,11 +47,17 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
             var pasta = Campo(raiz, "cwd")?.TrimEnd('\\', '/');
             var sessao = string.IsNullOrEmpty(pasta) ? "Claude" : Path.GetFileName(pasta);
             if (string.IsNullOrEmpty(sessao)) sessao = "Claude";
-            string texto = "";
-            if (tipo == TipoAviso.Esperando) texto = Campo(raiz, "message") ?? "";
-            else if (Campo(raiz, "transcript_path") is { } caminho && lerFimDoArquivo(caminho) is { } trecho)
-                texto = UltimaRespostaDoAssistente(trecho);
-            return new AvisoClaude(tipo.Value, sessao, Encurtar(texto)) { SessaoId = Campo(raiz, "session_id") };
+            // A última resposta do Claude: o resumo do Stop e, nos dois eventos, a mensagem inteira.
+            string? resposta = null;
+            if (Campo(raiz, "transcript_path") is { } caminho && lerFimDoArquivo(caminho) is { } trecho)
+                resposta = UltimaRespostaDoAssistente(trecho);
+            var texto = tipo == TipoAviso.Esperando ? Campo(raiz, "message") ?? "" : resposta ?? "";
+            return new AvisoClaude(tipo.Value, sessao, Encurtar(texto))
+            {
+                SessaoId = Campo(raiz, "session_id"),
+                Completo = string.IsNullOrEmpty(resposta) ? null : Completar(resposta),
+                ForaDoApp = foraDoApp,
+            };
         }
         catch (JsonException) { return null; }
     }
@@ -80,11 +95,26 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
         return limpo.Length <= maximo ? limpo : limpo[..(maximo - 1)].TrimEnd() + "…";
     }
 
+    /// O texto inteiro para ler no notch: sem o Markdown simples (títulos, negrito, código, marcadores de lista), com as
+    /// linhas e os parágrafos mantidos (no máximo uma linha em branco), até <see cref="MaximoCompleto"/> com "…".
+    public static string Completar(string texto)
+    {
+        var linhas = texto.Replace("\r", "").Split('\n').Select(l =>
+        {
+            var limpa = Marcador().Replace(Cabecalho().Replace(l, ""), "");
+            return Espacos().Replace(limpa.Replace("*", "").Replace("`", ""), " ").Trim();
+        });
+        var junto = Paragrafos().Replace(string.Join("\n", linhas), "\n\n").Trim();
+        return junto.Length <= MaximoCompleto ? junto : junto[..(MaximoCompleto - 1)] + "…";
+    }
+
     [GeneratedRegex(@"(?m)^\s*#+\s*")] private static partial Regex Cabecalho();
+    [GeneratedRegex(@"^\s*(?:[-*+]|\d+\.)\s+")] private static partial Regex Marcador();
+    [GeneratedRegex(@"\n{3,}")] private static partial Regex Paragrafos();
     [GeneratedRegex(@"\s+")] private static partial Regex Espacos();
 
     /// A linha que viaja pelo canal.
-    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId), OpcoesLinha);
+    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId, Completo, ForaDoApp), OpcoesLinha);
 
     public static AvisoClaude? DeLinha(string? linha)
     {
@@ -93,10 +123,10 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
         {
             var l = JsonSerializer.Deserialize<Linha>(linha, OpcoesLinha);
             return l is { Sessao: not null, Texto: not null } && Enum.TryParse<TipoAviso>(l.Tipo, out var tipo)
-                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId } : null;
+                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId, Completo = l.Completo, ForaDoApp = l.ForaDoApp } : null;
         }
         catch (JsonException) { return null; }
     }
 
-    private sealed record Linha(string? Tipo, string? Sessao, string? Texto, string? SessaoId);
+    private sealed record Linha(string? Tipo, string? Sessao, string? Texto, string? SessaoId, string? Completo, bool ForaDoApp);
 }

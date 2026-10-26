@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
 using Vitral.Core.Claude;
@@ -7,18 +9,37 @@ namespace Vitral.App.Claude;
 
 /// "Vitral.exe --aviso" (spec do notch vivo §4.3): roda no gancho do Claude Code, antes do Velopack e do WPF. Lê o que o
 /// Claude manda, entrega ao Vitral pelo canal e sai. Nunca falha para o Claude: toda exceção é engolida.
-internal static class Mensageiro
+internal static partial class Mensageiro
 {
     // A entrada inteira de um pedido de permissão pode ser grande (um Write com o arquivo todo): cortada, viraria JSON
-    // inválido e o pedido não chegaria ao notch. Da transcrição bastam os últimos 64 KB.
-    private const int LimiteEntrada = 8 * 1024 * 1024, Limite = 64 * 1024;
+    // inválido e o pedido não chegaria ao notch. Da transcrição bastam os últimos 256 KB (a resposta inteira do Claude).
+    private const int LimiteEntrada = 8 * 1024 * 1024, Limite = 256 * 1024;
+
+    [LibraryImport("user32.dll")] private static partial IntPtr GetForegroundWindow();
+    [LibraryImport("user32.dll")] private static partial uint GetWindowThreadProcessId(IntPtr h, out uint processo);
 
     /// Pedido de permissão espera a resposta do notch (spec das permissões §3.4); o resto só entrega e sai.
     public static bool EhPermissao(string entrada) => entrada.Contains("\"PermissionRequest\"", StringComparison.Ordinal);
 
+    /// A janela da frente é do app do Claude (o Gustavo está lá: o Stop não segura a sessão).
+    public static bool ClaudeNaFrente()
+    {
+        try
+        {
+            GetWindowThreadProcessId(GetForegroundWindow(), out var id);
+            using var p = Process.GetProcessById((int)id);
+            return p.ProcessName.Equals("claude", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { return false; }
+    }
+
+    /// Prazo total do "--aviso": permissão 65 s; Stop que espera a resposta 19,5 min; o resto 1,5 s.
+    public static int PrazoMs(string entrada, bool claudeNaFrente) =>
+        EhPermissao(entrada) ? 65_000 : Segurar.NoStop(entrada, claudeNaFrente) ? 1_170_000 : 1_500;
+
     public static string LerEntrada() => LerEntrada(TimeSpan.FromSeconds(2));
 
-    public static void Executar(string entrada)
+    public static void Executar(string entrada, bool claudeNaFrente)
     {
         try
         {
@@ -29,15 +50,29 @@ internal static class Mensageiro
                 // Sem resposta (tempo, Vitral fechado): não escreve nada e o Claude segue o pedido normal dele.
                 var resposta = Canal.Perguntar(Canal.Nome(sid), pedido.ParaLinha(), Canal.EsperaPedidoMs);
                 if (RespostaPermissao.DaLinha(resposta, pedido.Id) is not { } escolha) return;
-                using var saida = Console.OpenStandardOutput();
-                var bytes = new UTF8Encoding(false).GetBytes(RespostaPermissao.ParaClaude(escolha, entrada));
-                saida.Write(bytes, 0, bytes.Length);
-                saida.Flush();
+                Escrever(RespostaPermissao.ParaClaude(escolha, entrada));
                 return;
             }
-            if (AvisoClaude.DeGancho(entrada, LerFim) is { } aviso) Canal.Enviar(Canal.Nome(sid), aviso.ParaLinha());
+            if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !claudeNaFrente) is not { } aviso) return;
+            // Fora do app, o Stop vira ficha de resposta e segura a sessão até o texto (spec da resposta §3.3); sem
+            // texto (tempo, Esc, Vitral fechado), não escreve nada e a sessão termina normal.
+            if (Segurar.NoStop(entrada, claudeNaFrente) && PedidoResposta.DeAviso(aviso, DateTime.Now) is { } ficha)
+            {
+                var linha = Canal.Perguntar(Canal.Nome(sid), ficha.ParaLinha(), Canal.EsperaRespostaMs);
+                if (RespostaTexto.DaLinha(linha, ficha.Id) is { } texto) Escrever(RespostaTexto.ParaClaude(texto));
+                return;
+            }
+            Canal.Enviar(Canal.Nome(sid), aviso.ParaLinha());
         }
         catch (Exception) { /* o Claude segue, com ou sem aviso */ }
+    }
+
+    private static void Escrever(string json)
+    {
+        using var saida = Console.OpenStandardOutput();
+        var bytes = new UTF8Encoding(false).GetBytes(json);
+        saida.Write(bytes, 0, bytes.Length);
+        saida.Flush();
     }
 
     private static string LerEntrada(TimeSpan espera)

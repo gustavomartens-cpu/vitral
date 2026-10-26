@@ -55,3 +55,17 @@ Até a 0.8.2 o repositório era privado e o app levava um token de leitura embut
 atualizando enquanto esse token não vencer ou for apagado; depois disso, rode o Setup novo à mão uma vez. Os tokens
 `VITRAL_TOKEN_ATUALIZACAO` e `VITRAL_TOKEN_PUBLICAR` podem ser apagados no GitHub quando todas as instalações estiverem
 na 0.8.3 ou mais nova.
+
+## Quem pode alterar o repositório
+
+O repositório é **público**: qualquer pessoa lê, baixa e instala, inclusive pelo Claude, sem conta nem convite. **Só o
+dono altera:** enviar código, mexer em releases e em configurações exige ser colaborador, e o único colaborador é
+`gustavomartens-cpu`.
+
+- **Não adicione colaboradores.** Numa conta pessoal do GitHub não existe colaborador "só leitura": todo colaborador
+  pode enviar código. Quem testa não precisa de acesso, porque o Setup e as atualizações vêm das releases públicas.
+- **O que os outros conseguem:** fazer uma cópia própria (fork) e propor mudanças por pull request, que só entram se o
+  dono aprovar.
+- **Para fechar até as propostas e os comentários:** Settings → Moderation options → **Interaction limits** →
+  "Limit to repository collaborators" (vale por até 6 meses; renove quando vencer).
+

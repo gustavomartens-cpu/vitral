@@ -18,16 +18,20 @@ internal sealed class CanalAvisos : IDisposable
     private const int Instancias = 8, ErroCanalOcupado = 231; // ERROR_PIPE_BUSY
     private readonly CancellationTokenSource _parar = new();
 
+    /// Quem atende cada tipo de linha, na thread da interface.
+    private sealed record Destinos(Action<AvisoClaude> Chegou, Func<PedidoPermissao, Task<EscolhaPermissao?>> ChegouPedido,
+        Func<PedidoResposta, Task<string?>> ChegouResposta, Action<string> Desistiu);
+
     public CanalAvisos(Dispatcher ui, Action<AvisoClaude> chegou, Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido,
-        Action<string> desistiu)
+        Func<PedidoResposta, Task<string?>> chegouResposta, Action<string> desistiu)
     {
         var sid = WindowsIdentity.GetCurrent().User;
         if (sid is null) return;
-        _ = Task.Run(() => Ouvir(Canal.Nome(sid.Value), sid, ui, chegou, chegouPedido, desistiu, _parar.Token));
+        var destinos = new Destinos(chegou, chegouPedido, chegouResposta, desistiu);
+        _ = Task.Run(() => Ouvir(Canal.Nome(sid.Value), sid, ui, destinos, _parar.Token));
     }
 
-    private static async Task Ouvir(string nome, SecurityIdentifier sid, Dispatcher ui, Action<AvisoClaude> chegou,
-        Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido, Action<string> desistiu, CancellationToken parar)
+    private static async Task Ouvir(string nome, SecurityIdentifier sid, Dispatcher ui, Destinos destinos, CancellationToken parar)
     {
         var seguranca = new PipeSecurity();
         seguranca.AddAccessRule(new PipeAccessRule(sid, PipeAccessRights.FullControl, AccessControlType.Allow));
@@ -37,11 +41,11 @@ internal sealed class CanalAvisos : IDisposable
             try
             {
                 servidor = NamedPipeServerStreamAcl.Create(nome, PipeDirection.InOut, Instancias, PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous, 4096, 4096, seguranca); // buffers: uma linha pequena não espera o outro lado ler
+                    PipeOptions.Asynchronous, AvisoClaude.MaximoLinha, AvisoClaude.MaximoLinha, seguranca); // uma linha inteira não espera o outro lado ler
                 await servidor.WaitForConnectionAsync(parar);
                 var conexao = servidor;
                 servidor = null; // a conexão agora é do Atender; o laço já abre a próxima instância
-                _ = Task.Run(() => Atender(conexao, ui, chegou, chegouPedido, desistiu, parar));
+                _ = Task.Run(() => Atender(conexao, ui, destinos, parar));
             }
             catch (OperationCanceledException) when (parar.IsCancellationRequested) { servidor?.Dispose(); return; }
             catch (Exception e) when (e is IOException or OperationCanceledException or UnauthorizedAccessException)
@@ -54,8 +58,7 @@ internal sealed class CanalAvisos : IDisposable
         }
     }
 
-    private static async Task Atender(NamedPipeServerStream conexao, Dispatcher ui, Action<AvisoClaude> chegou,
-        Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido, Action<string> desistiu, CancellationToken parar)
+    private static async Task Atender(NamedPipeServerStream conexao, Dispatcher ui, Destinos destinos, CancellationToken parar)
     {
         await using var posse = conexao; // fecha a conexão ao sair, com ou sem resposta
         try
@@ -63,28 +66,47 @@ internal sealed class CanalAvisos : IDisposable
             using var tempo = CancellationTokenSource.CreateLinkedTokenSource(parar);
             tempo.CancelAfter(TimeSpan.FromSeconds(2));
             var linha = await LerLinha(conexao, tempo.Token);
+            // Pedido de permissão (prazo do notch 60 s) e ficha de resposta (60 s, ou 15 min digitando): o notch decide;
+            // os limites aqui são só de segurança.
             if (PedidoPermissao.DeLinha(linha) is { } pedido)
             {
-                // O notch decide na thread da interface; o prazo do pedido (60 s) é dele, aqui só um limite de segurança.
-                var decisao = await ui.InvokeAsync(() => chegouPedido(pedido));
-                var fechou = EsperarFechar(conexao, parar);
-                if (await Task.WhenAny(decisao, fechou).WaitAsync(TimeSpan.FromSeconds(65), parar) == fechou)
-                {
-                    _ = ui.BeginInvoke(desistiu, pedido.Id); // o mensageiro saiu sem esperar: o Claude largou o pedido
-                    return;
-                }
-                if (await decisao is not { } e) return;
-                var bytes = new UTF8Encoding(false).GetBytes(RespostaPermissao.Linha(pedido.Id, e) + "\n");
-                await conexao.WriteAsync(bytes, parar);
-                await conexao.FlushAsync(parar);
+                if (await Decidir(conexao, ui, () => destinos.ChegouPedido(pedido), pedido.Id, destinos.Desistiu, TimeSpan.FromSeconds(65), parar) is { } e)
+                    await Responder(conexao, RespostaPermissao.Linha(pedido.Id, e), parar);
             }
-            else if (AvisoClaude.DeLinha(linha) is { } aviso) _ = ui.BeginInvoke(chegou, aviso);
+            else if (PedidoResposta.DeLinha(linha) is { } ficha)
+            {
+                if (await Decidir(conexao, ui, () => destinos.ChegouResposta(ficha), ficha.Id, destinos.Desistiu, TimeSpan.FromSeconds(1170), parar) is { } texto)
+                    await Responder(conexao, RespostaTexto.Linha(ficha.Id, texto), parar);
+            }
+            else if (AvisoClaude.DeLinha(linha) is { } aviso) _ = ui.BeginInvoke(destinos.Chegou, aviso);
         }
         catch (Exception e) when (e is IOException or OperationCanceledException or TimeoutException or ObjectDisposedException)
         {
             // o mensageiro desistiu ou o Vitral está fechando: nada a responder
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("CanalAvisos.Atender", e); }
+    }
+
+    /// Entrega ao notch e espera a decisão; se o mensageiro fechar antes (o Claude largou o pedido), avisa o notch e
+    /// devolve o padrão (nada a responder).
+    private static async Task<T?> Decidir<T>(Stream conexao, Dispatcher ui, Func<Task<T?>> entregar, string id, Action<string> desistiu,
+        TimeSpan limite, CancellationToken parar)
+    {
+        var decisao = await ui.InvokeAsync(entregar);
+        var fechou = EsperarFechar(conexao, parar);
+        if (await Task.WhenAny(decisao, fechou).WaitAsync(limite, parar) == fechou)
+        {
+            _ = ui.BeginInvoke(desistiu, id);
+            return default;
+        }
+        return await decisao;
+    }
+
+    private static async Task Responder(Stream conexao, string linha, CancellationToken parar)
+    {
+        var bytes = new UTF8Encoding(false).GetBytes(linha + "\n");
+        await conexao.WriteAsync(bytes, parar);
+        await conexao.FlushAsync(parar);
     }
 
     /// Termina quando o outro lado fecha a conexão (o mensageiro não escreve nada depois do pedido).
