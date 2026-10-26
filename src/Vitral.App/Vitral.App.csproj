@@ -15,7 +15,7 @@
     <RootNamespace>Vitral.App</RootNamespace>
     <ApplicationIcon>Recursos\vitral.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.8.0</Version>
+    <Version>0.8.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- ThemeMode (Fluent) ainda é marcado como experimental no WPF -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>

@@ -145,13 +145,15 @@ internal sealed partial class JanelaPainel : Window
         set => _casca.Child = (UIElement?)value;
     }
 
-    /// Mostra em <paramref name="posicao"/> (DIPs), assentando de cima com o conteúdo em cascata.
-    public void Mostrar(Retangulo posicao)
+    /// Mostra em <paramref name="posicao"/> (DIPs), assentando de cima com o conteúdo em cascata. Sem
+    /// <paramref name="ativar"/> (aberto pelo mouse), não tira o foco de onde se está digitando.
+    public void Mostrar(Retangulo posicao, bool ativar = true)
     {
         Left = posicao.X;
         Top = posicao.Y;
+        ShowActivated = ativar;
         Show();
-        Activate();
+        if (ativar) Activate();
         Tema.Efeitos.Assentar(_casca, Tema.AssentarDe.Cima, cascata: true);
     }
 }

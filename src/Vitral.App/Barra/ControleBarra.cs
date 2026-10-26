@@ -21,6 +21,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
     // Painéis próprios (spec v2): um por vez, decidido pelo coordenador; as janelas nascem na primeira abertura.
     private readonly CoordenadorPaineis _coordenador = new();
+    private readonly PassarMouse _passar = new(() => DateTime.Now);
+    private readonly System.Windows.Threading.DispatcherTimer _tiquePassar = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly Dictionary<Painel, JanelaPainel> _paineis = [];
     private CalendarioViewModel? _vmCalendario;
     private PainelBateriaViewModel? _vmBateria;
@@ -81,6 +83,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         if (!_coordenadorLigado)
         {
             _coordenador.PropertyChanged += AoMudarPainel;
+            _coordenador.Fixou += AoFixarPainel;
+            _tiquePassar.Tick += (_, _) => TiquePassar();
             _coordenadorLigado = true;
             bandeja.Mudou += AoMudarBandeja;
         }
@@ -116,6 +120,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             var conteudo = criar();
             if (conteudo is IPedePainel pede) pede.Pediu += p => _coordenador.Alternar(p, DateTime.Now);
             if (conteudo is IlhaStatus status) { _conteudoStatus = status; status.MostrarSetinha(bandeja.Disponivel); }
+            if (conteudo is IlhaMidia midia) midia.MouseNoTitulo += dentro => MouseNaMidia(painel: false, dentro);
             janela = new JanelaIlha(nome, presaNaBorda: nome == "Relógio") { Conteudo = conteudo };
             janela.SizeChanged += (_, _) => Posicionar();
             janela.DpiChanged += (_, _) => Reajustar(); // troca de escala nem sempre manda WM_DISPLAYCHANGE
@@ -197,6 +202,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         try
         {
             var aberto = _coordenador.Aberto;
+            if (aberto != Painel.Midia) _passar.Fechou(); // fechou ou foi trocado: o passar larga a mídia
             foreach (var (painel, janela) in _paineis)
                 if (painel != aberto && janela.IsVisible) janela.Hide();
             if (aberto == Painel.Nenhum) return;
@@ -217,7 +223,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             var p = MonitorPrincipal.Ler();
             var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
             var ret = ilha is JanelaNotch notch ? notch.AreaDoRelogio : new Retangulo(ilha.Left, ilha.Top, ilha.ActualWidth, ilha.ActualHeight);
-            janelaPainel.Mostrar(PosicaoIlhas.Painel(ret, janelaPainel.Width, janelaPainel.ActualHeight, alinhamento, monitor));
+            janelaPainel.Mostrar(PosicaoIlhas.Painel(ret, janelaPainel.Width, janelaPainel.ActualHeight, alinhamento, monitor),
+                ativar: !_coordenador.SemFoco);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -263,6 +270,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
                     Conteudo = new PainelMidia(),
                     DataContext = Guardar(new PainelMidiaViewModel(_fontes.Midia, new RelogioWpf(), _fontes.Agora)),
                 };
+                nova.MouseEnter += (_, _) => MouseNaMidia(painel: true, dentro: true);
+                nova.MouseLeave += (_, _) => MouseNaMidia(painel: true, dentro: false);
+                nova.Activated += (_, _) => _coordenador.Fixar(); // clicou dentro do painel aberto pelo mouse
                 break;
         }
         if (nova is null) return null;
@@ -270,6 +280,34 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         nova.PediuFechar += _coordenador.FecharTodos;
         _paineis[painel] = nova;
         return nova;
+    }
+
+    /// O mouse na capa e no título da mídia, ou no painel dela (ver <see cref="PassarMouse"/>).
+    private void MouseNaMidia(bool painel, bool dentro)
+    {
+        if (dentro) _passar.Entrou(painel); else _passar.Saiu(painel);
+        if (!_tiquePassar.IsEnabled && !_passar.Ocioso) _tiquePassar.Start();
+    }
+
+    private void TiquePassar()
+    {
+        switch (_passar.Tique())
+        {
+            case AcaoPassar.Abrir:
+                if (!_coordenador.AbrirSemFoco(Painel.Midia)) _passar.Fechou(); // outro painel em uso: não toma o lugar
+                break;
+            case AcaoPassar.Fechar:
+                _coordenador.FecharSemFoco(Painel.Midia);
+                break;
+        }
+        if (_passar.Ocioso) _tiquePassar.Stop();
+    }
+
+    /// Fixado pelo clique (no título ou dentro do painel): o painel ganha o foco e passa a fechar como os outros.
+    private void AoFixarPainel()
+    {
+        _passar.Fixou();
+        if (_coordenador.Aberto is var p && _paineis.TryGetValue(p, out var janela) && janela.IsVisible && !janela.IsActive) janela.Activate();
     }
 
     private T Guardar<T>(T vm) where T : IDisposable
@@ -280,6 +318,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
     private void FecharPaineis()
     {
+        _tiquePassar.Stop();
         _coordenador.FecharTodos();
         foreach (var janela in _paineis.Values) janela.Close();
         _paineis.Clear();

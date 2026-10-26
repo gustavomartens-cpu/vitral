@@ -57,6 +57,60 @@ public sealed class PaineisTests
     }
 
     [Fact]
+    public void Abrir_sem_foco_so_quando_nada_esta_aberto()
+    {
+        var c = new CoordenadorPaineis();
+        Assert.True(c.AbrirSemFoco(Painel.Midia));
+        Assert.Equal(Painel.Midia, c.Aberto);
+        Assert.True(c.SemFoco);
+
+        var d = new CoordenadorPaineis();
+        d.Alternar(Painel.Calendario, T);
+        Assert.False(d.AbrirSemFoco(Painel.Midia));
+        Assert.Equal(Painel.Calendario, d.Aberto);
+    }
+
+    [Fact]
+    public void Clique_na_ilha_do_painel_aberto_sem_foco_fixa_em_vez_de_fechar()
+    {
+        var c = new CoordenadorPaineis();
+        var fixou = 0;
+        c.Fixou += () => fixou++;
+        c.AbrirSemFoco(Painel.Midia);
+        c.Alternar(Painel.Midia, T);
+        Assert.Equal(Painel.Midia, c.Aberto);
+        Assert.False(c.SemFoco);
+        Assert.Equal(1, fixou);
+        c.FecharTodos();
+        Assert.Equal(1, fixou); // fechar não é fixar
+    }
+
+    [Fact]
+    public void Fechar_sem_foco_nao_fecha_o_painel_fixado()
+    {
+        var c = new CoordenadorPaineis();
+        c.AbrirSemFoco(Painel.Midia);
+        c.Fixar();
+        c.FecharSemFoco(Painel.Midia);
+        Assert.Equal(Painel.Midia, c.Aberto);
+
+        var d = new CoordenadorPaineis();
+        d.AbrirSemFoco(Painel.Midia);
+        d.FecharSemFoco(Painel.Midia);
+        Assert.Equal(Painel.Nenhum, d.Aberto);
+    }
+
+    [Fact]
+    public void Abrir_outro_pelo_clique_tira_o_sem_foco()
+    {
+        var c = new CoordenadorPaineis();
+        c.AbrirSemFoco(Painel.Midia);
+        c.Alternar(Painel.Volume, T);
+        Assert.Equal(Painel.Volume, c.Aberto);
+        Assert.False(c.SemFoco);
+    }
+
+    [Fact]
     public void Fechar_todos()
     {
         var c = new CoordenadorPaineis();
