@@ -6,8 +6,9 @@ using Vitral.Core.Atualizacao;
 
 namespace Vitral.App.Atualizacao;
 
-/// Atualização pelas releases do GitHub com o Velopack (spec da atualização §5.2). Só liga com o token embutido e com o
-/// Vitral instalado; builds de desenvolvimento ficam desligados. Pré-releases são ignoradas.
+/// Atualização pelas releases do GitHub com o Velopack (spec da atualização §5.2). Só liga com o Vitral instalado; builds
+/// de desenvolvimento ficam desligados. O repositório é público desde a 0.8.3: o token embutido, se houver, é usado, mas
+/// não é mais preciso. Pré-releases são ignoradas.
 internal sealed class FonteVelopack : IFonteAtualizacao
 {
     private const string Repositorio = "https://github.com/gustavomartens-cpu/vitral";
@@ -19,7 +20,6 @@ internal sealed class FonteVelopack : IFonteAtualizacao
     public FonteVelopack(string? token, Action limpezaDeSaida)
     {
         _limpezaDeSaida = limpezaDeSaida;
-        if (token is null) return;
         try
         {
             var gerente = new UpdateManager(new GithubSource(Repositorio, token, false, null), null, null);

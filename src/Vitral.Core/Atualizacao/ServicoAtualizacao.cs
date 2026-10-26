@@ -5,7 +5,7 @@ namespace Vitral.Core.Atualizacao;
 /// De onde vem a atualização (o App usa o Velopack com as releases do GitHub). Falhas chegam como exceção.
 public interface IFonteAtualizacao
 {
-    /// Há token e o Vitral está instalado (builds de desenvolvimento ficam desligados).
+    /// O Vitral está instalado (builds de desenvolvimento ficam desligados).
     bool Ligada { get; }
 
     /// A versão nova, ou null se a instalada já é a mais nova.
