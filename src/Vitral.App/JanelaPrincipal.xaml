@@ -25,6 +25,10 @@
                     <CheckBox x:Name="IniciarComWindows" Content="Iniciar com o Windows" Foreground="{StaticResource Texto}"
                               FocusVisualStyle="{StaticResource FocoVitral}"
                               Checked="IniciarComWindows_Mudou" Unchecked="IniciarComWindows_Mudou" />
+                    <!-- Avisos do Claude Code no notch (spec do notch vivo §4.6): liga os ganchos no settings.json do Claude -->
+                    <CheckBox x:Name="AvisosClaude" Content="Avisos do Claude no notch" Foreground="{StaticResource Texto}" Margin="0,6,0,0"
+                              FocusVisualStyle="{StaticResource FocoVitral}"
+                              Checked="AvisosClaude_Mudou" Unchecked="AvisosClaude_Mudou" />
                     <TextBlock x:Name="TextoBuild" Margin="0,8,0,0" FontSize="11" Foreground="{StaticResource TextoSecundario}" />
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
