@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 
 namespace Vitral.Core.Claude;
 
-public enum Escolha { Permitir, SempreNaSessao, Negar }
+public enum EscolhaPermissao { Permitir, SempreNaSessao, Negar }
 
 /// Pedido de permissão do Claude Code para o notch (spec das permissões §3.2): vem do gancho PermissionRequest e viaja
 /// pelo canal como uma linha JSON; a resposta volta na mesma conexão.
@@ -69,23 +69,23 @@ public static class RespostaPermissao
 {
     private static readonly JsonSerializerOptions Opcoes = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    public static string Linha(string id, Escolha escolha) => JsonSerializer.Serialize(new Resposta(id, escolha.ToString()), Opcoes);
+    public static string Linha(string id, EscolhaPermissao escolha) => JsonSerializer.Serialize(new Resposta(id, escolha.ToString()), Opcoes);
 
-    public static Escolha? DaLinha(string? linha, string idEsperado)
+    public static EscolhaPermissao? DaLinha(string? linha, string idEsperado)
     {
         if (string.IsNullOrWhiteSpace(linha) || linha.Length > AvisoClaude.MaximoLinha) return null;
         try
         {
             var r = JsonSerializer.Deserialize<Resposta>(linha, Opcoes);
-            return r is not null && r.Id == idEsperado && Enum.TryParse<Escolha>(r.Escolha, out var e) ? e : null;
+            return r is not null && r.Id == idEsperado && Enum.TryParse<EscolhaPermissao>(r.EscolhaPermissao, out var e) ? e : null;
         }
         catch (JsonException) { return null; }
     }
 
-    public static string ParaClaude(Escolha escolha, string jsonDoGancho)
+    public static string ParaClaude(EscolhaPermissao escolha, string jsonDoGancho)
     {
         var decisao = new JsonObject();
-        if (escolha == Escolha.Negar)
+        if (escolha == EscolhaPermissao.Negar)
         {
             decisao["behavior"] = "deny";
             decisao["message"] = "Negado no notch do Vitral.";
@@ -94,7 +94,7 @@ public static class RespostaPermissao
         else
         {
             decisao["behavior"] = "allow";
-            if (escolha == Escolha.SempreNaSessao)
+            if (escolha == EscolhaPermissao.SempreNaSessao)
                 decisao["updatedPermissions"] = new JsonArray(new JsonObject
                 {
                     ["type"] = "addRules",
@@ -125,5 +125,5 @@ public static class RespostaPermissao
         return new JsonArray(regra);
     }
 
-    private sealed record Resposta(string? Id, string? Escolha);
+    private sealed record Resposta(string? Id, string? EscolhaPermissao);
 }

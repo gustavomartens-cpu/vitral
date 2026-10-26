@@ -89,15 +89,15 @@ public sealed class PermissaoTests
     [Fact]
     public void Resposta_com_id_certo_e_errado()
     {
-        Assert.Equal(Escolha.Negar, RespostaPermissao.DaLinha(RespostaPermissao.Linha("a", Escolha.Negar), "a"));
-        Assert.Null(RespostaPermissao.DaLinha(RespostaPermissao.Linha("a", Escolha.Negar), "b"));
+        Assert.Equal(EscolhaPermissao.Negar, RespostaPermissao.DaLinha(RespostaPermissao.Linha("a", EscolhaPermissao.Negar), "a"));
+        Assert.Null(RespostaPermissao.DaLinha(RespostaPermissao.Linha("a", EscolhaPermissao.Negar), "b"));
         Assert.Null(RespostaPermissao.DaLinha("{", "a"));
     }
 
     [Fact]
     public void Permitir_vira_allow()
     {
-        var j = JsonNode.Parse(RespostaPermissao.ParaClaude(Escolha.Permitir, Gancho("Bash", """{"command":"npm test"}""")))!;
+        var j = JsonNode.Parse(RespostaPermissao.ParaClaude(EscolhaPermissao.Permitir, Gancho("Bash", """{"command":"npm test"}""")))!;
         Assert.Equal("PermissionRequest", (string?)j["hookSpecificOutput"]!["hookEventName"]);
         Assert.Equal("allow", (string?)j["hookSpecificOutput"]!["decision"]!["behavior"]);
         Assert.Null(j["hookSpecificOutput"]!["decision"]!["updatedPermissions"]);
@@ -107,7 +107,7 @@ public sealed class PermissaoTests
     public void Sempre_usa_a_sugestao_com_destino_sessao()
     {
         const string sugestoes = """[{"type":"addRules","rules":[{"toolName":"Bash","ruleContent":"npm test:*"}],"behavior":"allow","destination":"localSettings"}]""";
-        var d = Decisao(RespostaPermissao.ParaClaude(Escolha.SempreNaSessao, Gancho("Bash", """{"command":"npm test"}""", sugestoes)));
+        var d = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.SempreNaSessao, Gancho("Bash", """{"command":"npm test"}""", sugestoes)));
         Assert.Equal("allow", (string?)d["behavior"]);
         var regra = d["updatedPermissions"]![0]!;
         Assert.Equal("addRules", (string?)regra["type"]);
@@ -119,7 +119,7 @@ public sealed class PermissaoTests
     [Fact]
     public void Sempre_sem_sugestao_no_Bash_usa_o_comando()
     {
-        var regra = Decisao(RespostaPermissao.ParaClaude(Escolha.SempreNaSessao, Gancho("Bash", """{"command":"npm test"}""")))["updatedPermissions"]![0]!;
+        var regra = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.SempreNaSessao, Gancho("Bash", """{"command":"npm test"}""")))["updatedPermissions"]![0]!;
         Assert.Equal("session", (string?)regra["destination"]);
         Assert.Equal("Bash", (string?)regra["rules"]![0]!["toolName"]);
         Assert.Equal("npm test", (string?)regra["rules"]![0]!["ruleContent"]);
@@ -128,7 +128,7 @@ public sealed class PermissaoTests
     [Fact]
     public void Sempre_sem_sugestao_em_outra_ferramenta_usa_a_ferramenta()
     {
-        var regra = Decisao(RespostaPermissao.ParaClaude(Escolha.SempreNaSessao, Gancho("WebFetch", """{"url":"https://x"}""")))["updatedPermissions"]![0]!;
+        var regra = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.SempreNaSessao, Gancho("WebFetch", """{"url":"https://x"}""")))["updatedPermissions"]![0]!;
         var r = regra["rules"]![0]!.AsObject();
         Assert.Equal("WebFetch", (string?)r["toolName"]);
         Assert.False(r.ContainsKey("ruleContent"));
@@ -137,7 +137,7 @@ public sealed class PermissaoTests
     [Fact]
     public void Negar_vira_deny_com_recado()
     {
-        var d = Decisao(RespostaPermissao.ParaClaude(Escolha.Negar, Gancho("Bash", """{"command":"rm -rf x"}""")));
+        var d = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.Negar, Gancho("Bash", """{"command":"rm -rf x"}""")));
         Assert.Equal("deny", (string?)d["behavior"]);
         Assert.Equal("Negado no notch do Vitral.", (string?)d["message"]);
         Assert.False((bool)d["interrupt"]!);
