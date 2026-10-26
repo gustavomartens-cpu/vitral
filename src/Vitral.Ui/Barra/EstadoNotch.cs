@@ -2,7 +2,7 @@ using Vitral.Core.Claude;
 
 namespace Vitral.Ui.Barra;
 
-public enum ModoNotch { Normal, Aviso, Lembrete, Permissao }
+public enum ModoNotch { Normal, Aviso, Lembrete, Permissao, Resposta }
 
 public enum AcaoNotch { Nenhuma, AbrirClaude, AbrirCalendario, AbrirNotificacoes, Reiniciar }
 
@@ -14,7 +14,7 @@ public enum ParteNotch { Meio, Esquerda, Direita }
 /// - fora do aviso, o mouse parado 250 ms abre as laterais (Claude à esquerda, notificações à direita);
 /// - pedidos de permissão têm prioridade: ficam em fila, cada um com 60 s desde que chegou, e saem com a resposta, com o
 ///   tempo esgotado ou com um aviso da mesma sessão (resolvido no app).
-public sealed class EstadoNotch(Func<DateTime> agora)
+public sealed partial class EstadoNotch(Func<DateTime> agora)
 {
     /// EsperaClique: um pedido que acabou de aparecer na ficha não aceita clique, para um clique dado no anterior não
     /// cair nele.
@@ -68,10 +68,12 @@ public sealed class EstadoNotch(Func<DateTime> agora)
                 if (p.SessaoId is not null && aviso.SessaoId is not null ? p.SessaoId == aviso.SessaoId : p.Sessao == aviso.Sessao) Sair(i, null);
             }
         if (atual is not null && PedidoAtual is { } seguinte && seguinte != atual) _mostrou = agora(); // outro tomou a ficha
+        AvisoNasRespostas(aviso);
         Aviso = aviso;
         Pendente = true;
         if (aviso.Tipo != TipoAviso.Atualizacao) PedidoPerdido = false; // a lateral passa a mostrar o aviso novo
-        if (_fila.Count > 0 || Confirmando) { Mudou?.Invoke(); return; } // o pedido de outra sessão continua na frente
+        // O pedido ou a ficha de outra sessão continuam na frente.
+        if (_fila.Count > 0 || Confirmando || _respostas.Count > 0 || ConfirmandoResposta) { Mudou?.Invoke(); return; }
         Laterais = false;
         _inicio = agora();
         Ir(ModoNotch.Aviso, forcar: true);
@@ -117,6 +119,7 @@ public sealed class EstadoNotch(Func<DateTime> agora)
         }
         else if (perdeu && !Confirmando) Avancar(semResposta: true);
         else if (perdeu) Mudou?.Invoke();
+        if (TiqueResposta(t) && Modo == ModoNotch.Resposta) Avancar(semResposta: false);
 
         if (Modo == ModoNotch.Aviso && !_mouse && (t - _inicio).TotalSeconds >= Duracao) Ir(ModoNotch.Lembrete);
         else if (Modo is ModoNotch.Normal or ModoNotch.Lembrete && _mouse && !Laterais && (t - _entrou).TotalSeconds >= EsperaLaterais)
@@ -126,7 +129,8 @@ public sealed class EstadoNotch(Func<DateTime> agora)
         }
     }
 
-    /// Depois de uma resposta ou de um pedido perdido: o próximo da fila, ou o fim do modo de pedido.
+    /// Depois de uma resposta, de um pedido perdido ou de uma ficha encerrada: o próximo pedido, a próxima ficha, ou o
+    /// fim (lembrete se há algo pendente).
     private void Avancar(bool semResposta)
     {
         if (_fila.Count > 0) { Mostrar(); return; }
@@ -134,9 +138,8 @@ public sealed class EstadoNotch(Func<DateTime> agora)
         {
             PedidoPerdido = true;
             Pendente = true;
-            Ir(ModoNotch.Lembrete, forcar: true);
-            return;
         }
+        if (_respostas.Count > 0) { MostrarResposta(); return; }
         Ir(Pendente ? ModoNotch.Lembrete : ModoNotch.Normal, forcar: true);
     }
 
@@ -175,7 +178,7 @@ public sealed class EstadoNotch(Func<DateTime> agora)
 
     public AcaoNotch Clicou(ParteNotch parte = ParteNotch.Meio)
     {
-        if (Modo == ModoNotch.Permissao) return AcaoNotch.Nenhuma; // na ficha, só os botões respondem
+        if (Modo is ModoNotch.Permissao or ModoNotch.Resposta) return AcaoNotch.Nenhuma; // nas fichas, só os botões respondem
         // O aviso (ou o lembrete) de uma versão nova do Vitral reinicia; os do Claude (e o pedido perdido) abrem o Claude.
         var abrir = Aviso?.Tipo == TipoAviso.Atualizacao && Pendente && !PedidoPerdido ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         var acao = parte switch
