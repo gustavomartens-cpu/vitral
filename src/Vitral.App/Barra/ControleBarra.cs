@@ -146,10 +146,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     /// Pedido de permissão do Claude (spec das permissões §3.5): vai para a ficha do notch; sem notch visível, sem resposta.
     public Task<Vitral.Core.Claude.EscolhaPermissao?> Pedir(Vitral.Core.Claude.PedidoPermissao pedido)
     {
-        if (_relogio is not { IsVisible: true }) return Task.FromResult<Vitral.Core.Claude.EscolhaPermissao?>(null);
-        // Provisório da Task 4 (a ficha entra na Task 5): registra e devolve "sem resposta" em 2 s.
-        LogBarra.Info($"Pedido de permissão: {pedido.Sessao} · {pedido.Titulo} · {pedido.Resumo}");
-        return Task.Delay(2000).ContinueWith(_ => (Vitral.Core.Claude.EscolhaPermissao?)null);
+        return _relogio is { IsVisible: true } notch ? notch.Pedir(pedido) : Task.FromResult<Vitral.Core.Claude.EscolhaPermissao?>(null);
     }
 
     /// Aviso do Claude chegou pelo canal: vai para o notch; sem a barra do topo (ou sem o relógio), é descartado.

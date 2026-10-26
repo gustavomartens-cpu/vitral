@@ -48,6 +48,18 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private readonly StackPanel _linhaRelogio = new() { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private readonly Ellipse _ponto;
     private readonly Grid _painelAviso = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 18, 0), Opacity = 0, Visibility = Visibility.Collapsed };
+
+    // Ficha do pedido de permissão (spec das permissões §4.1)
+    private readonly StackPanel _painelPedido = new() { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 18, 0), Opacity = 0, Visibility = Visibility.Collapsed };
+    private readonly TextBlock _pedidoTitulo = new() { FontWeight = FontWeights.SemiBold, FontSize = 12 };
+    private readonly TextBlock _pedidoSessao = new() { FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock _pedidoResumo = new() { FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock _pedidoFila = new() { FontSize = 10, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top };
+    private readonly StackPanel _botoes = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };
+    private readonly TextBlock _confirmacao = new() { FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Center, Height = 28, Visibility = Visibility.Collapsed };
+    private readonly ScaleTransform _tempoRestante = new(1, 1);
+    private readonly Dictionary<string, TaskCompletionSource<EscolhaPermissao?>> _esperando = [];
+    private string? _pedidoMostrado;
     private readonly TextBlock _titulo = new() { FontWeight = FontWeights.SemiBold, FontSize = 12 };
     private readonly TextBlock _detalhe = new() { FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly Border _esquerda, _direita;
@@ -94,6 +106,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         var miolo = new Grid();
         miolo.Children.Add(_linhaRelogio);
         miolo.Children.Add(_painelAviso);
+        MontarPedido();
+        miolo.Children.Add(_painelPedido);
         _meio.Child = miolo;
         _conteudo.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _conteudo.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -115,9 +129,13 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         Content = raiz;
 
         _estado.Mudou += AoMudarEstado;
+        _estado.Encerrado += (pedido, escolha) =>
+        {
+            if (_esperando.Remove(pedido.Id, out var espera)) espera.TrySetResult(escolha);
+        };
         _tique.Tick += (_, _) => _estado.Tique();
         _conteudo.MouseEnter += (_, _) => { _estado.MouseEntrou(); _tique.Start(); };
-        _conteudo.MouseLeave += (_, _) => { _estado.MouseSaiu(); if (_estado.Modo != ModoNotch.Aviso) _tique.Stop(); };
+        _conteudo.MouseLeave += (_, _) => { _estado.MouseSaiu(); if (_estado.Modo is not (ModoNotch.Aviso or ModoNotch.Permissao)) _tique.Stop(); };
         _meio.MouseLeftButtonUp += (_, _) => Clicou(ParteNotch.Meio);
         _esquerda.MouseLeftButtonUp += (_, _) => Clicou(ParteNotch.Esquerda);
         _direita.MouseLeftButtonUp += (_, _) => Clicou(ParteNotch.Direita);
@@ -128,7 +146,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             var h = new WindowInteropHelper(this).Handle;
             SetLong(h, GwlExStyle, (IntPtr)((long)GetLong(h, GwlExStyle) | WsExToolWindow | WsExNoActivate));
         };
-        Closed += (_, _) => _tique.Stop();
+        Closed += (_, _) => { _tique.Stop(); SoltarPedidos(); };
     }
 
     private Border IconeClaude(double tamanho) => new()
@@ -227,17 +245,139 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
     private void AoMudarEstado()
     {
-        if (_estado.Modo == ModoNotch.Aviso || IsMouseOver) _tique.Start(); else _tique.Stop();
+        if (_estado.Modo is ModoNotch.Aviso or ModoNotch.Permissao || IsMouseOver) _tique.Start(); else _tique.Stop();
         Ajustar(animar: true);
+    }
+
+    /// Pedido de permissão chegou pelo canal: entra na ficha (ou na fila) e devolve a escolha, ou null sem resposta.
+    public Task<EscolhaPermissao?> Pedir(PedidoPermissao pedido)
+    {
+        var espera = new TaskCompletionSource<EscolhaPermissao?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _esperando[pedido.Id] = espera;
+        _estado.Pediu(pedido);
+        return espera.Task;
+    }
+
+    /// Ao fechar, os pedidos que esperavam saem sem resposta (o Claude segue o pedido normal dele).
+    private void SoltarPedidos()
+    {
+        foreach (var espera in _esperando.Values) espera.TrySetResult(null);
+        _esperando.Clear();
+    }
+
+    private void MontarPedido()
+    {
+        var icone = IconeClaude(22);
+        icone.Margin = new Thickness(0, 0, 10, 0);
+        _pedidoSessao.Foreground = (Brush)Application.Current.Resources["TextoSecundario"];
+        _pedidoFila.Foreground = (Brush)Application.Current.Resources["TextoSecundario"];
+        _pedidoResumo.FontFamily = new FontFamily("Cascadia Mono, Consolas");
+        _pedidoResumo.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD8, 0x8A));
+        var codigo = new Border { Background = new SolidColorBrush(Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF)), CornerRadius = new CornerRadius(5), Padding = new Thickness(6, 1, 6, 1), Child = _pedidoResumo };
+        var linhaResumo = new DockPanel { Margin = new Thickness(0, 2, 0, 0), LastChildFill = true };
+        DockPanel.SetDock(_pedidoSessao, Dock.Left);
+        linhaResumo.Children.Add(_pedidoSessao);
+        linhaResumo.Children.Add(codigo);
+        var textos = new StackPanel();
+        textos.Children.Add(_pedidoTitulo);
+        textos.Children.Add(linhaResumo);
+        var linha = new DockPanel { LastChildFill = true };
+        DockPanel.SetDock(icone, Dock.Left);
+        DockPanel.SetDock(_pedidoFila, Dock.Right);
+        linha.Children.Add(icone);
+        linha.Children.Add(_pedidoFila);
+        linha.Children.Add(textos);
+
+        _botoes.Children.Add(BotaoPedido("Permitir", EscolhaPermissao.Permitir, principal: true));
+        _botoes.Children.Add(BotaoPedido("Sempre nesta sessão", EscolhaPermissao.SempreNaSessao));
+        _botoes.Children.Add(BotaoPedido("Negar", EscolhaPermissao.Negar, perigo: true));
+
+        var trilho = new Border { Height = 2, Margin = new Thickness(0, 9, 0, 0), CornerRadius = new CornerRadius(1), Background = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)) };
+        trilho.Child = new Border { Background = (Brush)Application.Current.Resources["Ambar"], CornerRadius = new CornerRadius(1), RenderTransform = _tempoRestante, RenderTransformOrigin = new Point(0, 0.5) };
+
+        _painelPedido.Children.Add(linha);
+        _painelPedido.Children.Add(_botoes);
+        _painelPedido.Children.Add(_confirmacao);
+        _painelPedido.Children.Add(trilho);
+    }
+
+    /// Botão em pílula da ficha (spec §4.1): âmbar no principal, vermelho no hover do perigo; afunda no clique.
+    private Border BotaoPedido(string texto, EscolhaPermissao escolha, bool principal = false, bool perigo = false)
+    {
+        var neutro = new SolidColorBrush(Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF));
+        var rotulo = new TextBlock { Text = texto, FontSize = 11.5, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+        var botao = new Border
+        {
+            Height = 28, CornerRadius = new CornerRadius(14), Padding = new Thickness(14, 0, 14, 0), Margin = new Thickness(3, 0, 3, 0),
+            Cursor = Cursors.Hand, Child = rotulo, Background = principal ? (Brush)Application.Current.Resources["AmbarGradiente"] : neutro,
+        };
+        if (principal)
+        {
+            rotulo.Foreground = (Brush)Application.Current.Resources["TextoSobreAmbar"];
+            rotulo.FontWeight = FontWeights.SemiBold;
+        }
+        else
+        {
+            var hover = perigo ? new SolidColorBrush(Color.FromArgb(0x38, 0xE8, 0x54, 0x54)) : new SolidColorBrush(Color.FromArgb(0x22, 0xFF, 0xFF, 0xFF));
+            botao.MouseEnter += (_, _) => { botao.Background = hover; if (perigo) rotulo.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x8A)); };
+            botao.MouseLeave += (_, _) => { botao.Background = neutro; rotulo.ClearValue(TextBlock.ForegroundProperty); };
+        }
+        Efeitos.SetAfundar(botao, true);
+        botao.MouseLeftButtonUp += (_, e) =>
+        {
+            e.Handled = true; // o clique é do botão, não do notch (que abriria o calendário)
+            _estado.Respondeu(escolha);
+        };
+        return botao;
+    }
+
+    /// Textos e barra do pedido atual; a barra esvazia no tempo que falta dos 60 s.
+    private void AtualizarPedido()
+    {
+        bool confirmando = _estado.Confirmando;
+        _botoes.Visibility = confirmando ? Visibility.Collapsed : Visibility.Visible;
+        _confirmacao.Visibility = confirmando ? Visibility.Visible : Visibility.Collapsed;
+        if (confirmando)
+        {
+            _confirmacao.Text = _estado.UltimaEscolha switch
+            {
+                EscolhaPermissao.Permitir => "✓ Permitido",
+                EscolhaPermissao.SempreNaSessao => "✓ Sempre nesta sessão",
+                _ => "Negado",
+            };
+            _confirmacao.Foreground = _estado.UltimaEscolha == EscolhaPermissao.Negar
+                ? new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x8A)) : (Brush)Application.Current.Resources["Texto"];
+        }
+        _pedidoFila.Text = _estado.NaFila > 0 ? $"+{_estado.NaFila}" : "";
+        if (_estado.PedidoAtual is not { } p || _pedidoMostrado == p.Id) return;
+        _pedidoMostrado = p.Id;
+        _pedidoTitulo.Text = p.Titulo;
+        _pedidoSessao.Text = $"{p.Sessao} · ";
+        _pedidoResumo.Text = p.Resumo;
+        _pedidoResumo.ToolTip = p.Resumo;
+        double falta = Math.Max(0, EstadoNotch.TempoPedido - (DateTime.Now - (_estado.ChegadaDoAtual ?? DateTime.Now)).TotalSeconds);
+        double inicio = falta / EstadoNotch.TempoPedido;
+        _tempoRestante.BeginAnimation(ScaleTransform.ScaleXProperty, Movimento.Ligado
+            ? new DoubleAnimation(inicio, 0, new Duration(TimeSpan.FromSeconds(falta)))
+            : new DoubleAnimation(1, new Duration(TimeSpan.Zero)));
     }
 
     /// Leva o corpo e o conteúdo ao estado atual.
     private void Ajustar(bool animar)
     {
         var modo = _estado.Modo;
-        bool laterais = _estado.Laterais && modo != ModoNotch.Aviso;
+        bool laterais = _estado.Laterais && modo is ModoNotch.Normal or ModoNotch.Lembrete;
         double largura, altura, raio;
-        if (modo == ModoNotch.Aviso)
+        if (modo == ModoNotch.Permissao)
+        {
+            AtualizarPedido();
+            _painelPedido.Visibility = Visibility.Visible;
+            _painelPedido.Measure(new Size(NotchMedidas.LarguraMaxPermissao - 36, double.PositiveInfinity));
+            largura = Math.Min(NotchMedidas.LarguraMaxPermissao, Math.Ceiling(_painelPedido.DesiredSize.Width) + 36);
+            altura = NotchMedidas.AlturaPermissao;
+            raio = NotchMedidas.RaioPermissao;
+        }
+        else if (modo == ModoNotch.Aviso)
         {
             _painelAviso.Visibility = Visibility.Visible;
             _painelAviso.Measure(new Size(NotchMedidas.LarguraMaxAviso, double.PositiveInfinity));
@@ -256,8 +396,10 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
         if (laterais) AtualizarEsquerda();
         _ponto.Visibility = modo == ModoNotch.Lembrete ? Visibility.Visible : Visibility.Collapsed;
+        if (modo != ModoNotch.Permissao) _pedidoMostrado = null;
+        Trocar(_painelPedido, mostrar: modo == ModoNotch.Permissao, animar);
         Trocar(_painelAviso, mostrar: modo == ModoNotch.Aviso, animar);
-        Trocar(_linhaRelogio, mostrar: modo != ModoNotch.Aviso, animar);
+        Trocar(_linhaRelogio, mostrar: modo is not (ModoNotch.Aviso or ModoNotch.Permissao), animar);
         Trocar(_esquerda, mostrar: laterais, animar);
         Trocar(_direita, mostrar: laterais, animar);
 
@@ -269,7 +411,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
     private void AtualizarEsquerda()
     {
-        if (_estado is { Pendente: true, Aviso: { } a })
+        if (_estado.PedidoPerdido)
+        {
+            _esquerdaTitulo.Text = "Pedido sem resposta";
+            _esquerdaSessao.Visibility = Visibility.Collapsed;
+        }
+        else if (_estado is { Pendente: true, Aviso: { } a })
         {
             _esquerdaTitulo.Text = a.Tipo == TipoAviso.Terminou ? "Terminou" : "Esperando você";
             _esquerdaSessao.Text = a.Sessao;
