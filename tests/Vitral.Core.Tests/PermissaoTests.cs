@@ -126,6 +126,15 @@ public sealed class PermissaoTests
     }
 
     [Fact]
+    public void Sempre_sem_sugestao_no_PowerShell_usa_o_comando()
+    {
+        // Sem o comando, a regra liberaria qualquer comando de PowerShell na sessão.
+        var regra = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.SempreNaSessao, Gancho("PowerShell", """{"command":"Get-Location"}""")))["updatedPermissions"]![0]!;
+        Assert.Equal("PowerShell", (string?)regra["rules"]![0]!["toolName"]);
+        Assert.Equal("Get-Location", (string?)regra["rules"]![0]!["ruleContent"]);
+    }
+
+    [Fact]
     public void Sempre_sem_sugestao_em_outra_ferramenta_usa_a_ferramenta()
     {
         var regra = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.SempreNaSessao, Gancho("WebFetch", """{"url":"https://x"}""")))["updatedPermissions"]![0]!;

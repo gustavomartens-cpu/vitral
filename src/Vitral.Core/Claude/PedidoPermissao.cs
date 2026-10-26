@@ -120,7 +120,8 @@ public static class RespostaPermissao
                     return (JsonArray)regras.DeepClone();
         var ferramenta = (string?)raiz?["tool_name"] ?? "?";
         var regra = new JsonObject { ["toolName"] = ferramenta };
-        if (ferramenta == "Bash" && raiz?["tool_input"]?["command"] is JsonValue c && c.TryGetValue<string>(out var comando))
+        // Ferramentas de comando (Bash, PowerShell): a regra vale só para esse comando, nunca para a ferramenta inteira.
+        if (raiz?["tool_input"]?["command"] is JsonValue c && c.TryGetValue<string>(out var comando))
             regra["ruleContent"] = comando;
         return new JsonArray(regra);
     }
