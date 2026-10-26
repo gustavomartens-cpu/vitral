@@ -69,8 +69,7 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja ban
             var p = MonitorPrincipal.Ler();
             var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
             var r = PosicaoIlhas.Doca(monitor, _janela.ActualWidth);
-            _janela.Left = r.X;
-            _janela.Top = r.Y;
+            PosicaoNativa.Colocar(_janela, r.X + r.Largura / 2, r.Y, p.Dpi, ancora: 0.5);
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("ControleDoca.Posicionar", e); }
     }

@@ -246,9 +246,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _estado.Chegou(aviso);
     }
 
-    /// O retângulo visível do corpo no estado normal, em DIPs de tela (o calendário se apoia nele).
-    public Retangulo AreaDoRelogio =>
-        new(Left + (Width - LarguraNormal) / 2, Top, LarguraNormal, PosicaoIlhas.NotchSobra + NotchMedidas.AlturaNormal);
+    /// O retângulo visível do corpo no estado normal, em DIPs do monitor de escala dpi (o calendário se apoia nele).
+    public Retangulo AreaDoRelogio(uint dpi)
+    {
+        var janela = PosicaoNativa.Ler(this, dpi);
+        return new(janela.X + (janela.Largura - LarguraNormal) / 2, janela.Y, LarguraNormal, PosicaoIlhas.NotchSobra + NotchMedidas.AlturaNormal);
+    }
 
     /// A largura do corpo com o relógio (o que a ilha do relógio ocupava antes).
     public double LarguraNormal
@@ -260,12 +263,9 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         }
     }
 
-    /// Centra a janela fixa no lugar do relógio calculado pelas ilhas.
-    public void Colocar(Retangulo relogio)
-    {
-        Left = relogio.X + relogio.Largura / 2 - Width / 2;
-        Top = relogio.Y;
-    }
+    /// Centra a janela fixa no lugar do relógio calculado pelas ilhas (DIPs do monitor de escala dpi).
+    public void Colocar(Retangulo relogio, uint dpi) =>
+        PosicaoNativa.Colocar(this, relogio.X + relogio.Largura / 2, relogio.Y, dpi, ancora: 0.5);
 
     private void Clicou(ParteNotch parte)
     {

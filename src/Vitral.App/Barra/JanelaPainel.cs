@@ -145,12 +145,11 @@ internal sealed partial class JanelaPainel : Window
         set => _casca.Child = (UIElement?)value;
     }
 
-    /// Mostra em <paramref name="posicao"/> (DIPs), assentando de cima com o conteúdo em cascata. Sem
-    /// <paramref name="ativar"/> (aberto pelo mouse), não tira o foco de onde se está digitando.
-    public void Mostrar(Retangulo posicao, bool ativar = true)
+    /// Mostra em <paramref name="posicao"/> (DIPs do monitor de escala <paramref name="dpi"/>), assentando de cima com o
+    /// conteúdo em cascata. Sem <paramref name="ativar"/> (aberto pelo mouse), não tira o foco de onde se está digitando.
+    public void Mostrar(Retangulo posicao, uint dpi, bool ativar = true)
     {
-        Left = posicao.X;
-        Top = posicao.Y;
+        PosicaoNativa.Colocar(this, posicao.X, posicao.Y, dpi);
         ShowActivated = ativar;
         Show();
         if (ativar) Activate();
