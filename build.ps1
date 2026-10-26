@@ -14,13 +14,12 @@ function Passo([string] $nome, [scriptblock] $acao) {
     if ($LASTEXITCODE -ne 0) { throw "Falhou: $nome (código $LASTEXITCODE)" }
 }
 
-# Publicar exige os dois tokens (nenhum é impresso): o de leitura vai dentro do app, o de publicação só sobe a release.
+# O repositório é público desde a 0.8.3: o app lê as releases sem token, e a release sobe pelo login do gh.
 if ($Publicar) {
-    foreach ($nome in 'VITRAL_TOKEN_ATUALIZACAO', 'VITRAL_TOKEN_PUBLICAR') {
-        if (-not [Environment]::GetEnvironmentVariable($nome)) {
-            Write-Host "Defina $nome (veja docs/publicar.md)" -ForegroundColor Red
-            exit 1
-        }
+    gh auth status *> $null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host 'Entre no GitHub CLI antes de publicar: gh auth login' -ForegroundColor Red
+        exit 1
     }
     # A release marca o commit compilado: a versão tem de ser dita, sem mudanças fora do commit, e o commit no GitHub.
     $problema =
@@ -39,16 +38,12 @@ $release = Join-Path $PSScriptRoot 'artifacts\release'
 Passo 'Testes' { dotnet test --nologo -v q }
 Passo 'Publicar (win-x64, com o .NET embutido)' {
     if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
-    # Token de leitura das releases (docs/publicar.md): embutido no app para a atualização automática. Nunca é impresso.
-    $token = @()
-    if ($env:VITRAL_TOKEN_ATUALIZACAO) { $token = @("-p:TokenAtualizacao=$env:VITRAL_TOKEN_ATUALIZACAO") }
-    else { Write-Host 'sem VITRAL_TOKEN_ATUALIZACAO: esta versão não se atualiza sozinha' -ForegroundColor Yellow }
-    dotnet publish src/Vitral.App -c Release -r win-x64 --self-contained -p:Version=$Versao @token -o $publish --nologo -v q
+    dotnet publish src/Vitral.App -c Release -r win-x64 --self-contained -p:Version=$Versao -o $publish --nologo -v q
 }
 if ($Publicar) {
     # A última release publicada, para o pack gerar o pacote de diferença mesmo num PC sem histórico.
     Passo 'Baixar a última release (GitHub)' {
-        vpk download github --repoUrl $repositorio --token $env:VITRAL_TOKEN_PUBLICAR --outputDir $release
+        vpk download github --repoUrl $repositorio --outputDir $release
     }
 }
 Passo 'Empacotar (Velopack)' {
@@ -63,10 +58,17 @@ Passo 'Empacotar (Velopack)' {
 }
 if ($Publicar) {
     Passo 'Subir a release (GitHub)' {
-        # A tag marca o commit compilado (que precisa estar no GitHub), não a ponta da main.
+        # A tag marca o commit compilado (que precisa estar no GitHub), não a ponta da main. Sobem só os arquivos desta
+        # versão e o índice (releases.win.json, RELEASES), que já traz as anteriores.
         $commit = git rev-parse HEAD
-        vpk upload github --repoUrl $repositorio --token $env:VITRAL_TOKEN_PUBLICAR --outputDir $release `
-            --tag "v$Versao" --releaseName "Vitral $Versao" --targetCommitish $commit --publish --merge
+        $arquivos = Get-ChildItem $release -File | Where-Object {
+            $_.Name -in 'releases.win.json', 'RELEASES', 'VitralApp-win-Setup.exe', 'VitralApp-win-Portable.zip' -or
+            $_.Name -like "VitralApp-$Versao-*.nupkg"
+        }
+        $notas = Join-Path $PSScriptRoot "docs\notas\$Versao.md"
+        $texto = if (Test-Path $notas) { @('--notes-file', $notas) } else { @('--notes', '') }
+        gh release create "v$Versao" @($arquivos.FullName) --repo gustavomartens-cpu/vitral --title "Vitral $Versao" `
+            --target $commit --latest @texto
     }
 }
 
