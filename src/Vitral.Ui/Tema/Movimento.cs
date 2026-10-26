@@ -39,3 +39,10 @@ public static class MenuFora
     /// <paramref name="antes"/>/<paramref name="agora"/>: algum botão apertado na conferência anterior e nesta.
     public static bool DeveFechar(bool antes, bool agora, bool cursorNoMenu) => !antes && agora && !cursorNoMenu;
 }
+
+/// Pílula de verdade: o raio dos cantos é a metade da altura. O WPF encolhe um raio grande (como 999) separadamente na
+/// largura e na altura, e a pílula larga e baixa vira um oval (achado do Gustavo em 25/10).
+public static class Pilula
+{
+    public static double Raio(double altura) => double.IsNaN(altura) || altura <= 0 ? 0 : altura / 2;
+}
