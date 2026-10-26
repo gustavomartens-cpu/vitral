@@ -26,6 +26,12 @@
     <Using Remove="System.Drawing" />
   </ItemGroup>
 
+  <!-- Token de leitura das releases (spec da atualização §3): o build.ps1 passa -p:TokenAtualizacao a partir da variável
+       VITRAL_TOKEN_ATUALIZACAO; sem ela (builds de desenvolvimento), não há token e a atualização fica desligada. -->
+  <ItemGroup Condition="'$(TokenAtualizacao)' != ''">
+    <AssemblyMetadata Include="TokenAtualizacao" Value="$(TokenAtualizacao)" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Main próprio (Program.cs) para o Velopack rodar antes do WPF -->
     <ApplicationDefinition Remove="App.xaml" />

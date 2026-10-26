@@ -133,3 +133,15 @@ public sealed class AtualizacaoTests
     public void Textos_da_linha_de_estado(EstadoAtualizacao estado, string? versao, string texto) =>
         Assert.Equal(texto, TextoAtualizacao.Para(estado, versao));
 }
+
+public sealed class TokenEmbutidoTests
+{
+    [Fact]
+    public void TokenEmbutido_ausente_e_null() => Assert.Null(TokenEmbutido.Ler(typeof(TokenEmbutidoTests).Assembly));
+
+    [Fact]
+    public void TokenEmbutido_presente() => Assert.Equal("abc", TokenEmbutido.Ler(typeof(TokenEmbutidoTests).Assembly, "TokenTeste"));
+
+    [Fact]
+    public void TokenEmbutido_vazio_e_null() => Assert.Null(TokenEmbutido.Ler(typeof(TokenEmbutidoTests).Assembly, "TokenVazio"));
+}

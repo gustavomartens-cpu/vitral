@@ -17,7 +17,11 @@ $release = Join-Path $PSScriptRoot 'artifacts\release'
 Passo 'Testes' { dotnet test --nologo -v q }
 Passo 'Publicar (win-x64, com o .NET embutido)' {
     if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
-    dotnet publish src/Vitral.App -c Release -r win-x64 --self-contained -p:Version=$Versao -o $publish --nologo -v q
+    # Token de leitura das releases (docs/publicar.md): embutido no app para a atualização automática. Nunca é impresso.
+    $token = @()
+    if ($env:VITRAL_TOKEN_ATUALIZACAO) { $token = @("-p:TokenAtualizacao=$env:VITRAL_TOKEN_ATUALIZACAO") }
+    else { Write-Host 'sem VITRAL_TOKEN_ATUALIZACAO: esta versão não se atualiza sozinha' -ForegroundColor Yellow }
+    dotnet publish src/Vitral.App -c Release -r win-x64 --self-contained -p:Version=$Versao @token -o $publish --nologo -v q
 }
 Passo 'Empacotar (Velopack)' {
     # packId diferente da pasta de dados (%LOCALAPPDATA%\Vitral): o Velopack instala em %LOCALAPPDATA%\<packId>
