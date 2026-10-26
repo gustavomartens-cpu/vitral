@@ -29,4 +29,15 @@ public sealed class CanalTests
         Assert.False(Canal.Enviar("Vitral-Inexistente-" + Guid.NewGuid().ToString("N"), "x"));
         Assert.True(relogio.Elapsed < TimeSpan.FromSeconds(1), $"demorou {relogio.ElapsedMilliseconds} ms");
     }
+
+    [Fact]
+    public void Servidor_que_nao_le_nao_prende_o_envio()
+    {
+        var nome = "Vitral-Teste-" + Guid.NewGuid().ToString("N");
+        using var servidor = new NamedPipeServerStream(nome, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 0);
+        _ = servidor.WaitForConnectionAsync(); // aceita a conexão e nunca lê (Vitral congelado)
+        var relogio = Stopwatch.StartNew();
+        Canal.Enviar(nome, new string((char)0x61, 64 * 1024));
+        Assert.True(relogio.Elapsed < TimeSpan.FromSeconds(2), $"demorou {relogio.ElapsedMilliseconds} ms");
+    }
 }

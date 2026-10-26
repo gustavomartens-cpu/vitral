@@ -55,22 +55,36 @@ public static class GanchosClaude
         return raiz.ToJsonString(Escrita);
     }
 
+    /// Lê e confere o formato que nos interessa; qualquer coisa fora dele (JSON quebrado, chave repetida, "hooks" ou a
+    /// lista de um evento com outro tipo) vira FormatException, e nada é gravado.
     private static JsonObject Ler(string texto)
     {
         if (string.IsNullOrWhiteSpace(texto)) return [];
         try
         {
-            return JsonNode.Parse(texto, documentOptions: Leitura) as JsonObject
-                ?? throw new FormatException("O settings.json do Claude não é um objeto JSON.");
+            if (JsonNode.Parse(texto, documentOptions: Leitura) is not JsonObject raiz)
+                throw new FormatException("O settings.json do Claude não é um objeto JSON.");
+            _ = raiz.Count; // o JsonObject só confere chaves repetidas quando é aberto
+            if (raiz["hooks"] is { } hooks)
+            {
+                if (hooks is not JsonObject eventos) throw new FormatException("\"hooks\" no settings.json do Claude não é um objeto.");
+                foreach (var evento in Eventos)
+                    if (eventos[evento] is { } lista && lista is not JsonArray)
+                        throw new FormatException($"\"hooks.{evento}\" no settings.json do Claude não é uma lista.");
+            }
+            return raiz;
         }
-        catch (JsonException e) { throw new FormatException("O settings.json do Claude está com defeito.", e); }
+        catch (Exception e) when (e is JsonException or InvalidOperationException or ArgumentException)
+        {
+            throw new FormatException("O settings.json do Claude está com defeito.", e);
+        }
     }
 
     private static JsonArray? Lista(JsonObject raiz, string evento) => raiz["hooks"]?[evento] as JsonArray;
 
     private static bool EhNosso(JsonNode? item) =>
-        item?["hooks"] is JsonArray comandos
-        && comandos.Any(c => c?["command"] is JsonValue v && v.TryGetValue<string>(out var s) && s.Contains(Marca, StringComparison.OrdinalIgnoreCase));
+        item is JsonObject o && o["hooks"] is JsonArray comandos
+        && comandos.Any(c => c is JsonObject co && co["command"] is JsonValue v && v.TryGetValue<string>(out var s) && s.Contains(Marca, StringComparison.OrdinalIgnoreCase));
 
     private static void Remover(JsonArray lista)
     {

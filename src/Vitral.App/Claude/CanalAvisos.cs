@@ -31,7 +31,7 @@ internal sealed class CanalAvisos : IDisposable
             try
             {
                 await using var servidor = NamedPipeServerStreamAcl.Create(nome, PipeDirection.In, 1, PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous, 0, 0, seguranca);
+                    PipeOptions.Asynchronous, 4096, 0, seguranca); // buffer: uma linha pequena não espera o Vitral ler
                 await servidor.WaitForConnectionAsync(parar);
                 using var tempo = CancellationTokenSource.CreateLinkedTokenSource(parar);
                 tempo.CancelAfter(TimeSpan.FromSeconds(2));

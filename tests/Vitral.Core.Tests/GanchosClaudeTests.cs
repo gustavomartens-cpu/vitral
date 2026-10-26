@@ -85,4 +85,24 @@ public sealed class GanchosClaudeTests
         Assert.Throws<FormatException>(() => GanchosClaude.Desligar("{\"hooks\": ["));
         Assert.Throws<FormatException>(() => GanchosClaude.Ligar("[1,2]", Comando));
     }
+
+    [Theory]
+    [InlineData("""{"hooks":[]}""")]
+    [InlineData("""{"hooks":"x"}""")]
+    [InlineData("""{"permissions":{},"permissions":{}}""")]
+    public void Formato_inesperado_nao_lanca_no_EstaLigado_e_vira_FormatException_ao_gravar(string texto)
+    {
+        Assert.False(GanchosClaude.EstaLigado(texto));
+        Assert.Throws<FormatException>(() => GanchosClaude.Ligar(texto, Comando));
+        Assert.Throws<FormatException>(() => GanchosClaude.Desligar(texto));
+    }
+
+    [Fact]
+    public void Item_estranho_na_lista_e_preservado()
+    {
+        var t = GanchosClaude.Ligar("""{"hooks":{"Stop":["x"]}}""", Comando);
+        Assert.True(GanchosClaude.EstaLigado(t));
+        Assert.Equal("x", (string?)Raiz(t)["hooks"]!["Stop"]![0]);
+        Assert.Equal("x", (string?)Raiz(GanchosClaude.Desligar(t))["hooks"]!["Stop"]![0]);
+    }
 }

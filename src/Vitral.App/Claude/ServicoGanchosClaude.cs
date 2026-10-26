@@ -19,6 +19,17 @@ internal sealed class ServicoGanchosClaude
 
     public void Desligar() => Gravar(GanchosClaude.Desligar);
 
+    /// Desinstalação: sem o Vitral.exe, os ganchos dariam erro a cada resposta do Claude. Melhor esforço, só se ligados.
+    public static void DesligarAoDesinstalar()
+    {
+        try
+        {
+            var servico = new ServicoGanchosClaude();
+            if (servico.EstaLigado()) servico.Desligar();
+        }
+        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("ServicoGanchosClaude.DesligarAoDesinstalar", e); }
+    }
+
     private void Gravar(Func<string, string> mudar)
     {
         string original = File.Exists(_arquivo) ? File.ReadAllText(_arquivo) : "";
