@@ -102,10 +102,17 @@ internal sealed partial class JanelaNotch
         moldura.PreviewMouseDown += (_, _) => Ativar();
         _enviar = Pilula.Criar("Enviar", Pilula.Estilo.Principal, Enviar);
         _enviar.VerticalAlignment = VerticalAlignment.Bottom;
+        // Nada a responder (o Claude só contou o que fez): solta a sessão e tira a ficha de vez, sem pendência.
+        var descartar = Pilula.Criar("Descartar", Pilula.Estilo.Contorno, Descartar);
+        descartar.VerticalAlignment = VerticalAlignment.Bottom;
+        descartar.ToolTip = "Soltar a sessão sem responder e sem guardar nas pendências";
         _linhaCaixa.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         _linhaCaixa.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        Grid.SetColumn(_enviar, 1);
+        _linhaCaixa.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(descartar, 1);
+        Grid.SetColumn(_enviar, 2);
         _linhaCaixa.Children.Add(moldura);
+        _linhaCaixa.Children.Add(descartar);
         _linhaCaixa.Children.Add(_enviar);
 
         _caixa.TextChanged += (_, _) =>
@@ -159,6 +166,15 @@ internal sealed partial class JanelaNotch
         _devolverFoco = true;
         if (_estado.Enviou(id)) Desativar();
         else _devolverFoco = false;
+    }
+
+    /// "Descartar": se o Gustavo tinha clicado na caixa, o foco volta para onde ele estava; senão, nada muda.
+    private void Descartar()
+    {
+        if (_respostaMostrada is not { } id) return;
+        _devolverFoco = true;
+        _estado.Descartou(id);
+        Desativar();
     }
 
     /// "abrir no Claude ›": solta a sessão (sem ir para as pendências) e traz o app, sem devolver o foco antes (a janela

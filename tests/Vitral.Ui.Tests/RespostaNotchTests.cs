@@ -218,6 +218,31 @@ public sealed class RespostaNotchTests
     }
 
     [Fact]
+    public void Descartar_solta_sem_ir_para_as_pendencias()
+    {
+        var e = Criar();
+        var fim = Encerradas(e);
+        e.PediuResposta(R("1"));
+        e.Descartou("1");
+        Assert.Equal([("1", (string?)null)], fim);
+        Assert.Equal(0, e.Pendencias.Quantas);
+        Assert.Equal(ModoNotch.Normal, e.Modo);
+    }
+
+    [Fact]
+    public void Descartar_tira_a_pendencia_antiga_da_mesma_sessao()
+    {
+        var e = Criar();
+        e.SemNotch(R("1"));
+        e.SemNotch(R("2", "sic"));
+        e.PediuResposta(R("3")); // a sessão vitral terminou de novo
+        e.PediuResposta(R("4", "crm"));
+        e.Descartou("3");
+        Assert.Equal(["sic"], e.Pendencias.Itens.Select(p => p.Sessao));
+        Assert.Equal("4", e.RespostaAtual!.Id); // a próxima ficha da fila entra
+    }
+
+    [Fact]
     public void Clicar_na_caixa_para_o_tempo()
     {
         var e = Criar();

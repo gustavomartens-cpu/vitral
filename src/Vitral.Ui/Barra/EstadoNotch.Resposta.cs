@@ -97,6 +97,16 @@ public sealed partial class EstadoNotch
         Avancar(semResposta: false);
     }
 
+    /// "Descartar": não há o que responder (o Claude só contou o que fez). A sessão é solta e sai de vez, sem ir para
+    /// as pendências, e a pendência antiga dela também sai.
+    public void Descartou(string id)
+    {
+        if (FichaAtual is not { } f || f.Pedido.Id != id) return;
+        Encerrar(f, pendente: false);
+        Pendencias.SaiuDaSessao(f.Pedido.SessaoId, f.Pedido.Sessao);
+        Avancar(semResposta: false);
+    }
+
     /// O mensageiro fechou (o Claude largou a sessão): sai sem ir para as pendências; o aviso seguinte diz o que houve.
     public void DesistiuResposta(string id)
     {
