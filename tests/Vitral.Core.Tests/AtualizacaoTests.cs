@@ -18,8 +18,10 @@ internal sealed class FonteFalsa : IFonteAtualizacao
         return Erro is not null ? Task.FromException<string?>(Erro) : Task.FromResult(Nova);
     }
 
+    public bool ReiniciarDaCerto { get; set; } = true;
+
     public Task BaixarAsync() { Baixadas++; return Task.CompletedTask; }
-    public void Reiniciar() => Reinicios++;
+    public bool Reiniciar() { Reinicios++; return ReiniciarDaCerto; }
 }
 
 public sealed class AtualizacaoTests
@@ -121,6 +123,20 @@ public sealed class AtualizacaoTests
         var s = Criar();
         await s.ProcurarAgoraAsync();
         Assert.Equal(1, _fonte.Procuras);
+    }
+
+    [Fact]
+    public async Task Reiniciar_que_falha_vai_a_Falhou_e_procura_de_novo()
+    {
+        _fonte.Nova = "0.7.3";
+        _fonte.ReiniciarDaCerto = false;
+        var s = Criar();
+        await Passar(s, TimeSpan.FromMinutes(1));
+        s.Reiniciar();
+        Assert.Equal(1, _fonte.Reinicios);
+        Assert.Equal(EstadoAtualizacao.Falhou, s.Estado);
+        await s.ProcurarAgoraAsync();
+        Assert.Equal(2, _fonte.Procuras);
     }
 
     [Theory]

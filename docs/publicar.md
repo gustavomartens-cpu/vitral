@@ -80,6 +80,20 @@ publica nada.
 
 Num PC com o Vitral instalado, **Procurar agora** na janela deve achar a versão em poucos segundos.
 
+## Se a publicação parar no meio
+
+O `build.ps1` para no passo que falhou e mostra a mensagem do `vpk` (por exemplo, "Falhou: Subir a release
+(GitHub)"). Quem já tem o Vitral instalado não é afetado: o app só enxerga releases publicadas, nunca rascunhos.
+
+1. **Parou antes de "Subir a release":** nada foi para o GitHub. Corrija a causa e rode o mesmo comando de novo.
+2. **Parou em "Subir a release":** abra <https://github.com/gustavomartens-cpu/vitral/releases> e procure a versão
+   `vX.Y.Z`, publicada pela metade ou como **Draft**.
+   - Abra a release, clique no ícone de lixeira (**Delete**) e confirme.
+   - Se a tag ficou para trás, apague também: aba **Tags** → `vX.Y.Z` → **Delete**.
+3. Apague a pasta `artifacts\release` (ela pode ter pedaços da tentativa) e rode de novo
+   `pwsh build.ps1 -Versao X.Y.Z -Publicar`, com a mesma versão.
+4. Confira a release como na seção 4.
+
 ## 5. Trocar um token que venceu ou vazou
 
 1. Gere um token novo (seção 1) e apague o antigo na mesma tela do GitHub (**Delete**).

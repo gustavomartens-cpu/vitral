@@ -42,12 +42,20 @@ internal sealed class FonteVelopack : IFonteAtualizacao
 
     public Task BaixarAsync() => _gerente!.DownloadUpdatesAsync(_info!, null, default);
 
-    /// A limpeza de saída de sempre (barra do Windows, ícones, doca) e depois a troca da versão, que reabre o Vitral.
-    public void Reiniciar()
+    /// Agenda a troca (o Update.exe espera o Vitral sair) e só então faz a limpeza de saída de sempre (barra do Windows,
+    /// ícones, doca) e fecha. Se a troca não puder ser agendada (Update.exe bloqueado, pacote sumido), nada é desfeito
+    /// e o Vitral segue aberto.
+    public bool Reiniciar()
     {
-        if (_gerente is null || _info is null) return;
+        if (_gerente is null || _info is null) return false;
+        try { _gerente.WaitExitThenApplyUpdates(_info.TargetFullRelease, true, true, []); }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            LogBarra.Erro("FonteVelopack.Reiniciar", e);
+            return false;
+        }
         _limpezaDeSaida();
-        _gerente.WaitExitThenApplyUpdates(_info.TargetFullRelease, true, true, []);
         Application.Current.Shutdown();
+        return true;
     }
 }

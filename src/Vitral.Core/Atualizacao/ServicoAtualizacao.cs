@@ -13,7 +13,8 @@ public interface IFonteAtualizacao
 
     Task BaixarAsync();
 
-    void Reiniciar();
+    /// Agenda a troca da versão e fecha o Vitral; false se a troca não pôde ser agendada (o Vitral segue aberto).
+    bool Reiniciar();
 }
 
 public enum EstadoAtualizacao { Desligada, Atualizado, Baixando, Pronta, Falhou, AcessoNegado }
@@ -69,7 +70,11 @@ public sealed class ServicoAtualizacao
         finally { _ocupado = false; }
     }
 
-    public void Reiniciar() => _fonte.Reiniciar();
+    /// A troca que não pôde ser agendada vira Falhou: a linha avisa, e a próxima conferência baixa de novo.
+    public void Reiniciar()
+    {
+        if (!_fonte.Reiniciar()) Ir(EstadoAtualizacao.Falhou, Versao);
+    }
 
     private void Ir(EstadoAtualizacao estado, string? versao)
     {
