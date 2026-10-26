@@ -4,7 +4,8 @@ using System.Text.RegularExpressions;
 
 namespace Vitral.Core.Claude;
 
-public enum TipoAviso { Terminou, Esperando }
+/// Atualizacao: aviso do próprio Vitral (versão nova pronta), que usa o mesmo notch (spec da atualização §5.3).
+public enum TipoAviso { Terminou, Esperando, Atualizacao }
 
 /// Aviso do Claude Code para o notch (spec do notch vivo §4.3): vem do gancho (Stop ou Notification) e viaja pelo canal
 /// como uma linha JSON.

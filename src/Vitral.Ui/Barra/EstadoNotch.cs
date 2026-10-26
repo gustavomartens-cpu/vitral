@@ -4,7 +4,7 @@ namespace Vitral.Ui.Barra;
 
 public enum ModoNotch { Normal, Aviso, Lembrete }
 
-public enum AcaoNotch { Nenhuma, AbrirClaude, AbrirCalendario, AbrirNotificacoes }
+public enum AcaoNotch { Nenhuma, AbrirClaude, AbrirCalendario, AbrirNotificacoes, Reiniciar }
 
 /// Onde o clique caiu: no meio (relógio ou aviso) ou numa das laterais (spec do notch vivo §3.4).
 public enum ParteNotch { Meio, Esquerda, Direita }
@@ -66,13 +66,15 @@ public sealed class EstadoNotch(Func<DateTime> agora)
 
     public AcaoNotch Clicou(ParteNotch parte = ParteNotch.Meio)
     {
+        // O aviso (ou o lembrete) de uma versão nova do Vitral reinicia; os do Claude abrem o Claude.
+        var abrir = Aviso?.Tipo == TipoAviso.Atualizacao && Pendente ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         var acao = parte switch
         {
-            ParteNotch.Esquerda => AcaoNotch.AbrirClaude,
+            ParteNotch.Esquerda => abrir,
             ParteNotch.Direita => AcaoNotch.AbrirNotificacoes,
-            _ => Modo == ModoNotch.Aviso ? AcaoNotch.AbrirClaude : AcaoNotch.AbrirCalendario,
+            _ => Modo == ModoNotch.Aviso ? abrir : AcaoNotch.AbrirCalendario,
         };
-        if (acao == AcaoNotch.AbrirClaude) Pendente = false;
+        if (acao is AcaoNotch.AbrirClaude or AcaoNotch.Reiniciar) Pendente = false;
         Ir(ModoNotch.Normal);
         return acao;
     }

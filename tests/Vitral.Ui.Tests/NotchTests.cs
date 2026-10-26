@@ -171,4 +171,35 @@ public sealed class NotchTests
         e.Clicou();
         Assert.False(e.Pendente);
     }
+
+    private static readonly AvisoClaude Atualizacao = new(TipoAviso.Atualizacao, "Vitral", "0.7.3 pronto");
+
+    [Fact]
+    public void Clique_no_aviso_de_atualizacao_reinicia()
+    {
+        var e = Criar();
+        e.Chegou(Atualizacao);
+        Assert.Equal(AcaoNotch.Reiniciar, e.Clicou());
+    }
+
+    [Fact]
+    public void Lembrete_de_atualizacao_reinicia_pela_lateral()
+    {
+        var e = Criar();
+        e.Chegou(Atualizacao);
+        Avancar(7, e);
+        Assert.Equal(ModoNotch.Lembrete, e.Modo);
+        Assert.Equal(AcaoNotch.Reiniciar, e.Clicou(ParteNotch.Esquerda));
+    }
+
+    [Fact]
+    public void Aviso_do_Claude_continua_abrindo_o_Claude()
+    {
+        var e = Criar();
+        e.Chegou(A1);
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou());
+        e.Chegou(A1);
+        Avancar(7, e);
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou(ParteNotch.Esquerda));
+    }
 }
