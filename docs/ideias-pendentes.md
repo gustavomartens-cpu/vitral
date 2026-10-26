@@ -17,16 +17,22 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
   responder por ali; ou um chat pela API da Anthropic.
 - Cantos curvos ("orelhas") ligando o notch à borda de cima; provavelmente exige notch escuro sólido, sem acrílico.
 
+## Consertos pendentes
+
+- **Faixa vazia acima da doca (notebook, 25/10/2026): corrigido na 0.6.1 (ramo `conserto-tela-menor`),
+  conferido no notebook.** Ao ligar, a bandeja do Vitral (ManagedShell) difunde "TaskbarCreated". A reserva achava que o Explorer
+  tinha reiniciado e tentava um ABM_NEW, que falhava porque o registro ainda existia. Desde então a reserva não se
+  reposicionava mais. Ela ficou onde o primeiro ABM_QUERYPOS a pôs: acima da barra do Windows, que ainda não estava
+  oculta. Resultado: 62 + 48 DIPs reservados embaixo. Agora o "TaskbarCreated" remove o registro antes de registrar
+  de novo (`RegistroAppBar`). A mesma falha valia para a reserva do topo. `tools/diagnostico-doca.ps1` mostra o estado.
+- **Desligar a doca parava no meio (mesmo dia): corrigido no mesmo ramo.** O `SendNotifyMessage` não tinha o
+  `EntryPoint` com W. A bandeja não devolvia os ícones, e a janela e a reserva da doca ficavam abertas.
+- **`Bandeja.Avisar` pode lançar** (H.NotifyIcon, "Show notification failed") e interromper quem avisou, como o
+  `ControleDoca.AoRecriar`. Ainda não corrigido.
+
 ## Logo em preto e branco (25/10/2026)
 
 O Gustavo não gosta do azul com âmbar no logo do Vitral (doca e topo). Quer um logo preto e branco, ou só preto. Mudar junto com o próximo ajuste visual.
-
-## Consertos pendentes
-
-- **Notebook com tela menor (25/10/2026):** com a 0.6.0 instalada noutro notebook, sobra uma faixa vazia grande entre as
-  janelas maximizadas e a doca (print do Gustavo). Suspeitas: a barra do Windows continuar reservando o espaço dela
-  além dos 62 px da doca (ocultar automático não aplicado nessa máquina), ou a reserva multiplicada pela escala da tela.
-  Diagnosticar nessa máquina com o estado da barra (visível/oculta, área de trabalho, ocultar automático, DPI).
 
 ## Responder ao Claude pelo notch (próxima fase, combinada em 25/10/2026)
 
