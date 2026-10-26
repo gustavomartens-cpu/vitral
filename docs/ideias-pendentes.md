@@ -20,3 +20,10 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 ## Logo em preto e branco (25/10/2026)
 
 O Gustavo não gosta do azul com âmbar no logo do Vitral (doca e topo). Quer um logo preto e branco, ou só preto. Mudar junto com o próximo ajuste visual.
+
+## Consertos pendentes
+
+- **Notebook com tela menor (25/10/2026):** com a 0.6.0 instalada noutro notebook, sobra uma faixa vazia grande entre as
+  janelas maximizadas e a doca (print do Gustavo). Suspeitas: a barra do Windows continuar reservando o espaço dela
+  além dos 62 px da doca (ocultar automático não aplicado nessa máquina), ou a reserva multiplicada pela escala da tela.
+  Diagnosticar nessa máquina com o estado da barra (visível/oculta, área de trabalho, ocultar automático, DPI).
