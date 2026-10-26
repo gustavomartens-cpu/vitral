@@ -30,6 +30,9 @@
                               FocusVisualStyle="{StaticResource FocoVitral}"
                               Checked="AvisosClaude_Mudou" Unchecked="AvisosClaude_Mudou" />
                     <TextBlock x:Name="TextoBuild" Margin="0,8,0,0" FontSize="11" Foreground="{StaticResource TextoSecundario}" />
+                    <!-- Versão e atualização automática (spec da atualização §5.4) -->
+                    <TextBlock x:Name="TextoVersao" Margin="0,2,0,0" FontSize="11" Foreground="{StaticResource TextoSecundario}" />
+                    <TextBlock x:Name="LinhaAtualizacao" Margin="0,2,0,0" FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextoSecundario}" />
                 </StackPanel>
                 <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
                     <Button Content="Desfazer última mudança" Command="{Binding DesfazerCommand}" Style="{StaticResource BotaoVidro}" HorizontalContentAlignment="Left" Margin="0,3" />
