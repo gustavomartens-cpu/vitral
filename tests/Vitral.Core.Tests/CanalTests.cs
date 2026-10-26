@@ -40,4 +40,41 @@ public sealed class CanalTests
         Canal.Enviar(nome, new string((char)0x61, 64 * 1024));
         Assert.True(relogio.Elapsed < TimeSpan.FromSeconds(2), $"demorou {relogio.ElapsedMilliseconds} ms");
     }
+
+    [Fact]
+    public async Task Perguntar_recebe_a_resposta()
+    {
+        var nome = "Vitral-Teste-" + Guid.NewGuid().ToString("N");
+        using var servidor = new NamedPipeServerStream(nome, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        var atender = Task.Run(async () =>
+        {
+            await servidor.WaitForConnectionAsync();
+            var leitor = new StreamReader(servidor);
+            await leitor.ReadLineAsync();
+            var escritor = new StreamWriter(servidor) { AutoFlush = true };
+            await escritor.WriteLineAsync("ok");
+        });
+        var resposta = await Task.Run(() => Canal.Perguntar(nome, "pedido", 3000));
+        Assert.Equal("ok", resposta);
+        await atender;
+    }
+
+    [Fact]
+    public void Perguntar_sem_resposta_da_null_no_prazo()
+    {
+        var nome = "Vitral-Teste-" + Guid.NewGuid().ToString("N");
+        using var servidor = new NamedPipeServerStream(nome, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 4096, 4096);
+        _ = servidor.WaitForConnectionAsync();
+        var relogio = Stopwatch.StartNew();
+        Assert.Null(Canal.Perguntar(nome, "pedido", 400));
+        Assert.InRange(relogio.ElapsedMilliseconds, 300, 1000);
+    }
+
+    [Fact]
+    public void Perguntar_sem_servidor_null_rapido()
+    {
+        var relogio = Stopwatch.StartNew();
+        Assert.Null(Canal.Perguntar("Vitral-Inexistente-" + Guid.NewGuid().ToString("N"), "x", 5000));
+        Assert.True(relogio.Elapsed < TimeSpan.FromSeconds(1));
+    }
 }

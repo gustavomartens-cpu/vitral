@@ -105,4 +105,30 @@ public sealed class GanchosClaudeTests
         Assert.Equal("x", (string?)Raiz(t)["hooks"]!["Stop"]![0]);
         Assert.Equal("x", (string?)Raiz(GanchosClaude.Desligar(t))["hooks"]!["Stop"]![0]);
     }
+
+    [Fact]
+    public void Ligar_escreve_os_tres_eventos_com_timeout_na_permissao()
+    {
+        var t = GanchosClaude.Ligar("", Comando);
+        Assert.Equal(1, Nossos(t, "Stop"));
+        Assert.Equal(1, Nossos(t, "Notification"));
+        Assert.Equal(1, Nossos(t, "PermissionRequest"));
+        Assert.Equal(75, (int)Raiz(t)["hooks"]!["PermissionRequest"]![0]!["hooks"]![0]!["timeout"]!);
+    }
+
+    [Fact]
+    public void So_os_dois_antigos_conta_como_desligado_e_ligar_completa()
+    {
+        var item = "{\"hooks\":[{\"type\":\"command\",\"command\":" + System.Text.Json.JsonSerializer.Serialize(Comando) + "}]}";
+        var antigo = "{\"hooks\":{\"Stop\":[" + item + "],\"Notification\":[" + item + "]}}";
+        Assert.False(GanchosClaude.EstaLigado(antigo));
+        var t = GanchosClaude.Ligar(antigo, Comando);
+        Assert.True(GanchosClaude.EstaLigado(t));
+        Assert.Equal(1, Nossos(t, "Stop"));
+        Assert.Equal(1, Nossos(t, "Notification"));
+        Assert.Equal(1, Nossos(t, "PermissionRequest"));
+    }
+
+    [Fact]
+    public void Desligar_tira_os_tres() => Assert.Null(Raiz(GanchosClaude.Desligar(GanchosClaude.Ligar("{}", Comando)))["hooks"]);
 }

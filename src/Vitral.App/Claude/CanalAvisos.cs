@@ -61,7 +61,7 @@ internal sealed class CanalAvisos : IDisposable
         }
         var texto = Encoding.UTF8.GetString(bytes, 0, total);
         int fim = texto.IndexOf('\n');
-        return fim >= 0 ? texto[..fim] : texto;
+        return (fim >= 0 ? texto[..fim] : texto).TrimEnd('\r');
     }
 
     public void Dispose()
