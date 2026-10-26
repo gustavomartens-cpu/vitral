@@ -12,7 +12,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 {
     private ReservaFaixa? _reserva;
     private Fontes? _fontes;
-    private JanelaIlha? _midia, _relogio, _status;
+    private JanelaIlha? _midia, _status;
+    private JanelaNotch? _relogio; // o notch vivo (spec do notch vivo §3)
     private IlhaMidiaViewModel? _vmMidia;
     private IlhaRelogioViewModel? _vmRelogio;
     private IlhaStatusViewModel? _vmStatus;
@@ -97,7 +98,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             _vmStatus = new IlhaStatusViewModel(_fontes.Desempenho, _fontes.Volume, _fontes.Rede, _fontes.Bateria, new RelogioWpf(), ilhas);
 
         _midia = Ajustar(_midia, _vmMidia, "Mídia", () => new IlhaMidia());
-        _relogio = Ajustar(_relogio, _vmRelogio, "Relógio", () => new IlhaRelogio());
+        _relogio = AjustarNotch(_relogio, _vmRelogio);
         _status = Ajustar(_status, _vmStatus, "Status", () => new IlhaStatus());
         AtualizarVisibilidadeMidia();
         Posicionar();
@@ -123,6 +124,31 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         return janela;
     }
 
+    /// O relógio vive dentro do notch vivo; o notch pede o calendário e avisa quando a largura do relógio muda.
+    private JanelaNotch? AjustarNotch(JanelaNotch? notch, object? vm)
+    {
+        if (vm is null)
+        {
+            notch?.Close();
+            return null;
+        }
+        if (notch is null)
+        {
+            notch = new JanelaNotch(new IlhaRelogio());
+            notch.Pediu += p => _coordenador.Alternar(p, DateTime.Now);
+            notch.LarguraNormalMudou += Posicionar;
+            notch.DpiChanged += (_, _) => Reajustar();
+        }
+        notch.DataContext = vm;
+        return notch;
+    }
+
+    /// Aviso do Claude chegou pelo canal: vai para o notch; sem a barra do topo (ou sem o relógio), é descartado.
+    public void Avisar(Vitral.Core.Claude.AvisoClaude aviso)
+    {
+        if (_relogio is { IsVisible: true } notch) notch.Avisar(aviso);
+    }
+
     private void AoMudarMidia(object? s, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(IlhaMidiaViewModel.Visivel)) return;
@@ -141,7 +167,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         Mostrar(_status, !_telaCheia);
     }
 
-    private static void Mostrar(JanelaIlha? janela, bool visivel)
+    private static void Mostrar(Window? janela, bool visivel)
     {
         if (janela is null) return;
         if (visivel && !janela.IsVisible) janela.Show();
@@ -166,7 +192,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             if (aberto == Painel.Nenhum) return;
 
             var janelaPainel = JanelaDoPainel(aberto);
-            var ilha = aberto switch { Painel.Calendario => _relogio, Painel.Midia => _midia, _ => _status };
+            Window? ilha = aberto switch { Painel.Calendario => _relogio, Painel.Midia => _midia, _ => _status };
             if (janelaPainel is null || ilha is null)
             {
                 _coordenador.FecharTodos(); // painel ainda não existe nesta versão
@@ -180,7 +206,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             };
             var p = MonitorPrincipal.Ler();
             var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
-            var ret = new Retangulo(ilha.Left, ilha.Top, ilha.ActualWidth, ilha.ActualHeight);
+            var ret = ilha is JanelaNotch notch ? notch.AreaDoRelogio : new Retangulo(ilha.Left, ilha.Top, ilha.ActualWidth, ilha.ActualHeight);
             janelaPainel.Mostrar(PosicaoIlhas.Painel(ret, janelaPainel.Width, janelaPainel.ActualHeight, alinhamento, monitor));
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
@@ -269,9 +295,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         {
             var p = MonitorPrincipal.Ler(); // as ilhas ficam no principal: DIPs pela escala atual dele
             var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
-            var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.ActualWidth ?? 0, _status?.ActualWidth ?? 0);
+            var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0);
             Colocar(_midia, m);
-            Colocar(_relogio, r);
+            _relogio?.Colocar(r);
             Colocar(_status, s);
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("ControleBarra.Posicionar", e); }
@@ -324,7 +350,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             _midia?.Close();
             _relogio?.Close();
             _status?.Close();
-            _midia = _relogio = _status = null;
+            _midia = _status = null;
+            _relogio = null;
             DescartarViewModels();
             _fontes?.Dispose();
             _fontes = null;

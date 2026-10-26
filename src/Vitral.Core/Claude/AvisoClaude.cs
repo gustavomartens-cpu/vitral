@@ -1,0 +1,98 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+namespace Vitral.Core.Claude;
+
+public enum TipoAviso { Terminou, Esperando }
+
+/// Aviso do Claude Code para o notch (spec do notch vivo §4.3): vem do gancho (Stop ou Notification) e viaja pelo canal
+/// como uma linha JSON.
+public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string Texto)
+{
+    public const int MaximoLinha = 4096;
+
+    private static readonly JsonSerializerOptions OpcoesLinha = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    /// O que o gancho recebe na entrada padrão. <paramref name="lerFimDoArquivo"/> devolve os últimos 64 KB da
+    /// transcrição (ou null). Evento que não interessa, JSON vazio ou com defeito: null.
+    public static AvisoClaude? DeGancho(string json, Func<string, string?> lerFimDoArquivo)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var raiz = doc.RootElement;
+            if (raiz.ValueKind != JsonValueKind.Object) return null;
+            TipoAviso? tipo = Campo(raiz, "hook_event_name") switch
+            {
+                "Stop" => TipoAviso.Terminou,
+                "Notification" => TipoAviso.Esperando,
+                _ => null,
+            };
+            if (tipo is null) return null;
+            var pasta = Campo(raiz, "cwd")?.TrimEnd('\\', '/');
+            var sessao = string.IsNullOrEmpty(pasta) ? "Claude" : Path.GetFileName(pasta);
+            if (string.IsNullOrEmpty(sessao)) sessao = "Claude";
+            string texto = "";
+            if (tipo == TipoAviso.Esperando) texto = Campo(raiz, "message") ?? "";
+            else if (Campo(raiz, "transcript_path") is { } caminho && lerFimDoArquivo(caminho) is { } trecho)
+                texto = UltimaRespostaDoAssistente(trecho);
+            return new AvisoClaude(tipo.Value, sessao, Encurtar(texto));
+        }
+        catch (JsonException) { return null; }
+    }
+
+    private static string? Campo(JsonElement e, string nome) =>
+        e.TryGetProperty(nome, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+
+    /// A última mensagem do assistente que tem texto, num trecho JSONL da transcrição. A primeira linha do trecho pode
+    /// vir cortada; linhas que não são JSON são ignoradas.
+    public static string UltimaRespostaDoAssistente(string trechoJsonl)
+    {
+        var linhas = trechoJsonl.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        for (int i = linhas.Length - 1; i >= 0; i--)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(linhas[i]);
+                var raiz = doc.RootElement;
+                if (Campo(raiz, "type") != "assistant" || !raiz.TryGetProperty("message", out var msg)
+                    || !msg.TryGetProperty("content", out var conteudo) || conteudo.ValueKind != JsonValueKind.Array) continue;
+                foreach (var bloco in conteudo.EnumerateArray())
+                    if (Campo(bloco, "type") == "text" && Campo(bloco, "text") is { Length: > 0 } t) return t;
+            }
+            catch (JsonException) { /* linha cortada ou estranha: segue */ }
+        }
+        return "";
+    }
+
+    /// Uma linha só, sem a marcação Markdown simples, no máximo <paramref name="maximo"/> caracteres (com o "…").
+    public static string Encurtar(string texto, int maximo = 80)
+    {
+        var limpo = Cabecalho().Replace(texto, "");
+        limpo = limpo.Replace("*", "").Replace("`", "");
+        limpo = Espacos().Replace(limpo, " ").Trim();
+        return limpo.Length <= maximo ? limpo : limpo[..(maximo - 1)].TrimEnd() + "…";
+    }
+
+    [GeneratedRegex(@"(?m)^\s*#+\s*")] private static partial Regex Cabecalho();
+    [GeneratedRegex(@"\s+")] private static partial Regex Espacos();
+
+    /// A linha que viaja pelo canal.
+    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto), OpcoesLinha);
+
+    public static AvisoClaude? DeLinha(string? linha)
+    {
+        if (string.IsNullOrWhiteSpace(linha) || linha.Length > MaximoLinha) return null;
+        try
+        {
+            var l = JsonSerializer.Deserialize<Linha>(linha, OpcoesLinha);
+            return l is { Sessao: not null, Texto: not null } && Enum.TryParse<TipoAviso>(l.Tipo, out var tipo)
+                ? new AvisoClaude(tipo, l.Sessao, l.Texto) : null;
+        }
+        catch (JsonException) { return null; }
+    }
+
+    private sealed record Linha(string? Tipo, string? Sessao, string? Texto);
+}

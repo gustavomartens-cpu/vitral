@@ -51,3 +51,13 @@ public sealed class MenuForaTests
     public void Fecha_so_num_clique_novo_fora_do_menu(bool antes, bool agora, bool noMenu, bool fecha) =>
         Assert.Equal(fecha, MenuFora.DeveFechar(antes, agora, noMenu));
 }
+
+public sealed class PilulaTests
+{
+    [Theory]
+    [InlineData(30, 15)]
+    [InlineData(0, 0)]
+    [InlineData(-4, 0)]
+    [InlineData(double.NaN, 0)]
+    public void Raio_e_meia_altura(double altura, double raio) => Assert.Equal(raio, Pilula.Raio(altura));
+}
