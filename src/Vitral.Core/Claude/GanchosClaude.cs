@@ -16,6 +16,9 @@ public static class GanchosClaude
     /// O pedido de permissão espera a resposta do notch por até 60 s (spec das permissões §3.1): o Claude não pode cortar antes.
     private const int TempoPermissao = 75;
 
+    /// O Stop pode segurar a sessão enquanto o Gustavo responde pelo notch (até 19,5 min, spec da resposta §3.1).
+    public const int TempoResposta = 1200;
+
     private static readonly JsonDocumentOptions Leitura = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
     private static readonly JsonSerializerOptions Escrita = new() { WriteIndented = true };
 
@@ -26,7 +29,9 @@ public static class GanchosClaude
         try
         {
             var raiz = Ler(texto);
-            return Eventos.All(e => Lista(raiz, e)?.Any(EhNosso) == true);
+            // O Stop sem o tempo da resposta é de uma versão anterior: ligar de novo completa.
+            return Eventos.All(e => Lista(raiz, e)?.Any(EhNosso) == true)
+                && Lista(raiz, "Stop")!.Any(i => EhNosso(i) && TemTempo(i, TempoResposta));
         }
         catch (FormatException) { return false; }
     }
@@ -41,6 +46,7 @@ public static class GanchosClaude
             Remover(lista);
             var item = new JsonObject { ["type"] = "command", ["command"] = comando };
             if (evento == "PermissionRequest") item["timeout"] = TempoPermissao;
+            if (evento == "Stop") item["timeout"] = TempoResposta;
             lista.Add(new JsonObject { ["hooks"] = new JsonArray(item) });
         }
         return raiz.ToJsonString(Escrita);
@@ -90,6 +96,10 @@ public static class GanchosClaude
     private static bool EhNosso(JsonNode? item) =>
         item is JsonObject o && o["hooks"] is JsonArray comandos
         && comandos.Any(c => c is JsonObject co && co["command"] is JsonValue v && v.TryGetValue<string>(out var s) && s.Contains(Marca, StringComparison.OrdinalIgnoreCase));
+
+    private static bool TemTempo(JsonNode? item, int segundos) =>
+        item is JsonObject o && o["hooks"] is JsonArray comandos
+        && comandos.Any(c => c is JsonObject co && co["timeout"] is JsonValue v && v.TryGetValue<int>(out var t) && t == segundos);
 
     private static void Remover(JsonArray lista)
     {

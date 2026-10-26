@@ -129,6 +129,31 @@ public sealed class GanchosClaudeTests
         Assert.Equal(1, Nossos(t, "PermissionRequest"));
     }
 
+    private static JsonNode? Item(string t, string evento) => Raiz(t)["hooks"]![evento]![0]!["hooks"]![0];
+
+    [Fact]
+    public void Ligar_poe_timeout_1200_no_Stop()
+    {
+        var t = GanchosClaude.Ligar("{}", Comando);
+        Assert.Equal(1200, (int)Item(t, "Stop")!["timeout"]!);
+        Assert.Equal(75, (int)Item(t, "PermissionRequest")!["timeout"]!);
+        Assert.Null(Item(t, "Notification")!["timeout"]);
+    }
+
+    [Fact]
+    public void Stop_sem_o_timeout_novo_aparece_desligado()
+    {
+        // Os ganchos da 0.8.x: três eventos, mas o Stop sem timeout.
+        var item = "{\"hooks\":[{\"type\":\"command\",\"command\":" + System.Text.Json.JsonSerializer.Serialize(Comando) + "}]}";
+        var permissao = "{\"hooks\":[{\"type\":\"command\",\"command\":" + System.Text.Json.JsonSerializer.Serialize(Comando) + ",\"timeout\":75}]}";
+        var v08 = "{\"hooks\":{\"Stop\":[" + item + "],\"Notification\":[" + item + "],\"PermissionRequest\":[" + permissao + "]}}";
+        Assert.False(GanchosClaude.EstaLigado(v08));
+        var t = GanchosClaude.Ligar(v08, Comando);
+        Assert.True(GanchosClaude.EstaLigado(t));
+        Assert.Equal(1, Nossos(t, "Stop"));
+        Assert.Equal(1, Nossos(t, "PermissionRequest"));
+    }
+
     [Fact]
     public void Desligar_tira_os_tres() => Assert.Null(Raiz(GanchosClaude.Desligar(GanchosClaude.Ligar("{}", Comando)))["hooks"]);
 }
