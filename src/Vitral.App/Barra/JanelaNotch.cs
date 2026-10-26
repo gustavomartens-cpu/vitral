@@ -60,6 +60,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private readonly ScaleTransform _tempoRestante = new(1, 1);
     private readonly Dictionary<string, TaskCompletionSource<EscolhaPermissao?>> _esperando = [];
     private string? _pedidoMostrado;
+    private Border _botaoSempre = null!;
     private readonly TextBlock _titulo = new() { FontWeight = FontWeights.SemiBold, FontSize = 12 };
     private readonly TextBlock _detalhe = new() { FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly TextBlock _abrir = new() { FontSize = 11, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
@@ -323,7 +324,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         linha.Children.Add(textos);
 
         _botoes.Children.Add(BotaoPedido("Permitir", EscolhaPermissao.Permitir, principal: true));
-        _botoes.Children.Add(BotaoPedido("Sempre nesta sessão", EscolhaPermissao.SempreNaSessao));
+        _botaoSempre = BotaoPedido("Sempre nesta sessão", EscolhaPermissao.SempreNaSessao);
+        _botoes.Children.Add(_botaoSempre);
         _botoes.Children.Add(BotaoPedido("Negar", EscolhaPermissao.Negar, perigo: true));
 
         var trilho = new Border { Height = 2, Margin = new Thickness(0, 9, 0, 0), CornerRadius = new CornerRadius(1), Background = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)) };
@@ -362,7 +364,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         botao.MouseLeftButtonUp += (_, e) =>
         {
             e.Handled = true; // o clique é do botão, não do notch (que abriria o calendário)
-            _estado.Respondeu(escolha);
+            // Para o pedido que está na tela; o estado recusa se outro acabou de tomar a ficha.
+            if (_pedidoMostrado is { } id) _estado.Respondeu(id, escolha);
         };
         return botao;
     }
@@ -390,7 +393,10 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _pedidoTitulo.Text = p.Titulo;
         _pedidoSessao.Text = $"{p.Sessao} · ";
         _pedidoResumo.Text = p.Resumo;
-        _pedidoResumo.ToolTip = p.Resumo;
+        // A dica traz o pedido inteiro, e a do "Sempre" diz o que ele libera; sem regra segura, o "Sempre" some.
+        _pedidoResumo.ToolTip = new TextBlock { Text = p.Completo ?? p.Resumo, TextWrapping = TextWrapping.Wrap, MaxWidth = 480 };
+        _botaoSempre.ToolTip = p.AlcanceSempre;
+        _botaoSempre.Visibility = p.AlcanceSempre is null ? Visibility.Collapsed : Visibility.Visible;
         double falta = Math.Max(0, EstadoNotch.TempoPedido - (DateTime.Now - (_estado.ChegadaDoAtual ?? DateTime.Now)).TotalSeconds);
         double inicio = falta / EstadoNotch.TempoPedido;
         _tempoRestante.BeginAnimation(ScaleTransform.ScaleXProperty, Movimento.Ligado

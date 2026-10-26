@@ -6,7 +6,75 @@ namespace Vitral.Core.Tests;
 public sealed class PermissaoTests
 {
     private static string Gancho(string ferramenta, string entrada, string? sugestoes = null) =>
-        $$"""{"hook_event_name":"PermissionRequest","cwd":"G:\\dev\\vitral","tool_name":"{{ferramenta}}","tool_input":{{entrada}}{{(sugestoes is null ? "" : $",\"permission_suggestions\":{sugestoes}")}}}""";
+        $$"""{"hook_event_name":"PermissionRequest","session_id":"s1","cwd":"G:\\dev\\vitral","tool_name":"{{ferramenta}}","tool_input":{{entrada}}{{(sugestoes is null ? "" : $",\"permission_suggestions\":{sugestoes}")}}}""";
+
+    private static JsonNode? Regra(EscolhaPermissao escolha, string gancho) =>
+        Decisao(RespostaPermissao.ParaClaude(escolha, gancho))["updatedPermissions"]?[0]?["rules"]?[0];
+
+    [Theory]
+    [InlineData("Bash")]
+    [InlineData("PowerShell")]
+    public void Ferramenta_de_comando_vira_rodar_um_comando(string ferramenta)
+    {
+        var p = PedidoPermissao.DeGancho(Gancho(ferramenta, """{"command":"Remove-Item x"}"""))!;
+        Assert.Equal("Claude quer rodar um comando", p.Titulo);
+        Assert.Equal("Remove-Item x", p.Resumo);
+        Assert.Equal("Só este comando, nesta sessão", p.AlcanceSempre);
+    }
+
+    [Fact]
+    public void Comando_mostrado_sem_perder_asterisco_nem_crase()
+    {
+        var p = PedidoPermissao.DeGancho(Gancho("PowerShell", """{"command":"del *.log; Write-Host `\"a`\"\n# fim"}"""))!;
+        Assert.Equal("del *.log; Write-Host `\"a`\" # fim", p.Resumo);
+    }
+
+    [Fact]
+    public void Comando_inteiro_vai_para_a_dica()
+    {
+        var comando = new string('x', 500) + "; rm y";
+        var p = PedidoPermissao.DeGancho(Gancho("Bash", $$"""{"command":"{{comando}}"}"""))!;
+        Assert.Equal(200, p.Resumo.Length);
+        Assert.Equal(comando, p.Completo);
+    }
+
+    [Fact]
+    public void Comando_com_asterisco_nao_tem_sempre()
+    {
+        var gancho = Gancho("Bash", """{"command":"rm -rf dist/*"}""");
+        Assert.Null(PedidoPermissao.DeGancho(gancho)!.AlcanceSempre);
+        var d = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.SempreNaSessao, gancho));
+        Assert.Equal("allow", (string?)d["behavior"]);
+        Assert.Null(d["updatedPermissions"]);
+    }
+
+    [Fact]
+    public void Sempre_ignora_sugestao_mais_larga_que_o_comando()
+    {
+        const string sugestoes = """[{"type":"addRules","rules":[{"toolName":"Bash","ruleContent":"git push:*"}],"behavior":"allow","destination":"localSettings"}]""";
+        var regra = Regra(EscolhaPermissao.SempreNaSessao, Gancho("Bash", """{"command":"git push origin main"}""", sugestoes))!;
+        Assert.Equal("git push origin main", (string?)regra["ruleContent"]);
+    }
+
+    [Fact]
+    public void WebFetch_sempre_vale_para_o_dominio()
+    {
+        var gancho = Gancho("WebFetch", """{"url":"https://exemplo.com/x?y=1"}""");
+        Assert.Equal("domain:exemplo.com", (string?)Regra(EscolhaPermissao.SempreNaSessao, gancho)!["ruleContent"]);
+        Assert.Equal("Qualquer endereço em exemplo.com, nesta sessão", PedidoPermissao.DeGancho(gancho)!.AlcanceSempre);
+    }
+
+    [Fact]
+    public void Edicao_avisa_que_o_sempre_vale_para_qualquer_arquivo() =>
+        Assert.Equal("Qualquer edição de arquivo, nesta sessão",
+            PedidoPermissao.DeGancho(Gancho("Edit", """{"file_path":"C:\\a\\Foo.cs"}"""))!.AlcanceSempre);
+
+    [Fact]
+    public void Mcp_avisa_que_o_sempre_vale_para_a_ferramenta() =>
+        Assert.Equal("A ferramenta sic · lead_get, nesta sessão", PedidoPermissao.DeGancho(Gancho("mcp__sic__lead_get", "{}"))!.AlcanceSempre);
+
+    [Fact]
+    public void Pedido_leva_o_id_da_sessao() => Assert.Equal("s1", PedidoPermissao.DeGancho(Gancho("Bash", """{"command":"x"}"""))!.SessaoId);
 
     private static JsonNode Decisao(string json) => JsonNode.Parse(json)!["hookSpecificOutput"]!["decision"]!;
 
@@ -41,11 +109,11 @@ public sealed class PermissaoTests
     }
 
     [Fact]
-    public void Mcp_mostra_o_ultimo_trecho()
+    public void Mcp_mostra_o_servidor_e_a_ferramenta()
     {
         var p = PedidoPermissao.DeGancho(Gancho("mcp__sic__lead_get", "{}"))!;
         Assert.Equal("Claude quer usar uma ferramenta", p.Titulo);
-        Assert.Equal("lead_get", p.Resumo);
+        Assert.Equal("sic · lead_get", p.Resumo);
     }
 
     [Fact]
@@ -73,7 +141,8 @@ public sealed class PermissaoTests
     [Fact]
     public void Linha_do_pedido_ida_e_volta()
     {
-        var p = new PedidoPermissao("id1", "vitral", "Bash", "Claude quer rodar um comando", "npm test");
+        var p = new PedidoPermissao("id1", "vitral", "Bash", "Claude quer rodar um comando", "npm test")
+            { SessaoId = "s1", Completo = "npm test", AlcanceSempre = "Só este comando, nesta sessão" };
         Assert.Equal(p, PedidoPermissao.DeLinha(p.ParaLinha()));
         Assert.True(PedidoPermissao.EhPedido(p.ParaLinha()));
     }
@@ -104,7 +173,7 @@ public sealed class PermissaoTests
     }
 
     [Fact]
-    public void Sempre_usa_a_sugestao_com_destino_sessao()
+    public void Sempre_sai_com_destino_sessao_mesmo_com_sugestao_de_outro_destino()
     {
         const string sugestoes = """[{"type":"addRules","rules":[{"toolName":"Bash","ruleContent":"npm test:*"}],"behavior":"allow","destination":"localSettings"}]""";
         var d = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.SempreNaSessao, Gancho("Bash", """{"command":"npm test"}""", sugestoes)));
@@ -113,7 +182,7 @@ public sealed class PermissaoTests
         Assert.Equal("addRules", (string?)regra["type"]);
         Assert.Equal("session", (string?)regra["destination"]);
         Assert.Equal("allow", (string?)regra["behavior"]);
-        Assert.Equal("npm test:*", (string?)regra["rules"]![0]!["ruleContent"]);
+        Assert.Equal("npm test", (string?)regra["rules"]![0]!["ruleContent"]);
     }
 
     [Fact]
@@ -137,9 +206,9 @@ public sealed class PermissaoTests
     [Fact]
     public void Sempre_sem_sugestao_em_outra_ferramenta_usa_a_ferramenta()
     {
-        var regra = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.SempreNaSessao, Gancho("WebFetch", """{"url":"https://x"}""")))["updatedPermissions"]![0]!;
+        var regra = Decisao(RespostaPermissao.ParaClaude(EscolhaPermissao.SempreNaSessao, Gancho("mcp__sic__lead_get", "{}")))["updatedPermissions"]![0]!;
         var r = regra["rules"]![0]!.AsObject();
-        Assert.Equal("WebFetch", (string?)r["toolName"]);
+        Assert.Equal("mcp__sic__lead_get", (string?)r["toolName"]);
         Assert.False(r.ContainsKey("ruleContent"));
     }
 

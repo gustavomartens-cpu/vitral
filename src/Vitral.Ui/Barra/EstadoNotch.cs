@@ -16,10 +16,12 @@ public enum ParteNotch { Meio, Esquerda, Direita }
 ///   tempo esgotado ou com um aviso da mesma sessão (resolvido no app).
 public sealed class EstadoNotch(Func<DateTime> agora)
 {
-    public const double Duracao = 6, EsperaLaterais = 0.25, TempoPedido = 60, TempoConfirmacao = 1;
+    /// EsperaClique: um pedido que acabou de aparecer na ficha não aceita clique, para um clique dado no anterior não
+    /// cair nele.
+    public const double Duracao = 6, EsperaLaterais = 0.25, TempoPedido = 60, TempoConfirmacao = 1, EsperaClique = 0.5;
 
     private readonly List<(PedidoPermissao Pedido, DateTime Chegou)> _fila = [];
-    private DateTime _inicio, _entrou, _confirmou;
+    private DateTime _inicio, _entrou, _confirmou, _mostrou;
     private bool _mouse;
 
     public ModoNotch Modo { get; private set; } = ModoNotch.Normal;
@@ -56,9 +58,15 @@ public sealed class EstadoNotch(Func<DateTime> agora)
     {
         // Um aviso do Claude da sessão de um pedido aberto diz que ele foi resolvido no app. O de atualização é do próprio
         // Vitral e nunca resolve pedido (um Claude numa pasta "Vitral" teria a mesma sessão).
+        // Com o id da sessão dos dois lados, só ele vale (várias conversas na mesma pasta); sem ele, o nome da pasta.
+        var atual = PedidoAtual;
         if (aviso.Tipo != TipoAviso.Atualizacao)
             for (int i = _fila.Count - 1; i >= 0; i--)
-                if (_fila[i].Pedido.Sessao == aviso.Sessao) Sair(i, null);
+            {
+                var p = _fila[i].Pedido;
+                if (p.SessaoId is not null && aviso.SessaoId is not null ? p.SessaoId == aviso.SessaoId : p.Sessao == aviso.Sessao) Sair(i, null);
+            }
+        if (atual is not null && PedidoAtual is { } seguinte && seguinte != atual) _mostrou = agora(); // outro tomou a ficha
         Aviso = aviso;
         Pendente = true;
         if (_fila.Count > 0 || Confirmando) { Mudou?.Invoke(); return; } // o pedido de outra sessão continua na frente
@@ -73,13 +81,15 @@ public sealed class EstadoNotch(Func<DateTime> agora)
         PedidoPerdido = false;
         Laterais = false;
         if (Modo == ModoNotch.Permissao) { Mudou?.Invoke(); return; } // "+N"
-        Ir(ModoNotch.Permissao, forcar: true);
+        Mostrar();
     }
 
-    /// O clique num botão da ficha; devolve o pedido respondido (o canal completa a resposta pelo Encerrado).
-    public PedidoPermissao? Respondeu(EscolhaPermissao escolha)
+    /// O clique num botão da ficha, para o pedido <paramref name="id"/> que estava na tela; devolve o pedido
+    /// respondido (o canal completa a resposta pelo Encerrado). Recusa se outro pedido tomou a ficha ou se o atual
+    /// acabou de aparecer.
+    public PedidoPermissao? Respondeu(string id, EscolhaPermissao escolha)
     {
-        if (PedidoAtual is not { } pedido) return null;
+        if (PedidoAtual is not { } pedido || pedido.Id != id || (agora() - _mostrou).TotalSeconds < EsperaClique) return null;
         Sair(0, escolha);
         Confirmando = true;
         UltimaEscolha = escolha;
@@ -110,7 +120,7 @@ public sealed class EstadoNotch(Func<DateTime> agora)
     /// Depois de uma resposta ou de um pedido perdido: o próximo da fila, ou o fim do modo de pedido.
     private void Avancar(bool semResposta)
     {
-        if (_fila.Count > 0) { Ir(ModoNotch.Permissao, forcar: true); return; }
+        if (_fila.Count > 0) { Mostrar(); return; }
         if (semResposta)
         {
             PedidoPerdido = true;
@@ -157,6 +167,13 @@ public sealed class EstadoNotch(Func<DateTime> agora)
         if (acao is AcaoNotch.AbrirClaude or AcaoNotch.Reiniciar) { Pendente = false; PedidoPerdido = false; }
         Ir(ModoNotch.Normal);
         return acao;
+    }
+
+    /// O primeiro da fila vai para a ficha (e só aceita clique depois da EsperaClique).
+    private void Mostrar()
+    {
+        _mostrou = agora();
+        Ir(ModoNotch.Permissao, forcar: true);
     }
 
     private void Ir(ModoNotch modo, bool forcar = false)

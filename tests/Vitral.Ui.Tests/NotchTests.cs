@@ -192,7 +192,8 @@ public sealed class NotchTests
         e.Encerrado += (p, x) => encerrados.Add((p, x));
         var pedido = P("1");
         e.Pediu(pedido);
-        Assert.Same(pedido, e.Respondeu(EscolhaPermissao.Permitir));
+        Avancar(0.6, e);
+        Assert.Same(pedido, e.Respondeu(pedido.Id, EscolhaPermissao.Permitir));
         Assert.Equal([(pedido, (EscolhaPermissao?)EscolhaPermissao.Permitir)], encerrados);
         Assert.True(e.Confirmando);
         Assert.Equal(EscolhaPermissao.Permitir, e.UltimaEscolha);
@@ -225,7 +226,8 @@ public sealed class NotchTests
         e.Pediu(P("1"));
         e.Pediu(segundo);
         Assert.Equal(1, e.NaFila);
-        e.Respondeu(EscolhaPermissao.Negar);
+        Avancar(0.6, e);
+        e.Respondeu("1", EscolhaPermissao.Negar);
         Avancar(1.1, e);
         Assert.Same(segundo, e.PedidoAtual);
         Assert.Equal(ModoNotch.Permissao, e.Modo);
@@ -242,7 +244,7 @@ public sealed class NotchTests
         Avancar(50, e);
         e.Pediu(P("2"));
         Avancar(5, e);
-        e.Respondeu(EscolhaPermissao.Permitir);
+        e.Respondeu("1", EscolhaPermissao.Permitir);
         Avancar(54.9, e);
         Assert.DoesNotContain(("2", (EscolhaPermissao?)null), encerrados);
         Avancar(0.2, e);
@@ -333,5 +335,73 @@ public sealed class NotchTests
         Avancar(60.1, e);
         Assert.True(e.PedidoPerdido);
         Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou(ParteNotch.Esquerda));
+    }
+
+    [Fact]
+    public void Clique_logo_que_o_pedido_aparece_e_ignorado()
+    {
+        var e = Criar();
+        var encerrados = 0;
+        e.Encerrado += (_, _) => encerrados++;
+        e.Pediu(P("1"));
+        Avancar(0.2, e);
+        Assert.Null(e.Respondeu("1", EscolhaPermissao.SempreNaSessao));
+        Assert.Equal(0, encerrados);
+        Avancar(0.4, e);
+        Assert.NotNull(e.Respondeu("1", EscolhaPermissao.SempreNaSessao));
+    }
+
+    [Fact]
+    public void Clique_logo_que_o_seguinte_entra_e_ignorado()
+    {
+        var e = Criar();
+        e.Pediu(P("1"));
+        e.Pediu(P("2"));
+        Avancar(0.6, e);
+        e.Respondeu("1", EscolhaPermissao.Permitir);
+        Avancar(1.1, e);
+        Assert.Equal("2", e.PedidoAtual!.Id);
+        Assert.Null(e.Respondeu("2", EscolhaPermissao.SempreNaSessao));
+    }
+
+    [Fact]
+    public void Clique_em_pedido_que_ja_saiu_e_ignorado()
+    {
+        var e = Criar();
+        e.Pediu(P("2"));
+        Avancar(0.6, e);
+        Assert.Null(e.Respondeu("1", EscolhaPermissao.Permitir));
+        Assert.Equal(ModoNotch.Permissao, e.Modo);
+    }
+
+    [Fact]
+    public void Aviso_de_outra_sessao_na_mesma_pasta_nao_descarta()
+    {
+        var e = Criar();
+        e.Pediu(P("1") with { SessaoId = "s2" });
+        e.Chegou(A1 with { SessaoId = "s1" });
+        Assert.Equal(ModoNotch.Permissao, e.Modo);
+        Assert.Equal("1", e.PedidoAtual!.Id);
+    }
+
+    [Fact]
+    public void Aviso_que_tira_o_atual_tambem_segura_o_clique_no_seguinte()
+    {
+        var e = Criar();
+        e.Pediu(P("1", "vitral"));
+        e.Pediu(P("2", "sic"));
+        Avancar(0.6, e);
+        e.Chegou(A1); // sessão vitral: tira o 1, o 2 vai para a ficha
+        Assert.Equal("2", e.PedidoAtual!.Id);
+        Assert.Null(e.Respondeu("2", EscolhaPermissao.SempreNaSessao));
+    }
+
+    [Fact]
+    public void Aviso_da_mesma_sessao_pelo_id_descarta()
+    {
+        var e = Criar();
+        e.Pediu(P("1") with { SessaoId = "s1" });
+        e.Chegou(A1 with { SessaoId = "s1" });
+        Assert.Equal(ModoNotch.Aviso, e.Modo);
     }
 }
