@@ -27,3 +27,14 @@ O Gustavo não gosta do azul com âmbar no logo do Vitral (doca e topo). Quer um
   janelas maximizadas e a doca (print do Gustavo). Suspeitas: a barra do Windows continuar reservando o espaço dela
   além dos 62 px da doca (ocultar automático não aplicado nessa máquina), ou a reserva multiplicada pela escala da tela.
   Diagnosticar nessa máquina com o estado da barra (visível/oculta, área de trabalho, ocultar automático, DPI).
+
+## Responder ao Claude pelo notch (próxima fase, combinada em 25/10/2026)
+
+Começar pelas **permissões**: gancho `PermissionRequest` do Claude Code. O notch mostra o pedido ("Claude quer rodar:
+npm test") com Permitir / Negar; o mensageiro espera o clique (ex.: 60 s, `timeout` do gancho) e devolve
+`hookSpecificOutput.decision.behavior` = allow/deny. Sem resposta a tempo, não devolve nada e o Claude mostra o pedido
+normal dele.
+
+Depois, como experimento: **resposta por texto** no `Stop` (`decision: "block"` + `reason` com o texto digitado no
+notch). Ressalvas: a sessão aparece "trabalhando" enquanto o notch espera, e o texto entra como retorno do gancho, não
+como mensagem do usuário. Não existe gancho para mandar uma mensagem nova a qualquer momento.
