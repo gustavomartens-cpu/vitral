@@ -22,7 +22,7 @@ internal sealed partial class FonteBandeja(Dispatcher ui) : IFonteBandeja, IDisp
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool GetCursorPos(out Ponto ponto);
     [LibraryImport("user32.dll", EntryPoint = "RegisterWindowMessageW", StringMarshalling = StringMarshalling.Utf16)]
     private static partial uint RegisterWindowMessage(string nome);
-    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
+    [LibraryImport("user32.dll", EntryPoint = "SendNotifyMessageW")] [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool SendNotifyMessage(IntPtr janela, uint mensagem, IntPtr w, IntPtr l);
 
     [StructLayout(LayoutKind.Sequential)] private struct Ponto { public int X, Y; }
