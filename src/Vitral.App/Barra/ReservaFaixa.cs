@@ -6,7 +6,7 @@ namespace Vitral.App.Barra;
 /// Reserva uma faixa do monitor principal como AppBar: a do topo (barra do topo, spec §3.1) ou a de baixo (doca):
 /// janelas maximizadas ficam fora dela. Uma janela oculta recebe as notificações da AppBar (tela cheia, mudança de posição) e o "TaskbarCreated"
 /// do Explorer reiniciado. Se o Vitral cair, o Windows libera a reserva sozinho.
-internal sealed partial class ReservaFaixa : IDisposable
+internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
 {
     private const uint AbmNew = 0, AbmRemove = 1, AbmQueryPos = 2, AbmSetPos = 3;
     private const uint AbeTop = 1, AbeBottom = 3;
@@ -33,7 +33,7 @@ internal sealed partial class ReservaFaixa : IDisposable
     private readonly HwndSource _janela;
     private readonly uint _mensagemAppBar = RegisterWindowMessage("Vitral.ReservaFaixa");
     private readonly uint _mensagemTaskbarCriada = RegisterWindowMessage("TaskbarCreated");
-    private bool _registrada;
+    private readonly Ui.Barra.RegistroAppBar _registro;
 
     /// true quando um app entra em tela cheia; false quando sai.
     public event Action<bool>? TelaCheia;
@@ -49,30 +49,36 @@ internal sealed partial class ReservaFaixa : IDisposable
     {
         _embaixo = embaixo;
         _alturaDips = alturaDips;
+        _registro = new Ui.Barra.RegistroAppBar(this);
         // Janela comum oculta (não "message-only"): precisa receber as mensagens de difusão, como TaskbarCreated.
         _janela = new HwndSource(new HwndSourceParameters("Vitral.ReservaFaixa") { Width = 0, Height = 0, WindowStyle = 0 });
         _janela.AddHook(Processar);
     }
 
-    public bool Registrada => _registrada;
+    public bool Registrada => _registro.Registrada;
 
-    /// Registra (se preciso) e posiciona a faixa de 46 px. Devolve false se o Windows recusar.
-    public bool Registrar()
+    /// Registra (se preciso) e posiciona a faixa. Devolve false se o Windows recusar.
+    public bool Registrar() => _registro.Registrar();
+
+    public void Reposicionar() => _registro.Reposicionar();
+
+    public void Liberar() => _registro.Liberar();
+
+    bool Ui.Barra.IAppBar.Novo()
     {
         var d = Dados();
-        if (!_registrada)
-        {
-            d.MensagemRetorno = _mensagemAppBar;
-            if (SHAppBarMessage(AbmNew, ref d) == UIntPtr.Zero) return false;
-            _registrada = true;
-        }
-        Reposicionar();
-        return true;
+        d.MensagemRetorno = _mensagemAppBar;
+        return SHAppBarMessage(AbmNew, ref d) != UIntPtr.Zero;
     }
 
-    public void Reposicionar()
+    void Ui.Barra.IAppBar.Remover()
     {
-        if (!_registrada) return;
+        var d = Dados();
+        SHAppBarMessage(AbmRemove, ref d);
+    }
+
+    void Ui.Barra.IAppBar.Posicionar()
+    {
         var monitor = MonitorPrincipal.Ler(); // escala e tamanho atuais do principal, não os da janela oculta
         int altura = (int)Math.Round(_alturaDips * monitor.Dpi / 96.0);
         int fundo = monitor.Y + monitor.Altura;
@@ -86,14 +92,6 @@ internal sealed partial class ReservaFaixa : IDisposable
         if (_embaixo) d.Retangulo.Topo = d.Retangulo.Base - altura;
         else d.Retangulo.Base = d.Retangulo.Topo + altura;
         SHAppBarMessage(AbmSetPos, ref d);
-    }
-
-    public void Liberar()
-    {
-        if (!_registrada) return;
-        var d = Dados();
-        SHAppBarMessage(AbmRemove, ref d);
-        _registrada = false;
     }
 
     /// O aviso também chega com a área de trabalho em primeiro plano ou tela cheia em outro monitor: confere.
@@ -133,7 +131,7 @@ internal sealed partial class ReservaFaixa : IDisposable
             }
             else if (msg == _mensagemTaskbarCriada)
             {
-                _registrada = false; // o Explorer novo não conhece a reserva antiga
+                _registro.AoCriarBarra(); // do Explorer reiniciado ou da bandeja do Vitral (ver RegistroAppBar)
                 Recriar?.Invoke();
             }
         }
