@@ -36,6 +36,10 @@ Abra a janela do Vitral (ícone na bandeja, perto do relógio). No pé da barra 
 
 ## Se não atualizar
 
+**Clicou em reiniciar e voltou a versão antiga?** Algum programa está usando a pasta do Vitral. Até a 0.9.1, os
+programas abertos pela doca (como o app do Claude) faziam isso. Feche-os, clique em reiniciar de novo e abra-os depois.
+
+
 Baixe o Setup mais novo e rode por cima, como na [instalação](instalar.md#1-baixar-o-instalador). Os perfis são
 mantidos, e a partir daí as atualizações voltam a chegar sozinhas.
 
