@@ -2,6 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <!-- Capa e título: o mouse parado aqui abre o painel (PassarMouse); os botões ao lado não abrem -->
+        <StackPanel x:Name="Gatilho" Orientation="Horizontal" Background="Transparent"
+                    MouseEnter="Gatilho_Entrou" MouseLeave="Gatilho_Saiu">
         <Grid Width="18" Height="18" Margin="0,0,8,0">
             <TextBlock Text="&#xE8D6;" FontFamily="{StaticResource FonteIcones}" FontSize="12" Foreground="{StaticResource TextoSecundario}"
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -14,6 +17,7 @@
         <Border Style="{StaticResource ItemIlha}" MouseLeftButtonUp="Titulo_Clique" ToolTip="Mais da mídia" Margin="-6,0,0,0">
             <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center" MaxWidth="260" TextTrimming="CharacterEllipsis" />
         </Border>
+        </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
             <Button Style="{StaticResource BotaoIlha}" Content="&#xE892;" Command="{Binding AnteriorCommand}" ToolTip="Anterior" />
             <Button Command="{Binding TocarPausarCommand}" ToolTip="Tocar ou pausar">
