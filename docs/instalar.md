@@ -4,6 +4,9 @@ O instalador é um arquivo só. Ele **instala para o seu usuário, sem pedir adm
 computador não precisa de nada instalado antes. Depois de instalado, o Vitral **se atualiza sozinho**
 (veja [Atualização](atualizacao.md)); este passo a passo é feito uma vez só por computador.
 
+**Quem só usa o Vitral não precisa de token nem de variável nenhuma**: a chave de leitura das versões já vai dentro do
+instalador. Os tokens do [Publicar](publicar.md) servem apenas a quem publica versões novas.
+
 ## 1. Baixar o instalador
 
 O repositório é privado: você precisa de uma conta do GitHub com acesso a ele. Se ainda não tem, peça ao Gustavo para
