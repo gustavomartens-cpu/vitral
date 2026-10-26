@@ -46,4 +46,4 @@ public static class GrupoApps
 }
 
 /// Um item do menu do botão direito da doca.
-public sealed record ItemMenu(string Texto, Action Acao);
+public sealed record ItemMenu(string Texto, Action Acao, string? Icone = null, bool Perigo = false);

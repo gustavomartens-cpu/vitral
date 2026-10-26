@@ -23,6 +23,15 @@ public sealed class MenuBandejaTests : IDisposable
     }
 
     [Fact]
+    public void Menu_da_bandeja_tem_icones_em_abrir_e_sair()
+    {
+        var itens = MenuBandeja.Montar(["A"], "A");
+        Assert.Null(itens[0].Icone);
+        Assert.Equal("", itens.Single(i => i.Acao == "abrir").Icone);
+        Assert.Equal("", itens.Single(i => i.Acao == "sair").Icone);
+    }
+
+    [Fact]
     public void Sem_perfis_o_menu_so_tem_as_acoes()
     {
         var itens = MenuBandeja.Montar([], null);

@@ -1,46 +1,57 @@
-# Gera src/Vitral.App/Recursos/vitral.ico: losango de vitral com 4 gomos âmbar/azul, fundo transparente.
-# Mesmo desenho de src/Vitral.App/Tema/Logo.xaml (spec 2026-10-24 §2.2).
+# Gera o src/Vitral.App/Recursos/vitral.ico a partir do Logo.xaml (spec do ajuste visual §5).
+# 16 e 24 px usam o LogoPequeno (contorno mais grosso); 32, 48, 64 e 256 px, o Logo. Cada tamanho vai como PNG dentro do ICO.
+# Uso: pwsh -NoProfile -File tools/gerar-icone.ps1   (roda o desenho numa thread STA, que o WPF exige)
 $ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName System.Drawing
+$raiz = Split-Path $PSScriptRoot -Parent
+$xaml = Join-Path $raiz 'src\Vitral.App\Tema\Logo.xaml'
+$saida = Join-Path $raiz 'src\Vitral.App\Recursos\vitral.ico'
 
-$ambar = [System.Drawing.Color]::FromArgb(255, 0xF2, 0xB5, 0x44)
-$azul  = [System.Drawing.Color]::FromArgb(255, 0x4C, 0x7D, 0xF0)
+Add-Type -AssemblyName PresentationCore, PresentationFramework, WindowsBase
 
-function Png([int] $s) {
-    $bmp = New-Object System.Drawing.Bitmap $s, $s
-    $g = [System.Drawing.Graphics]::FromImage($bmp)
-    $g.SmoothingMode = 'AntiAlias'; $g.PixelOffsetMode = 'HighQuality'
-    $g.Clear([System.Drawing.Color]::Transparent)
-    $g.TranslateTransform($s / 2, $s / 2); $g.RotateTransform(45); $g.TranslateTransform(-$s / 2, -$s / 2)
-    $u = $s / 100.0                        # unidades do Logo.xaml (0..100)
-    $gomo = 30.5 * $u; $r = [Math]::Max(1, 4 * $u)
-    $cantos = @(@(18, 18, $ambar), @(51.5, 18, $azul), @(18, 51.5, $azul), @(51.5, 51.5, $ambar))
-    foreach ($c in $cantos) {
-        $x = $c[0] * $u; $y = $c[1] * $u
-        $p = New-Object System.Drawing.Drawing2D.GraphicsPath
-        $d = 2 * $r
-        $p.AddArc($x, $y, $d, $d, 180, 90); $p.AddArc($x + $gomo - $d, $y, $d, $d, 270, 90)
-        $p.AddArc($x + $gomo - $d, $y + $gomo - $d, $d, $d, 0, 90); $p.AddArc($x, $y + $gomo - $d, $d, $d, 90, 90); $p.CloseFigure()
-        $g.FillPath((New-Object System.Drawing.SolidBrush $c[2]), $p)
+$desenhar = {
+    param($xaml, $saida)
+    $dic = [System.Windows.Markup.XamlReader]::Parse([IO.File]::ReadAllText($xaml))
+    $tamanhos = 16, 24, 32, 48, 64, 256
+    $pngs = foreach ($t in $tamanhos) {
+        $imagem = if ($t -le 24) { $dic['LogoPequeno'] } else { $dic['Logo'] }
+        $visual = [System.Windows.Media.DrawingVisual]::new()
+        $ctx = $visual.RenderOpen()
+        $ctx.DrawImage($imagem, [System.Windows.Rect]::new(0, 0, $t, $t))
+        $ctx.Close()
+        $bmp = [System.Windows.Media.Imaging.RenderTargetBitmap]::new($t, $t, 96, 96, [System.Windows.Media.PixelFormats]::Pbgra32)
+        $bmp.Render($visual)
+        $enc = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
+        $enc.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+        $ms = [IO.MemoryStream]::new()
+        $enc.Save($ms)
+        [pscustomobject]@{ Tamanho = $t; Dados = $ms.ToArray() }
     }
-    $ms = New-Object System.IO.MemoryStream
-    $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png); $g.Dispose(); $bmp.Dispose()
-    , $ms.ToArray()
+
+    # ICONDIR (6 bytes) + uma ICONDIRENTRY (16 bytes) por tamanho + os PNGs
+    $ms = [IO.MemoryStream]::new()
+    $w = [IO.BinaryWriter]::new($ms)
+    $w.Write([uint16]0); $w.Write([uint16]1); $w.Write([uint16]$pngs.Count)
+    $deslocamento = 6 + 16 * $pngs.Count
+    foreach ($p in $pngs) {
+        $lado = if ($p.Tamanho -ge 256) { 0 } else { $p.Tamanho }
+        $w.Write([byte]$lado); $w.Write([byte]$lado); $w.Write([byte]0); $w.Write([byte]0)
+        $w.Write([uint16]1); $w.Write([uint16]32)
+        $w.Write([uint32]$p.Dados.Length); $w.Write([uint32]$deslocamento)
+        $deslocamento += $p.Dados.Length
+    }
+    foreach ($p in $pngs) { $w.Write($p.Dados) }
+    $w.Flush()
+    [IO.File]::WriteAllBytes($saida, $ms.ToArray())
+    foreach ($p in $pngs) { "{0,4} px  {1,7} bytes" -f $p.Tamanho, $p.Dados.Length }
+    "Gravado: $saida ($($ms.Length) bytes)"
 }
 
-$tamanhos = 16, 24, 32, 48, 256
-$imagens = $tamanhos | ForEach-Object { , (Png $_) }
-$destino = Join-Path $PSScriptRoot '..\src\Vitral.App\Recursos\vitral.ico'
-$fs = [System.IO.File]::Create((Resolve-Path (Split-Path $destino)).Path + '\vitral.ico')
-$w = New-Object System.IO.BinaryWriter $fs
-$w.Write([uint16]0); $w.Write([uint16]1); $w.Write([uint16]$tamanhos.Count)
-$offset = 6 + 16 * $tamanhos.Count
-for ($i = 0; $i -lt $tamanhos.Count; $i++) {
-    $s = $tamanhos[$i]
-    $w.Write([byte]($s % 256)); $w.Write([byte]($s % 256)); $w.Write([byte]0); $w.Write([byte]0)
-    $w.Write([uint16]1); $w.Write([uint16]32); $w.Write([uint32]$imagens[$i].Length); $w.Write([uint32]$offset)
-    $offset += $imagens[$i].Length
-}
-foreach ($b in $imagens) { $w.Write($b) }
-$w.Close()
-Write-Host "Ícone gerado: $destino"
+# O WPF precisa de STA: roda o desenho num runspace STA.
+$rs = [runspacefactory]::CreateRunspace()
+$rs.ApartmentState = 'STA'
+$rs.Open()
+$ps = [powershell]::Create()
+$ps.Runspace = $rs
+$null = $ps.AddScript($desenhar).AddArgument($xaml).AddArgument($saida)
+try { $ps.Invoke() | ForEach-Object { $_ }; if ($ps.HadErrors) { $ps.Streams.Error | ForEach-Object { throw $_ } } }
+finally { $ps.Dispose(); $rs.Dispose() }

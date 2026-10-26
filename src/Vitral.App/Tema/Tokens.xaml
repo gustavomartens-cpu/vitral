@@ -48,4 +48,15 @@
 
     <FontFamily x:Key="FonteTitulo">Segoe UI Variable Display, Segoe UI</FontFamily>
     <FontFamily x:Key="FonteCorpo">Segoe UI Variable Text, Segoe UI</FontFamily>
+    <!-- Ícones do Windows: usada nas ilhas, na doca e nos menus (por isso fica nos tokens, que carregam primeiro) -->
+    <FontFamily x:Key="FonteIcones">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+    <!-- Movimento (spec do ajuste visual §3.1). As peças em Tema/Efeitos.cs leem estes valores. -->
+    <Duration x:Key="DuracaoRapida">0:0:0.12</Duration>
+    <Duration x:Key="DuracaoMedia">0:0:0.18</Duration>
+    <Duration x:Key="DuracaoLenta">0:0:0.26</Duration>
+    <Duration x:Key="DuracaoClique">0:0:0.06</Duration>
+    <Duration x:Key="DuracaoBrilho">0:0:0.55</Duration>
+    <BackEase x:Key="CurvaMola" EasingMode="EaseOut" Amplitude="0.35" />
+    <CubicEase x:Key="CurvaSuave" EasingMode="EaseOut" />
 </ResourceDictionary>

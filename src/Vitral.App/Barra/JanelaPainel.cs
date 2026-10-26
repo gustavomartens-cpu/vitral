@@ -4,7 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using Vitral.Ui.Barra;
 
 namespace Vitral.App.Barra;
@@ -15,13 +14,11 @@ internal sealed partial class JanelaPainel : Window
 {
     private const int GwlExStyle = -20;
     private const long WsExToolWindow = 0x80;
-    private static readonly Duration Entrada = new(TimeSpan.FromMilliseconds(120));
 
     [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static partial IntPtr GetLong(IntPtr h, int i);
     [LibraryImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static partial IntPtr SetLong(IntPtr h, int i, IntPtr v);
 
     private readonly Border _casca;
-    private readonly TranslateTransform _deslize = new();
     private System.Windows.Threading.DispatcherTimer? _vigiaMenu;
     private DateTime _inicioMenu;
     private bool _vistoMenu;
@@ -58,7 +55,6 @@ internal sealed partial class JanelaPainel : Window
             BorderBrush = (Brush)Application.Current.Resources["BordaVidro"],
             BorderThickness = new Thickness(1),
             Padding = new Thickness(16, 14, 16, 14),
-            RenderTransform = _deslize,
         };
         Content = _casca;
         VidroIlha.Preparar(this, _casca);
@@ -149,15 +145,14 @@ internal sealed partial class JanelaPainel : Window
         set => _casca.Child = (UIElement?)value;
     }
 
-    /// Mostra em <paramref name="posicao"/> (DIPs) com o deslize de 8 px em 120 ms.
+    /// Mostra em <paramref name="posicao"/> (DIPs), assentando de cima com o conteúdo em cascata.
     public void Mostrar(Retangulo posicao)
     {
         Left = posicao.X;
         Top = posicao.Y;
         Show();
         Activate();
-        _deslize.BeginAnimation(TranslateTransform.YProperty,
-            new DoubleAnimation(-8, 0, Entrada) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        Tema.Efeitos.Assentar(_casca, Tema.AssentarDe.Cima, cascata: true);
     }
 }
 

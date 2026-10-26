@@ -11,8 +11,9 @@
                 </Border.Background>
             </Border>
         </Grid>
-        <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center" MaxWidth="260" TextTrimming="CharacterEllipsis"
-                   Cursor="Hand" MouseLeftButtonUp="Titulo_Clique" ToolTip="Mais da mídia" />
+        <Border Style="{StaticResource ItemIlha}" MouseLeftButtonUp="Titulo_Clique" ToolTip="Mais da mídia" Margin="-6,0,0,0">
+            <TextBlock Text="{Binding Titulo}" VerticalAlignment="Center" MaxWidth="260" TextTrimming="CharacterEllipsis" />
+        </Border>
         <StackPanel Orientation="Horizontal" Margin="8,0,0,0">
             <Button Style="{StaticResource BotaoIlha}" Content="&#xE892;" Command="{Binding AnteriorCommand}" ToolTip="Anterior" />
             <Button Command="{Binding TocarPausarCommand}" ToolTip="Tocar ou pausar">
