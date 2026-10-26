@@ -45,6 +45,18 @@ public sealed class RespostaTests
         Assert.Equal(texto, (string?)j["reason"]);
     }
 
+    private const string Stop = """{"hook_event_name":"Stop","cwd":"G:\\dev\\vitral"}""";
+    private const string Notificacao = """{"hook_event_name":"Notification","cwd":"G:\\dev\\vitral","message":"oi"}""";
+
+    [Fact]
+    public void Nao_segura_com_o_Claude_na_frente() => Assert.False(Segurar.NoStop(Stop, claudeNaFrente: true));
+
+    [Fact]
+    public void Segura_o_Stop_fora_do_app() => Assert.True(Segurar.NoStop(Stop, claudeNaFrente: false));
+
+    [Fact]
+    public void Notification_nunca_segura() => Assert.False(Segurar.NoStop(Notificacao, claudeNaFrente: false));
+
     [Fact]
     public void Espera_da_resposta_cabe_no_timeout_do_gancho() =>
         Assert.True(Canal.EsperaRespostaMs == 1_140_000 && Canal.EsperaRespostaMs < GanchosClaude.TempoResposta * 1000);
