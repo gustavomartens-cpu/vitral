@@ -1,7 +1,7 @@
 ﻿# Diagnóstico da doca: escala, área de trabalho, barras do Explorer e estado gravado pelo Vitral.
-# Só lê; não muda nada no Windows. Rodar com o Vitral aberto e a doca ligada, com uma janela maximizada:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File tools\diagnostico-doca.ps1 | Set-Clipboard
-# e colar a saída na conversa.
+# Só lê; não muda nada no Windows. Rodar com o Vitral aberto e a doca ligada, com uma janela maximizada
+# (botão direito > Executar com PowerShell). A saída fica em diagnostico-doca.txt na Área de Trabalho e na área de
+# transferência.
 
 $ErrorActionPreference = 'Continue'
 
@@ -67,6 +67,7 @@ function Processo([uint32]$id) {
     if ($p) { "$($p.ProcessName) (PID $id)" } else { "PID $id" }
 }
 
+$texto = & {
 "=== Vitral: diagnóstico da doca ($(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')) ==="
 $os = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -ErrorAction SilentlyContinue
 "Windows: $($os.DisplayVersion) build $($os.CurrentBuild).$($os.UBR)"
@@ -163,3 +164,12 @@ if (Test-Path $cfg) {
 "`n=== Fim do barra.log (40 linhas) ==="
 $log = Join-Path $env:LOCALAPPDATA 'Vitral\logs\barra.log'
 if (Test-Path $log) { Get-Content $log -Tail 40 } else { "(não existe)" }
+} 2>&1 | Out-String
+
+# Pelo "Executar com PowerShell" a janela fecha no fim: a saída vai para um arquivo e para a área de transferência.
+$arquivo = Join-Path ([Environment]::GetFolderPath('Desktop')) 'diagnostico-doca.txt'
+[IO.File]::WriteAllText($arquivo, $texto, (New-Object Text.UTF8Encoding $true))
+Write-Host $texto
+try { Set-Clipboard -Value $texto; $copiado = ' e copiada para a área de transferência' } catch { $copiado = '' }
+Write-Host "Saída gravada em $arquivo$copiado. Cole na conversa com o Claude." -ForegroundColor Green
+if ($Host.Name -eq 'ConsoleHost') { try { Read-Host 'Enter para fechar' | Out-Null } catch { } }
