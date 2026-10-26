@@ -245,6 +245,39 @@ O §4.6 da spec pedia `PrincipalViewModel.AvisosClaude`. A caixa vizinha, "Inici
 
 ---
 
+### Task 5b: Laterais do notch (pedido do Gustavo, spec §3.4)
+
+**Files:**
+- Modify: `src/Vitral.Ui/Barra/EstadoNotch.cs`, `src/Vitral.Ui/Barra/FormaNotch.cs` (`NotchMedidas`), `src/Vitral.App/Barra/JanelaNotch.cs`
+- Test: `tests/Vitral.Ui.Tests/NotchTests.cs`
+
+**Interfaces:**
+- Produces:
+  - `EstadoNotch.Laterais` e `EstadoNotch.Pendente` (bool);
+  - `AcaoNotch Clicou(ParteNotch parte = ParteNotch.Meio)`;
+  - `enum ParteNotch { Meio, Esquerda, Direita }`;
+  - `AcaoNotch.AbrirNotificacoes`;
+  - `NotchMedidas.LarguraLateral = 130`, `LarguraMaxCorpo = 440`;
+  - `JanelaLargura = LarguraMaxCorpo + 2 × Orelha`.
+
+- [ ] **Step 1: Testes que falham:**
+  - `Mouse_parado_250ms_abre_as_laterais`: em normal, `MouseEntrou`; com 0,2 s, não; com 0,3 s, `Laterais`; `Mudou` dispara.
+  - `Sair_recolhe_as_laterais`.
+  - `No_aviso_o_mouse_nao_abre_laterais`.
+  - `Clique_na_esquerda_abre_o_Claude_e_limpa_o_lembrete`: no lembrete, `Clicou(Esquerda)` devolve `AbrirClaude`; o modo vai a `Normal` e `Pendente` fica false.
+  - `Clique_na_direita_abre_as_notificacoes`.
+  - `Pendente_do_aviso_ate_abrir`: `Chegou` deixa true; depois de 6 s (lembrete), continua true; `Clicou()` no aviso deixa false.
+- [ ] **Step 2: Rodar** → FAIL. **Step 3: Implementar** → PASS.
+- [ ] **Step 4: JanelaNotch:**
+  - o corpo com laterais tem a largura do relógio mais 2 × 130;
+  - o conteúdo ganha três colunas: lateral esquerda (ícone do Claude, título curto e sessão), relógio, lateral direita (sino e "Notificações"). As laterais entram com o fade de `DuracaoMedia`;
+  - o clique em cada coluna chama `Clicou(parte)`;
+  - `AbrirNotificacoes` chama `Atalhos.CentralDeNotificacoes()`.
+- [ ] **Step 5: Verificação com o Gustavo:** as laterais abrem com o mouse parado e fecham ao sair; a esquerda mostra o aviso perdido e traz o Claude; a direita abre a central; o meio abre o calendário.
+- [ ] **Step 6: Commit** `feat: laterais do notch (Claude e notificações)`.
+
+---
+
 ### Task 6: Chave "Avisos do Claude no notch"
 
 **Files:**

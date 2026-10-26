@@ -98,6 +98,40 @@ A máquina de estados é pura: `EstadoNotch` em `src/Vitral.Ui/Barra/EstadoNotch
 `Passou(tempo)`, `MouseEntrou/Saiu` e `Clicou` e as saídas estado, aviso atual e ação (`AbrirClaude`,
 `AbrirCalendario`, nenhuma). Tem testes.
 
+### 3.4 Laterais ao passar o mouse
+
+Acrescentadas em 25/10, a pedido do Gustavo, depois da primeira conferência na tela.
+
+**Quando abrem e fecham:**
+
+- Com o mouse parado **250 ms** sobre o notch, no estado normal ou de lembrete, ele se alarga para os dois lados. Usa a
+  mesma mola de 320 ms, e o relógio continua no meio.
+- No estado de aviso, o mouse só segura o aviso, como em §3.3.
+- Tirando o mouse, as laterais recolhem.
+
+**O que cada parte mostra e faz:**
+
+| Parte | Largura | Mostra | Clique |
+|-------|---------|--------|--------|
+| Esquerda | 130 px | ícone do Claude e, se houver aviso pendente, "terminou" ou "esperando" e a sessão; sem pendência, só "Claude" | traz o Claude (§4.5) e limpa o lembrete |
+| Meio | a do relógio | o relógio | calendário, como hoje |
+| Direita | 130 px | sino (glifo `E7E7`) e "Notificações" | abre a central de notificações do Windows (Win+N, o mesmo atalho de antes do notch) |
+
+O corpo com as laterais tem a largura do relógio mais 260 px. Por isso a janela passa a ter 440 px de corpo no máximo
+(`NotchMedidas.LarguraMaxCorpo`), mais as orelhas.
+
+**Notificações de verdade no lado direito** ficam para a fase das notificações: ler as notificações exige identidade de
+pacote (§1). Até lá, o lado direito é só o atalho para a central do Windows, que continua abrindo no canto dela.
+
+**`EstadoNotch` ganha:**
+
+- `bool Laterais`, que liga com o mouse parado 250 ms (pelo `Tique`) fora do aviso e desliga em `MouseSaiu`;
+- `bool Pendente`, que é true do aviso até ele ser aberto, pelo clique no aviso ou na lateral esquerda;
+- `Clicou(ParteNotch parte)`, com `enum ParteNotch { Meio, Esquerda, Direita }`:
+  - a Esquerda devolve `AbrirClaude` e limpa a pendência;
+  - a Direita devolve `AbrirNotificacoes` (novo valor de `AcaoNotch`);
+  - o Meio mantém §3.3.
+
 ## 4. O caminho do aviso
 
 ### 4.1 Ganchos do Claude Code
