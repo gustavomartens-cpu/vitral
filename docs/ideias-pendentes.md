@@ -38,3 +38,14 @@ normal dele.
 Depois, como experimento: **resposta por texto** no `Stop` (`decision: "block"` + `reason` com o texto digitado no
 notch). Ressalvas: a sessão aparece "trabalhando" enquanto o notch espera, e o texto entra como retorno do gancho, não
 como mensagem do usuário. Não existe gancho para mandar uma mensagem nova a qualquer momento.
+
+## Atualização automática pelo GitHub (pedido em 25/10/2026)
+
+O Vitral confere as releases do GitHub (ao abrir e a cada poucas horas, com internet), baixa só o pacote delta do
+Velopack e aplica ao reiniciar, ou avisa no notch para o Gustavo escolher a hora. A publicação passa a usar
+`vpk upload github` (sobe Setup, Portable, os .nupkg e o releases.win.json) em vez de só o Setup e o Portable.
+
+Decisão pendente: o repositório do código é privado, e o app instalado não baixa de repositório privado sem
+credencial. Opções: (1, recomendada) um repositório público só com as releases (ex.: `vitral-releases`), com o código
+continuando privado; (2) tornar o repositório do código público; (3) token só de leitura embutido no app (vai junto
+em cada instalação e pode ser extraído).
