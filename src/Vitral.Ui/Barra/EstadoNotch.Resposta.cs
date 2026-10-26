@@ -58,7 +58,19 @@ public sealed partial class EstadoNotch
     {
         if (FichaAtual is not { } f || f.Pedido.Id != id) return;
         f.Rascunho = texto;
-        if (f.Digitou is not null || texto.Length == 0) return;
+        if (texto.Length > 0) Comecou(f);
+    }
+
+    /// O clique na caixa: o Gustavo vai responder; a barra para já aqui (senão a ficha venceria entre o clique e o
+    /// primeiro caractere, com a caixa em foco).
+    public void Focou(string id)
+    {
+        if (FichaAtual is { } f && f.Pedido.Id == id) Comecou(f);
+    }
+
+    private void Comecou(Ficha f)
+    {
+        if (f.Digitou is not null) return;
         f.Digitou = agora();
         Mudou?.Invoke(); // a barra para
     }
@@ -96,7 +108,11 @@ public sealed partial class EstadoNotch
     }
 
     /// Sem notch visível (barra desligada, tela cheia): não há ficha; a sessão vai direto para as pendências.
-    public void SemNotch(PedidoResposta pedido) => Pendencias.Entrou(ComoPendencia(pedido));
+    public void SemNotch(PedidoResposta pedido)
+    {
+        Pendencias.Entrou(ComoPendencia(pedido));
+        Pendente = true; // o ponto de lembrete, quando o notch voltar
+    }
 
     private void Encerrar(Ficha f, bool pendente)
     {

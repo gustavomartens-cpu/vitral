@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -11,7 +12,7 @@ public enum EscolhaPermissao { Permitir, SempreNaSessao, Negar }
 public sealed partial record PedidoPermissao(string Id, string Sessao, string Ferramenta, string Titulo, string Resumo)
 {
     private const int MaximoResumo = 200, MaximoCompleto = 1500;
-    private static readonly JsonSerializerOptions Opcoes = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions Opcoes = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// O id da sessão do Claude (session_id): só um aviso dessa mesma sessão descarta o pedido.
     public string? SessaoId { get; init; }
@@ -131,7 +132,7 @@ public sealed partial record PedidoPermissao(string Id, string Sessao, string Fe
 /// A resposta do notch: a linha que volta pelo canal e o JSON que o mensageiro devolve ao Claude (spec §3.3).
 public static class RespostaPermissao
 {
-    private static readonly JsonSerializerOptions Opcoes = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions Opcoes = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static string Linha(string id, EscolhaPermissao escolha) => JsonSerializer.Serialize(new Resposta(id, escolha.ToString()), Opcoes);
 

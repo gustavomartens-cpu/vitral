@@ -33,13 +33,31 @@ internal static partial class Mensageiro
         catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { return false; }
     }
 
+    /// Segura o Stop para a resposta pelo notch? Lido uma vez, no começo: a janela da frente, quem é a sessão (pelas
+    /// variáveis do Claude Code) e se o gancho já foi religado com o tempo da resposta.
+    public static bool SegurarStop(string entrada) =>
+        Segurar.NoStop(entrada, ClaudeNaFrente(),
+            Segurar.SessaoComGente(Environment.GetEnvironmentVariable("CLAUDE_CODE_ENTRYPOINT"), Environment.GetEnvironmentVariable("CLAUDE_CODE_SESSION_ATTENDED")),
+            GanchoComTempo());
+
+    /// O settings.json do Claude já tem o Stop com o tempo da resposta (a caixa foi religada depois da 0.9.0).
+    private static bool GanchoComTempo()
+    {
+        try
+        {
+            var caminho = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".claude", "settings.json");
+            return GanchosClaude.EstaLigado(File.ReadAllText(caminho));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
+    }
+
     /// Prazo total do "--aviso": permissão 65 s; Stop que espera a resposta 19,5 min; o resto 1,5 s.
-    public static int PrazoMs(string entrada, bool claudeNaFrente) =>
-        EhPermissao(entrada) ? 65_000 : Segurar.NoStop(entrada, claudeNaFrente) ? 1_170_000 : 1_500;
+    public static int PrazoMs(string entrada, bool segurar) =>
+        EhPermissao(entrada) ? 65_000 : segurar ? 1_170_000 : 1_500;
 
     public static string LerEntrada() => LerEntrada(TimeSpan.FromSeconds(2));
 
-    public static void Executar(string entrada, bool claudeNaFrente)
+    public static void Executar(string entrada, bool segurar)
     {
         try
         {
@@ -53,10 +71,10 @@ internal static partial class Mensageiro
                 Escrever(RespostaPermissao.ParaClaude(escolha, entrada));
                 return;
             }
-            if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !claudeNaFrente) is not { } aviso) return;
+            if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !ClaudeNaFrente()) is not { } aviso) return;
             // Fora do app, o Stop vira ficha de resposta e segura a sessão até o texto (spec da resposta §3.3); sem
             // texto (tempo, Esc, Vitral fechado), não escreve nada e a sessão termina normal.
-            if (Segurar.NoStop(entrada, claudeNaFrente) && PedidoResposta.DeAviso(aviso, DateTime.Now) is { } ficha)
+            if (segurar && PedidoResposta.DeAviso(aviso, DateTime.Now) is { } ficha)
             {
                 var linha = Canal.Perguntar(Canal.Nome(sid), ficha.ParaLinha(), Canal.EsperaRespostaMs);
                 if (RespostaTexto.DaLinha(linha, ficha.Id) is { } texto) Escrever(RespostaTexto.ParaClaude(texto));

@@ -1,3 +1,4 @@
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -7,7 +8,7 @@ namespace Vitral.Core.Claude;
 /// pelo canal como uma linha JSON; o texto digitado volta na mesma conexão.
 public sealed record PedidoResposta(string Id, string Sessao, string Completo, DateTime Hora)
 {
-    private static readonly JsonSerializerOptions Opcoes = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions Opcoes = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// O id da sessão do Claude: o aviso seguinte dela descarta a ficha.
     public string? SessaoId { get; init; }
@@ -38,7 +39,7 @@ public sealed record PedidoResposta(string Id, string Sessao, string Completo, D
 /// O texto digitado no notch: a linha que volta pelo canal e o que o mensageiro devolve ao Claude no Stop.
 public static class RespostaTexto
 {
-    private static readonly JsonSerializerOptions Opcoes = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions Opcoes = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     public static string Linha(string id, string texto) => JsonSerializer.Serialize(new Resposta(id, texto), Opcoes);
 
