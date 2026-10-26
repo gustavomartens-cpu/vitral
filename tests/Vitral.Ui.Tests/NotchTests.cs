@@ -280,4 +280,58 @@ public sealed class NotchTests
         Avancar(60.1, e);
         Assert.NotEqual(ModoNotch.Permissao, e.Modo);
     }
+
+    private static readonly AvisoClaude Atualizacao = new(TipoAviso.Atualizacao, "Vitral", "0.7.3 pronto");
+
+    [Fact]
+    public void Clique_no_aviso_de_atualizacao_reinicia()
+    {
+        var e = Criar();
+        e.Chegou(Atualizacao);
+        Assert.Equal(AcaoNotch.Reiniciar, e.Clicou());
+    }
+
+    [Fact]
+    public void Lembrete_de_atualizacao_reinicia_pela_lateral()
+    {
+        var e = Criar();
+        e.Chegou(Atualizacao);
+        Avancar(7, e);
+        Assert.Equal(ModoNotch.Lembrete, e.Modo);
+        Assert.Equal(AcaoNotch.Reiniciar, e.Clicou(ParteNotch.Esquerda));
+    }
+
+    [Fact]
+    public void Aviso_do_Claude_continua_abrindo_o_Claude()
+    {
+        var e = Criar();
+        e.Chegou(A1);
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou());
+        e.Chegou(A1);
+        Avancar(7, e);
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou(ParteNotch.Esquerda));
+    }
+
+    [Fact]
+    public void Aviso_de_atualizacao_nao_descarta_pedido_de_sessao_Vitral()
+    {
+        var e = Criar();
+        var encerrados = 0;
+        e.Encerrado += (_, _) => encerrados++;
+        e.Pediu(P("1", "Vitral"));
+        e.Chegou(Atualizacao);
+        Assert.Equal(0, encerrados);
+        Assert.Equal(ModoNotch.Permissao, e.Modo);
+    }
+
+    [Fact]
+    public void Pedido_perdido_com_atualizacao_pendente_abre_o_Claude()
+    {
+        var e = Criar();
+        e.Chegou(Atualizacao);
+        e.Pediu(P("1"));
+        Avancar(60.1, e);
+        Assert.True(e.PedidoPerdido);
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou(ParteNotch.Esquerda));
+    }
 }

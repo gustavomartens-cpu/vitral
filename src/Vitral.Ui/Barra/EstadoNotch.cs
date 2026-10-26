@@ -4,7 +4,7 @@ namespace Vitral.Ui.Barra;
 
 public enum ModoNotch { Normal, Aviso, Lembrete, Permissao }
 
-public enum AcaoNotch { Nenhuma, AbrirClaude, AbrirCalendario, AbrirNotificacoes }
+public enum AcaoNotch { Nenhuma, AbrirClaude, AbrirCalendario, AbrirNotificacoes, Reiniciar }
 
 /// Onde o clique caiu: no meio (relógio ou aviso) ou numa das laterais (spec do notch vivo §3.4).
 public enum ParteNotch { Meio, Esquerda, Direita }
@@ -54,9 +54,11 @@ public sealed class EstadoNotch(Func<DateTime> agora)
 
     public void Chegou(AvisoClaude aviso)
     {
-        // Um aviso da sessão de um pedido aberto diz que ele foi resolvido no app.
-        for (int i = _fila.Count - 1; i >= 0; i--)
-            if (_fila[i].Pedido.Sessao == aviso.Sessao) Sair(i, null);
+        // Um aviso do Claude da sessão de um pedido aberto diz que ele foi resolvido no app. O de atualização é do próprio
+        // Vitral e nunca resolve pedido (um Claude numa pasta "Vitral" teria a mesma sessão).
+        if (aviso.Tipo != TipoAviso.Atualizacao)
+            for (int i = _fila.Count - 1; i >= 0; i--)
+                if (_fila[i].Pedido.Sessao == aviso.Sessao) Sair(i, null);
         Aviso = aviso;
         Pendente = true;
         if (_fila.Count > 0 || Confirmando) { Mudou?.Invoke(); return; } // o pedido de outra sessão continua na frente
@@ -144,13 +146,15 @@ public sealed class EstadoNotch(Func<DateTime> agora)
     public AcaoNotch Clicou(ParteNotch parte = ParteNotch.Meio)
     {
         if (Modo == ModoNotch.Permissao) return AcaoNotch.Nenhuma; // na ficha, só os botões respondem
+        // O aviso (ou o lembrete) de uma versão nova do Vitral reinicia; os do Claude (e o pedido perdido) abrem o Claude.
+        var abrir = Aviso?.Tipo == TipoAviso.Atualizacao && Pendente && !PedidoPerdido ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         var acao = parte switch
         {
-            ParteNotch.Esquerda => AcaoNotch.AbrirClaude,
+            ParteNotch.Esquerda => abrir,
             ParteNotch.Direita => AcaoNotch.AbrirNotificacoes,
-            _ => Modo == ModoNotch.Aviso ? AcaoNotch.AbrirClaude : AcaoNotch.AbrirCalendario,
+            _ => Modo == ModoNotch.Aviso ? abrir : AcaoNotch.AbrirCalendario,
         };
-        if (acao == AcaoNotch.AbrirClaude) { Pendente = false; PedidoPerdido = false; }
+        if (acao is AcaoNotch.AbrirClaude or AcaoNotch.Reiniciar) { Pendente = false; PedidoPerdido = false; }
         Ir(ModoNotch.Normal);
         return acao;
     }

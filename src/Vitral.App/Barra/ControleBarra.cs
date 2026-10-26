@@ -136,6 +136,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         {
             notch = new JanelaNotch(new IlhaRelogio());
             notch.Pediu += p => _coordenador.Alternar(p, DateTime.Now);
+            notch.PediuReiniciar += () => Reiniciar?.Invoke();
             notch.LarguraNormalMudou += Posicionar;
             notch.DpiChanged += (_, _) => Reajustar();
         }
@@ -148,6 +149,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     {
         return _relogio is { IsVisible: true } notch ? notch.Pedir(pedido) : Task.FromResult<Vitral.Core.Claude.EscolhaPermissao?>(null);
     }
+
+    /// O clique no aviso de atualização (o App liga ao ServicoAtualizacao).
+    public Action? Reiniciar { get; set; }
 
     /// Aviso do Claude chegou pelo canal: vai para o notch; sem a barra do topo (ou sem o relógio), é descartado.
     public void Avisar(Vitral.Core.Claude.AvisoClaude aviso)

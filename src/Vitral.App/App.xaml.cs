@@ -34,6 +34,10 @@ public partial class App : Application
     private Doca.BarraDoWindows? _barraWindows;
     private Doca.FonteBandeja? _bandejaApps;
     private Claude.CanalAvisos? _canalAvisos;
+    private System.Windows.Threading.DispatcherTimer? _relogioAtualizacao;
+
+    internal Vitral.Core.Atualizacao.ServicoAtualizacao Atualizador { get; private set; } = null!;
+    internal string VersaoAtual { get; private set; } = "?";
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -79,6 +83,16 @@ public partial class App : Application
         // Avisos do Claude Code (spec do notch vivo §4.4)
         _canalAvisos = new Claude.CanalAvisos(Dispatcher, a => _barra?.Avisar(a),
             p => _barra?.Pedir(p) ?? Task.FromResult<Core.Claude.EscolhaPermissao?>(null));
+        // Atualização automática pelas releases do GitHub (spec da atualização §5): confere 1 min depois de abrir e a
+        // cada 6 h; a versão baixada é avisada no notch e entra com o clique (ou na próxima vez que o Vitral abrir).
+        var fonte = new Atualizacao.FonteVelopack(Vitral.Core.Atualizacao.TokenEmbutido.Ler(typeof(App).Assembly), LimparParaSair);
+        VersaoAtual = fonte.VersaoAtual;
+        Atualizador = new Vitral.Core.Atualizacao.ServicoAtualizacao(fonte, () => DateTime.Now);
+        Atualizador.Pronta += AvisarAtualizacao;
+        _barra.Reiniciar = Atualizador.Reiniciar;
+        _relogioAtualizacao = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+        _relogioAtualizacao.Tick += async (_, _) => await Atualizador.TiqueAsync();
+        _relogioAtualizacao.Start();
         // Depois de AoIniciar: um teste que ficou aberto já voltou, e o observador começa com a lista certa.
         _observadorIcones = new BarraDeTarefas.ObservadorIcones(registro, estadoIcones, _notificador);
         // Monitores, resolução ou escala mudaram, ou o PC voltou da suspensão: reposiciona e relê a barra.
@@ -100,14 +114,26 @@ public partial class App : Application
 
     internal void MostrarJanela()
     {
-        _janela ??= new JanelaPrincipal(Principal, Inicializacao);
+        _janela ??= new JanelaPrincipal(Principal, Inicializacao, Atualizador, VersaoAtual);
         _janela.Show();
         if (_janela.WindowState == WindowState.Minimized) _janela.WindowState = WindowState.Normal;
         _janela.Activate();
     }
 
+    /// Versão nova baixada: aviso no notch (sem a barra do topo, fica só a linha de estado na janela).
+    internal void AvisarAtualizacao(string versao) =>
+        _barra?.Avisar(new Vitral.Core.Claude.AvisoClaude(Vitral.Core.Claude.TipoAviso.Atualizacao, "Vitral", $"{versao} pronto"));
+
     internal void Sair()
     {
+        LimparParaSair();
+        Shutdown();
+    }
+
+    /// Tudo o que o Sair desfaz antes de fechar (também usado antes de reiniciar para atualizar).
+    private void LimparParaSair()
+    {
+        _relogioAtualizacao?.Stop();
         // Sair no meio de um teste volta ao anterior, como se a contagem tivesse acabado.
         Principal.Contagem?.VoltarCommand.Execute(null);
         _janelaContagem?.Close();
@@ -121,7 +147,6 @@ public partial class App : Application
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));
         _bandeja?.Dispose();
         _instancia?.Dispose();
-        Shutdown();
     }
 
     /// Rede de segurança: um erro inesperado na interface vira aviso e log, em vez de derrubar o app
