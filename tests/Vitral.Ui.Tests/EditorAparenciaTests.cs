@@ -58,4 +58,15 @@ public sealed class EditorAparenciaTests
         e.Geral.CorFundo = "#0B0C10";
         Assert.Equal(CorArgb.DeHex("#ECEEF2"), e.Previa!.Ilhas.Texto);
     }
+
+    [Fact]
+    public void Opcoes_da_aparencia_cobrem_todos_os_valores_com_do_tema_primeiro()
+    {
+        Assert.Same(Opcoes.Nulo, Opcoes.TemasAparencia[0].Valor);
+        Assert.Equal(Enum.GetValues<TemaAparencia>().Cast<object>(), Opcoes.TemasAparencia.Skip(1).Select(o => o.Valor));
+        Assert.Equal(["Do tema", "Vidro", "Sólido"], Opcoes.MateriaisAparencia.Select(o => o.Rotulo));
+        Assert.Equal(["Do tema", "Retos", "Suaves", "Redondos"], Opcoes.CantosAparencia.Select(o => o.Rotulo));
+        Assert.All([Opcoes.MateriaisAparencia, Opcoes.CantosAparencia, Opcoes.FundosAparencia, Opcoes.DestaquesAparencia],
+            l => Assert.Same(Opcoes.Nulo, l[0].Valor));
+    }
 }

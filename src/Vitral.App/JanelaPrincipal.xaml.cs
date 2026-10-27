@@ -63,6 +63,12 @@ public partial class JanelaPrincipal : Window
         return link;
     }
 
+    /// Aba Aparência: a transparência volta a "do tema" (o deslizante não tem como mostrar nulo).
+    private void TransparenciaDoTema_Click(object sender, RoutedEventArgs e)
+    {
+        if (((FrameworkElement)sender).DataContext is EditorAjustesAparencia campos) campos.Transparencia = null;
+    }
+
     private void IniciarComWindows_Mudou(object sender, RoutedEventArgs e)
     {
         if (_carregando) return;
