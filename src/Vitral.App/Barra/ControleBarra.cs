@@ -144,7 +144,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             notch.PediuReiniciar += () => Reiniciar?.Invoke();
             notch.LarguraNormalMudou += Posicionar;
             notch.SizeChanged += (_, _) => Posicionar(); // a HWND pode mudar de tamanho ao trocar de escala
-            notch.DpiChanged += (_, _) => Reajustar();
+            // Depois de o WPF terminar a troca de escala dele, que deixa a HWND no tamanho antigo (PosicaoNativa.Colocar)
+            notch.DpiChanged += (_, _) => notch.Dispatcher.BeginInvoke(Reajustar, System.Windows.Threading.DispatcherPriority.Background);
             var esse = notch;
             esse.IsVisibleChanged += (_, e) =>
             {

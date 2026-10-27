@@ -268,7 +268,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
     /// Centra a janela fixa no lugar do relógio calculado pelas ilhas (DIPs do monitor de escala dpi).
     public void Colocar(Retangulo relogio, uint dpi) =>
-        PosicaoNativa.Colocar(this, relogio.X + relogio.Largura / 2, relogio.Y, dpi, ancora: 0.5);
+        PosicaoNativa.Colocar(this, relogio.X + relogio.Largura / 2, relogio.Y, dpi, ancora: 0.5,
+            new Size(NotchMedidas.JanelaLargura, NotchMedidas.JanelaAltura));
 
     private void Clicou(ParteNotch parte)
     {
