@@ -103,11 +103,15 @@ public static class ResolverAparencia
         if (!w.Transparencia) { material = MaterialParte.Solido; opacidade = 100; }
         fundo = fundo.ComAlfa(Alfa(opacidade));
 
-        bool escuro = Luminancia(fundo) > 0.5 && opacidade >= 50; // fundo claro e visível: texto escuro
+        // Texto escuro sobre fundo claro. No vidro com desfoque vale só a cor: o acrílico do Windows sai da cor do
+        // tingimento quase sem depender do alfa (conferido na tela em 27/10: branco a 8% sai claro, azul-noite a 20% sai
+        // escuro). Sem desfoque (notch, sólido), um fundo muito transparente deixa ver o papel de parede: texto claro.
+        bool desfoque = material == MaterialParte.Vidro && !ehNotch;
+        bool escuro = Luminancia(fundo) > 0.5 && (desfoque || opacidade >= 50);
         var texto = escuro ? TextoEscuro : TextoClaro;
         var borda = escuro ? new CorArgb(Alfa(8), 0, 0, 0) : new CorArgb(Alfa(10), 255, 255, 255);
         return new ValoresParte(material, fundo, texto, texto.ComAlfa(Alfa(62)), borda, destaque, cantos,
-            Desfoque: material == MaterialParte.Vidro && !ehNotch);
+            Desfoque: desfoque);
     }
 
     private static byte Alfa(int porcento) => (byte)Math.Round(porcento / 100.0 * 255, MidpointRounding.AwayFromZero);

@@ -64,7 +64,14 @@ public sealed class AparenciaTests
     public void Texto_legivel()
     {
         Assert.Equal(C("#1B1D22"), R(new AparenciaPerfil(TemaAparencia.Claro)).Ilhas.Texto);
-        Assert.Equal(C("#ECEEF2"), R(new AparenciaPerfil(TemaAparencia.Cristal)).Ilhas.Texto); // branco a 8%: quem aparece é o papel de parede
+        // Vidro com desfoque: o acrílico do Windows sai da cor do tingimento quase sem depender do alfa (conferido na tela
+        // em 27/10: branco a 8% sai claro, azul-noite a 20% sai escuro, violeta a 42% sai violeta). O texto segue a cor.
+        Assert.Equal(C("#1B1D22"), R(new AparenciaPerfil(TemaAparencia.Cristal)).Ilhas.Texto);
+        Assert.Equal(C("#ECEEF2"), R(new AparenciaPerfil(TemaAparencia.VidroEscuro, Geral: new AjustesAparencia(Transparencia: 80))).Doca.Texto);
+        Assert.Equal(C("#ECEEF2"), R(new AparenciaPerfil(TemaAparencia.VidroColorido)).Ilhas.Texto);
+        Assert.Equal(C("#1B1D22"), R(new AparenciaPerfil(TemaAparencia.Claro, Geral: new AjustesAparencia(Transparencia: 90))).Ilhas.Texto);
+        // O notch não tem desfoque: preto a 55% continua com texto claro.
+        Assert.Equal(C("#ECEEF2"), R(new AparenciaPerfil(TemaAparencia.Cristal)).Notch.Texto);
         Assert.Equal(C("#1B1D22"), R(new AparenciaPerfil(TemaAparencia.PretoSolido, Geral: new AjustesAparencia(CorFundo: "#F4F4F6"))).Doca.Texto);
         var claro = R(new AparenciaPerfil(TemaAparencia.Claro)).Ilhas;
         Assert.Equal(C("#1B1D22", 158), claro.TextoSecundario); // 62%
