@@ -272,9 +272,11 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
     private void Clicou(ParteNotch parte)
     {
+        // A conversa do aviso (lido antes do clique, que o limpa); o pedido sem resposta não tem conversa guardada.
+        var conversa = _estado.PedidoPerdido ? null : _estado.Aviso?.AppId;
         switch (_estado.Clicou(parte))
         {
-            case AcaoNotch.AbrirClaude: Claude.AbrirClaude.Trazer(); break;
+            case AcaoNotch.AbrirClaude: Claude.AbrirClaude.Trazer(conversa); break;
             case AcaoNotch.AbrirCalendario: Pediu?.Invoke(Painel.Calendario); break;
             case AcaoNotch.AbrirNotificacoes: Atalhos.CentralDeNotificacoes(); break;
             case AcaoNotch.Reiniciar: PediuReiniciar?.Invoke(); break;

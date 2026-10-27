@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Vitral.App.Barra;
+using Vitral.Core.Claude;
 
 namespace Vitral.App.Claude;
 
@@ -14,8 +15,19 @@ internal static partial class AbrirClaude
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool ShowWindow(IntPtr h, int comando);
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool IsIconic(IntPtr h);
 
-    public static void Trazer()
+    /// Com o id da conversa no app (<paramref name="appId"/>), abre exatamente ela pelo link do app; sem ele, só traz a
+    /// janela para a frente.
+    public static void Trazer(string? appId = null)
     {
+        if (ConversaClaude.Link(appId) is { } link)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(link) { UseShellExecute = true })?.Dispose();
+                return;
+            }
+            catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("AbrirClaude.Link", e); }
+        }
         try
         {
             var janela = Process.GetProcessesByName("claude").Select(p => p.MainWindowHandle).FirstOrDefault(h => h != IntPtr.Zero);

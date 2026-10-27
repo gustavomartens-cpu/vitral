@@ -131,7 +131,7 @@ public sealed partial class EstadoNotch
         if (pendente) Pendencias.Entrou(ComoPendencia(f.Pedido));
     }
 
-    private static Pendencias.Pendencia ComoPendencia(PedidoResposta p) => new(p.SessaoId, p.Sessao, TipoAviso.Terminou, p.Hora, p.Completo);
+    private static Pendencias.Pendencia ComoPendencia(PedidoResposta p) => new(p.SessaoId, p.Sessao, TipoAviso.Terminou, p.Hora, p.Completo, p.AppId);
 
     /// Um aviso chegou: a ficha da mesma sessão sai (resolvida no app), as pendências dela também, e um "esperando
     /// você" fora do app vira pendência. O aviso de atualização é do Vitral e não mexe em nada disso.
@@ -143,7 +143,7 @@ public sealed partial class EstadoNotch
             Encerrar(f, pendente: false);
         Pendencias.SaiuDaSessao(aviso.SessaoId, aviso.Sessao);
         if (aviso is { Tipo: TipoAviso.Esperando, ForaDoApp: true })
-            Pendencias.Entrou(new(aviso.SessaoId, aviso.Sessao, TipoAviso.Esperando, agora(), aviso.Completo ?? aviso.Texto));
+            Pendencias.Entrou(new(aviso.SessaoId, aviso.Sessao, TipoAviso.Esperando, agora(), aviso.Completo ?? aviso.Texto, aviso.AppId));
         if (antes is not null && _respostas.Count > 0 && _fila.Count == 0 && RespostaAtual != antes) MostrarResposta(); // outra tomou a ficha
     }
 

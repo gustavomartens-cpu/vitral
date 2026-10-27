@@ -71,7 +71,9 @@ internal static partial class Mensageiro
                 Escrever(RespostaPermissao.ParaClaude(escolha, entrada));
                 return;
             }
-            if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !ClaudeNaFrente()) is not { } aviso) return;
+            if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !ClaudeNaFrente()) is not { } lido) return;
+            // A conversa no app do Claude (herdada da sessão), para o clique no notch abrir exatamente ela.
+            var aviso = lido with { AppId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp) };
             // Fora do app, o Stop vira ficha de resposta e segura a sessão até o texto (spec da resposta §3.3); sem
             // texto (tempo, Esc, Vitral fechado), não escreve nada e a sessão termina normal.
             if (segurar && PedidoResposta.DeAviso(aviso, DateTime.Now) is { } ficha)

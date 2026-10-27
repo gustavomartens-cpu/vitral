@@ -6,7 +6,8 @@ namespace Vitral.Ui.Barra;
 /// nova em cima, uma por sessão. Vive enquanto o Vitral está aberto.
 public sealed class Pendencias
 {
-    public sealed record Pendencia(string? SessaoId, string Sessao, TipoAviso Tipo, DateTime Hora, string Completo);
+    /// <param name="AppId">A conversa no app do Claude: "Abrir no Claude" vai direto a ela.</param>
+    public sealed record Pendencia(string? SessaoId, string Sessao, TipoAviso Tipo, DateTime Hora, string Completo, string? AppId = null);
 
     private readonly List<Pendencia> _itens = [];
 

@@ -23,6 +23,24 @@ public sealed class RespostaTests
     }
 
     [Fact]
+    public void Pedido_leva_a_conversa_do_app()
+    {
+        var aviso = new AvisoClaude(TipoAviso.Terminou, "vitral", "Pronto.") { AppId = "local_8a75c5a1-db60-4c71-ab62-ab24c1aeb4fb" };
+        Assert.Equal(aviso, AvisoClaude.DeLinha(aviso.ParaLinha()));
+        var p = PedidoResposta.DeAviso(aviso, Hora)!;
+        Assert.Equal("local_8a75c5a1-db60-4c71-ab62-ab24c1aeb4fb", p.AppId);
+        Assert.Equal(p, PedidoResposta.DeLinha(p.ParaLinha()));
+    }
+
+    [Theory]
+    [InlineData("local_8a75c5a1-db60-4c71-ab62-ab24c1aeb4fb", "claude://claude.ai/epitaxy/local_8a75c5a1-db60-4c71-ab62-ab24c1aeb4fb")]
+    [InlineData(null, null)]
+    [InlineData("", null)]
+    [InlineData("local_x/../../etc", null)]
+    [InlineData("8a75c5a1-db60-4c71-ab62-ab24c1aeb4fb", null)]
+    public void Link_da_conversa_so_com_id_do_app(string? appId, string? link) => Assert.Equal(link, ConversaClaude.Link(appId));
+
+    [Fact]
     public void Pedido_sem_completo_usa_o_resumo() =>
         Assert.Equal("Pronto.", PedidoResposta.DeAviso(new AvisoClaude(TipoAviso.Terminou, "vitral", "Pronto."), Hora)!.Completo);
 

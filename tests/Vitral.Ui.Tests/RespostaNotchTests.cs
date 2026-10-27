@@ -218,6 +218,16 @@ public sealed class RespostaNotchTests
     }
 
     [Fact]
+    public void Pendencia_guarda_a_conversa_do_app()
+    {
+        var e = Criar();
+        e.PediuResposta(R("1") with { AppId = "local_a" });
+        e.Cancelou("1");
+        e.Chegou(new AvisoClaude(TipoAviso.Esperando, "sic", "esperando") { SessaoId = "s-sic", ForaDoApp = true, AppId = "local_b" });
+        Assert.Equal(["local_b", "local_a"], e.Pendencias.Itens.Select(p => p.AppId));
+    }
+
+    [Fact]
     public void Descartar_solta_sem_ir_para_as_pendencias()
     {
         var e = Criar();
