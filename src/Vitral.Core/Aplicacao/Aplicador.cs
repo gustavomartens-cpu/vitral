@@ -11,7 +11,7 @@ namespace Vitral.Core.Aplicacao;
 /// do perfil (e a do retrato, ao reverter) também é aplicada; sem ele (CLI), a barra não é tocada.
 /// Com <paramref name="icones"/>, a lista de ícones aplicada fica guardada para os ícones que aparecerem depois.
 public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INotificador notificador, EstadoBarra? barra = null,
-    EstadoIcones? icones = null, EstadoDoca? doca = null)
+    EstadoIcones? icones = null, EstadoDoca? doca = null, Aparencia.EstadoAparencia? aparencia = null)
 {
 
     public Resultado Aplicar(Perfil p)
@@ -55,6 +55,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
 
         barra?.Aplicar(p.BarraTopo);
         doca?.Aplicar(p.BarraBaixo);
+        aparencia?.Aplicar(p.Aparencia);
         icones?.Definir(p.BarraTarefas?.IconesVisiveis); // sem lista no perfil = não mexer: o observador para
         Avisar(aplicados);
         return new Resultado(naoAplicados.Count == 0, aplicados, naoAplicados, anterior, arquivoAnterior);
@@ -70,6 +71,7 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         var naoVoltou = ReverterRegistro(r);
         barra?.Aplicar(r.BarraTopo);
         doca?.Aplicar(r.BarraBaixo);
+        aparencia?.Aplicar(r.Aparencia);
         return naoVoltou;
     }
 

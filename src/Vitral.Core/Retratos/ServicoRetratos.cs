@@ -10,7 +10,7 @@ namespace Vitral.Core.Retratos;
 /// <paramref name="barraAtual"/> e <paramref name="iconesAtuais"/> informam o estado da barra do topo e a lista de ícones
 /// aplicada para o retrato; sem eles, o retrato não mexe nessas partes.
 public sealed class ServicoRetratos(IRegistro registro, string pasta, Func<BarraTopoPerfil>? barraAtual = null,
-    Func<IReadOnlyList<string>?>? iconesAtuais = null, Func<BarraBaixoPerfil>? docaAtual = null)
+    Func<IReadOnlyList<string>?>? iconesAtuais = null, Func<BarraBaixoPerfil>? docaAtual = null, Func<AparenciaPerfil>? aparenciaAtual = null)
 {
     private const int Limite = 10;
     private const string NomeOriginal = "original.json";
@@ -20,7 +20,7 @@ public sealed class ServicoRetratos(IRegistro registro, string pasta, Func<Barra
         perfil,
         AjustesNativos.Controlados.Concat(BarraDeTarefas.Controlados).Select(c => registro.Ler(c.Chave, c.Nome, c.Tipo))
             .Concat(Icones.Retratar(registro)).ToList(),
-        barraAtual?.Invoke(), iconesAtuais?.Invoke(), docaAtual?.Invoke());
+        barraAtual?.Invoke(), iconesAtuais?.Invoke(), docaAtual?.Invoke(), aparenciaAtual?.Invoke());
 
     /// Grava o retrato e devolve o nome do arquivo (para guardar a referência, por exemplo num teste em andamento).
     public string Salvar(Retrato r)
@@ -54,7 +54,8 @@ public sealed class ServicoRetratos(IRegistro registro, string pasta, Func<Barra
         if (File.Exists(arquivo))
         {
             var o = LerArquivo(arquivo);
-            return o with { BarraTopo = o.BarraTopo ?? BarraTopoPerfil.Desligada, BarraBaixo = o.BarraBaixo ?? BarraBaixoPerfil.Desligada };
+            return o with { BarraTopo = o.BarraTopo ?? BarraTopoPerfil.Desligada, BarraBaixo = o.BarraBaixo ?? BarraBaixoPerfil.Desligada,
+                Aparencia = o.Aparencia ?? new AparenciaPerfil(TemaAparencia.VidroEscuro) };
         }
         Directory.CreateDirectory(pasta);
         var r = Tirar(null);
@@ -74,14 +75,14 @@ public sealed class ServicoRetratos(IRegistro registro, string pasta, Func<Barra
 
     private sealed record ValorJson(string Chave, string Nome, TipoValor Tipo, uint? Dword, string? Binario, string? Texto);
     private sealed record RetratoJson(DateTimeOffset Quando, string? PerfilAplicado, List<ValorJson> Valores, BarraTopoPerfil? BarraTopo = null,
-        List<string>? IconesVisiveis = null, BarraBaixoPerfil? BarraBaixo = null);
+        List<string>? IconesVisiveis = null, BarraBaixoPerfil? BarraBaixo = null, AparenciaPerfil? Aparencia = null);
 
     private static readonly JsonSerializerOptions Opcoes = new() { WriteIndented = true };
 
     private static string Serializar(Retrato r) => JsonSerializer.Serialize(new RetratoJson(
         r.Quando, r.PerfilAplicado,
         r.Valores.Select(v => new ValorJson(v.Chave, v.Nome, v.Tipo,
-            v.Dado as uint?, v.Dado is byte[] b ? Convert.ToBase64String(b) : null, v.Dado as string)).ToList(), r.BarraTopo, r.IconesVisiveis?.ToList(), r.BarraBaixo), Opcoes);
+            v.Dado as uint?, v.Dado is byte[] b ? Convert.ToBase64String(b) : null, v.Dado as string)).ToList(), r.BarraTopo, r.IconesVisiveis?.ToList(), r.BarraBaixo, r.Aparencia), Opcoes);
 
     private static Retrato LerArquivo(string arquivo)
     {
@@ -93,6 +94,6 @@ public sealed class ServicoRetratos(IRegistro registro, string pasta, Func<Barra
                 TipoValor.Dword => v.Dword,
                 TipoValor.Binario => v.Binario is null ? null : Convert.FromBase64String(v.Binario),
                 _ => v.Texto,
-            })).ToList(), j.BarraTopo, j.IconesVisiveis, j.BarraBaixo);
+            })).ToList(), j.BarraTopo, j.IconesVisiveis, j.BarraBaixo, j.Aparencia);
     }
 }

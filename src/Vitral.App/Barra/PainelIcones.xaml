@@ -14,7 +14,7 @@
                     </Border>
                     <DataTemplate.Triggers>
                         <Trigger SourceName="Fundo" Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Fundo" Property="Background" Value="{StaticResource SuperficieHover}" />
+                            <Setter TargetName="Fundo" Property="Background" Value="{DynamicResource SuperficieHover}" />
                         </Trigger>
                     </DataTemplate.Triggers>
                 </DataTemplate>

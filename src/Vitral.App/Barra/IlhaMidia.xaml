@@ -6,7 +6,7 @@
         <StackPanel x:Name="Gatilho" Orientation="Horizontal" Background="Transparent"
                     MouseEnter="Gatilho_Entrou" MouseLeave="Gatilho_Saiu">
         <Grid Width="18" Height="18" Margin="0,0,8,0">
-            <TextBlock Text="&#xE8D6;" FontFamily="{StaticResource FonteIcones}" FontSize="12" Foreground="{StaticResource TextoSecundario}"
+            <TextBlock Text="&#xE8D6;" FontFamily="{StaticResource FonteIcones}" FontSize="12" Foreground="{DynamicResource TextoSecundario}"
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
             <Border CornerRadius="4" ClipToBounds="True">
                 <Border.Background>
@@ -23,7 +23,7 @@
             <Button Command="{Binding TocarPausarCommand}" ToolTip="Tocar ou pausar">
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource BotaoIlha}">
-                        <Setter Property="Foreground" Value="{StaticResource Ambar}" />
+                        <Setter Property="Foreground" Value="{DynamicResource Ambar}" />
                         <Setter Property="Content" Value="&#xE768;" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Tocando}" Value="True"><Setter Property="Content" Value="&#xE769;" /></DataTrigger>

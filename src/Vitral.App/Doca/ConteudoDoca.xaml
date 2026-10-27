@@ -6,7 +6,7 @@
     <UserControl.Resources>
         <Style x:Key="BotaoDoca" TargetType="Button">
             <Setter Property="tema:Efeitos.Afundar" Value="True" />
-            <Setter Property="Foreground" Value="{StaticResource Texto}" />
+            <Setter Property="Foreground" Value="{DynamicResource Texto}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="False" />
             <Setter Property="Template">
@@ -16,7 +16,7 @@
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{StaticResource SuperficieHover}" /></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{DynamicResource SuperficieHover}" /></Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -32,7 +32,7 @@
         <Button Style="{StaticResource BotaoDoca}" Command="{Binding PesquisarCommand}" ToolTip="Pesquisar" Margin="2,0,0,0">
             <TextBlock Text="&#xE721;" FontFamily="{StaticResource FonteIcones}" FontSize="16" tema:Efeitos.AlvoDaLupa="True" />
         </Button>
-        <Border Width="1" Height="24" Background="{StaticResource Linha}" Margin="8,0" VerticalAlignment="Center" />
+        <Border Width="1" Height="24" Background="{DynamicResource Linha}" Margin="8,0" VerticalAlignment="Center" />
 
         <ItemsControl x:Name="Itens" ItemsSource="{Binding Botoes}" Focusable="False">
             <ItemsControl.ItemsPanel>
@@ -49,7 +49,7 @@
                                 CommandParameter="{Binding}">
                             <Grid Width="30" Height="30" tema:Efeitos.AlvoDaLupa="True">
                                 <!-- Pulso âmbar: o app pede atenção -->
-                                <Border x:Name="Pulso" CornerRadius="8" Background="{StaticResource Ambar}" Opacity="0" />
+                                <Border x:Name="Pulso" CornerRadius="8" Background="{DynamicResource Ambar}" Opacity="0" />
                                 <TextBlock x:Name="SemIcone" Text="&#xE737;" FontFamily="{StaticResource FonteIcones}" FontSize="18"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
                                 <Image Source="{Binding Icone}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -57,9 +57,11 @@
                             </Grid>
                         </Button>
                         <!-- Tracinho: aberto; marca âmbar com brilho: ativo -->
+                        <!-- Cores da aparência da doca: trocadas por Setter (animação de estilo não aceita cor dinâmica);
+                             o brilho fica sempre ali e só a intensidade anima. -->
                         <Border x:Name="Marca" Height="3" Width="6" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,1"
-                                HorizontalAlignment="Center" Visibility="Hidden">
-                            <Border.Background><SolidColorBrush Color="{StaticResource CorTextoSecundario}" /></Border.Background>
+                                HorizontalAlignment="Center" Visibility="Hidden" Background="{DynamicResource TextoSecundario}">
+                            <Border.Effect><DropShadowEffect Color="{DynamicResource CorAmbar}" BlurRadius="8" ShadowDepth="0" Opacity="0" /></Border.Effect>
                         </Border>
                     </Grid>
                     <DataTemplate.Triggers>
@@ -78,7 +80,7 @@
                                 <BeginStoryboard>
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="Marca" Storyboard.TargetProperty="Width" To="16" Duration="0:0:0.18" EasingFunction="{StaticResource CurvaMola}" />
-                                        <ColorAnimation Storyboard.TargetName="Marca" Storyboard.TargetProperty="Background.Color" To="{StaticResource CorAmbar}" Duration="0:0:0.18" />
+                                        <DoubleAnimation Storyboard.TargetName="Marca" Storyboard.TargetProperty="Effect.Opacity" To="0.8" Duration="0:0:0.18" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </DataTrigger.EnterActions>
@@ -86,13 +88,11 @@
                                 <BeginStoryboard>
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="Marca" Storyboard.TargetProperty="Width" To="6" Duration="0:0:0.18" EasingFunction="{StaticResource CurvaMola}" />
-                                        <ColorAnimation Storyboard.TargetName="Marca" Storyboard.TargetProperty="Background.Color" To="{StaticResource CorTextoSecundario}" Duration="0:0:0.18" />
+                                        <DoubleAnimation Storyboard.TargetName="Marca" Storyboard.TargetProperty="Effect.Opacity" To="0" Duration="0:0:0.18" />
                                     </Storyboard>
                                 </BeginStoryboard>
                             </DataTrigger.ExitActions>
-                            <Setter TargetName="Marca" Property="Effect">
-                                <Setter.Value><DropShadowEffect Color="{StaticResource CorAmbar}" BlurRadius="8" ShadowDepth="0" Opacity="0.8" /></Setter.Value>
-                            </Setter>
+                            <Setter TargetName="Marca" Property="Background" Value="{DynamicResource Ambar}" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding PedindoAtencao}" Value="True">
                             <DataTrigger.EnterActions>

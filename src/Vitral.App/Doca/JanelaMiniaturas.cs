@@ -69,7 +69,7 @@ internal sealed partial class JanelaMiniaturas : Window
             Child = _linha,
         };
         Content = _casca;
-        VidroIlha.Preparar(this, _casca);
+        VidroIlha.Preparar(this, _casca, Tema.ParteAparencia.Doca);
         SourceInitialized += (_, _) =>
         {
             _handle = new WindowInteropHelper(this).Handle;
@@ -120,7 +120,8 @@ internal sealed partial class JanelaMiniaturas : Window
         }
         else miniatura = IntPtr.Zero;
 
-        var lugar = new Border { Width = Largura, Height = altura, CornerRadius = new CornerRadius(4), Background = (Brush)Application.Current.Resources["Linha"] };
+        var lugar = new Border { Width = Largura, Height = altura, CornerRadius = new CornerRadius(4) };
+        lugar.SetResourceReference(Border.BackgroundProperty, "Linha");
         if (miniatura != IntPtr.Zero) _miniaturas.Add((lugar, miniatura));
 
         // O título corta com "…" na largura da miniatura (o inteiro fica na dica): um título longo não alarga a célula
@@ -150,7 +151,7 @@ internal sealed partial class JanelaMiniaturas : Window
             Background = Brushes.Transparent,
             Cursor = Cursors.Hand,
         };
-        celula.MouseEnter += (_, _) => celula.Background = (Brush)Application.Current.Resources["SuperficieHover"];
+        celula.MouseEnter += (_, _) => celula.Background = (Brush)celula.FindResource("SuperficieHover"); // a da doca
         celula.MouseLeave += (_, _) => celula.Background = Brushes.Transparent;
         celula.MouseLeftButtonUp += (_, e) =>
         {

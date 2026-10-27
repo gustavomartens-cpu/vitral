@@ -29,6 +29,17 @@
     <SolidColorBrush x:Key="Superficie" Color="{StaticResource CorSuperficie}" />
     <SolidColorBrush x:Key="SuperficieHover" Color="{StaticResource CorSuperficieHover}" />
     <SolidColorBrush x:Key="Selecao" Color="{StaticResource CorSelecao}" />
+    <!-- Menus de contexto (a doca redefine pela aparência; o da bandeja fica com estes) -->
+    <SolidColorBrush x:Key="FundoMenu" Color="#DB1E2026" />
+    <SolidColorBrush x:Key="HoverMenu" Color="#29F2B544" />
+    <SolidColorBrush x:Key="SeparadorMenu" Color="#17FFFFFF" />
+    <!-- Botões em pílula das fichas (a aparência redefine por parte) -->
+    <SolidColorBrush x:Key="PilulaFundo" Color="#FFF2F2F2" />
+    <SolidColorBrush x:Key="PilulaFundoHover" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="PilulaTexto" Color="#FF111111" />
+    <SolidColorBrush x:Key="PilulaBorda" Color="#47FFFFFF" />
+    <SolidColorBrush x:Key="Perigo" Color="#FFFF8A8A" />
+    <SolidColorBrush x:Key="PerigoHover" Color="#29E85454" />
 
     <LinearGradientBrush x:Key="AmbarGradiente" StartPoint="0,0" EndPoint="1,1">
         <GradientStop Color="#FFF7C766" Offset="0" />

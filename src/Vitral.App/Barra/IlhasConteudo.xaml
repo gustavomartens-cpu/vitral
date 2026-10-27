@@ -17,13 +17,13 @@
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="tema:Efeitos.Afundar" Value="True" />
         <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{StaticResource SuperficieHover}" /></Trigger>
+            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{DynamicResource SuperficieHover}" /></Trigger>
         </Style.Triggers>
     </Style>
 
     <Style x:Key="BotaoIlha" TargetType="Button">
         <Setter Property="tema:Efeitos.Afundar" Value="True" />
-        <Setter Property="Foreground" Value="{StaticResource Texto}" />
+        <Setter Property="Foreground" Value="{DynamicResource Texto}" />
         <Setter Property="FontFamily" Value="{StaticResource FonteIcones}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Cursor" Value="Hand" />
@@ -35,7 +35,7 @@
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{StaticResource SuperficieHover}" /></Trigger>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{DynamicResource SuperficieHover}" /></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -44,13 +44,13 @@
 
     <!-- Painéis (spec v2): rótulo de seção, linha clicável e controle deslizante -->
     <Style x:Key="TituloPainel" TargetType="TextBlock">
-        <Setter Property="Foreground" Value="{StaticResource TextoSecundario}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundario}" />
         <Setter Property="FontSize" Value="10" />
         <Setter Property="Margin" Value="0,2,0,8" />
     </Style>
 
     <Style x:Key="LinhaPainel" TargetType="Button">
-        <Setter Property="Foreground" Value="{StaticResource Texto}" />
+        <Setter Property="Foreground" Value="{DynamicResource Texto}" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
@@ -61,7 +61,7 @@
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{StaticResource SuperficieHover}" /></Trigger>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{DynamicResource SuperficieHover}" /></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -77,8 +77,8 @@
                 <ControlTemplate TargetType="Slider">
                     <!-- Trilho desenhado atrás do Track; os botões de repetição só capturam o clique -->
                     <Grid x:Name="Fundo" Height="20" Background="Transparent">
-                        <Border Height="4" CornerRadius="2" Background="{StaticResource Linha}" />
-                        <Border Height="4" CornerRadius="2" HorizontalAlignment="Left" Background="{StaticResource AmbarGradiente}">
+                        <Border Height="4" CornerRadius="2" Background="{DynamicResource Linha}" />
+                        <Border Height="4" CornerRadius="2" HorizontalAlignment="Left" Background="{DynamicResource AmbarGradiente}">
                             <Border.Width>
                                 <MultiBinding Converter="{StaticResource LarguraPreenchida}">
                                     <Binding Path="Value" RelativeSource="{RelativeSource TemplatedParent}" />
@@ -105,7 +105,7 @@
                             <Track.Thumb>
                                 <Thumb>
                                     <Thumb.Template>
-                                        <ControlTemplate><Ellipse Width="14" Height="14" Fill="{StaticResource Texto}" /></ControlTemplate>
+                                        <ControlTemplate><Ellipse Width="14" Height="14" Fill="{DynamicResource Texto}" /></ControlTemplate>
                                     </Thumb.Template>
                                 </Thumb>
                             </Track.Thumb>
@@ -123,15 +123,15 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">
-                    <Border x:Name="Trilho" Width="32" Height="18" CornerRadius="9" Background="{StaticResource Linha}"
-                            BorderBrush="{StaticResource Borda}" BorderThickness="1">
-                        <Ellipse x:Name="Bolinha" Width="12" Height="12" Margin="3,0" HorizontalAlignment="Left" Fill="{StaticResource Texto}" />
+                    <Border x:Name="Trilho" Width="32" Height="18" CornerRadius="9" Background="{DynamicResource Linha}"
+                            BorderBrush="{DynamicResource Borda}" BorderThickness="1">
+                        <Ellipse x:Name="Bolinha" Width="12" Height="12" Margin="3,0" HorizontalAlignment="Left" Fill="{DynamicResource Texto}" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Trilho" Property="Background" Value="{StaticResource Ambar}" />
+                            <Setter TargetName="Trilho" Property="Background" Value="{DynamicResource Ambar}" />
                             <Setter TargetName="Bolinha" Property="HorizontalAlignment" Value="Right" />
-                            <Setter TargetName="Bolinha" Property="Fill" Value="{StaticResource TextoSobreAmbar}" />
+                            <Setter TargetName="Bolinha" Property="Fill" Value="{DynamicResource TextoSobreAmbar}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -142,8 +142,8 @@
     <!-- Mini barra âmbar com a porcentagem (CPU, MEM) -->
     <DataTemplate x:Key="MiniBarra">
         <Grid Width="22" Height="4" VerticalAlignment="Center">
-            <Border Background="{StaticResource Linha}" CornerRadius="2" />
-            <Border Background="{StaticResource Ambar}" CornerRadius="2" HorizontalAlignment="Left" Width="22" RenderTransformOrigin="0,0.5">
+            <Border Background="{DynamicResource Linha}" CornerRadius="2" />
+            <Border Background="{DynamicResource Ambar}" CornerRadius="2" HorizontalAlignment="Left" Width="22" RenderTransformOrigin="0,0.5">
                 <Border.RenderTransform><ScaleTransform ScaleX="{Binding}" /></Border.RenderTransform>
             </Border>
         </Grid>

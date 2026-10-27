@@ -38,7 +38,7 @@ internal sealed partial class JanelaDoca : Window
             Padding = new Thickness(10, 0, 10, 0),
         };
         Content = _casca;
-        VidroIlha.Preparar(this, _casca);
+        VidroIlha.Preparar(this, _casca, Tema.ParteAparencia.Doca);
         Microsoft.Win32.UserPreferenceChangedEventHandler aoMudar = (_, e) =>
         {
             if (e.Category is Microsoft.Win32.UserPreferenceCategory.General or Microsoft.Win32.UserPreferenceCategory.Color)

@@ -20,6 +20,7 @@ internal static partial class MenuDoca
     public static void Abrir(UIElement alvo, IReadOnlyList<ItemMenu> itens)
     {
         var menu = new ContextMenu { PlacementTarget = alvo, Placement = PlacementMode.Top };
+        Tema.ServicoAparencia.Instancia.Registrar(menu, Tema.ParteAparencia.Doca); // o menu é outra árvore: as cores da doca vão junto
         foreach (var item in itens)
         {
             if (item.Perigo && menu.Items.Count > 0) menu.Items.Add(new Separator());

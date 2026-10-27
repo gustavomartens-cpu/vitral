@@ -7,8 +7,13 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 - **Compromissos no calendário do notch** (Google e/ou Outlook): exige login na conta dentro do Vitral.
 - **Notificações de outros apps no notch**, e respostas por ali: precisa de identidade de pacote para ler as
   notificações do Windows.
-- **Customização visual da doca, do notch e das laterais:** estilos diferentes, como já existe para a barra de tarefas
-  do Windows (hoje a doca, o notch e as ilhas têm um visual só).
+- **Aparência, fase 2 (formas):** doca flutuante ou corrida, tamanho dos ícones, ampliação ligada ou desligada; tamanho,
+  arredondamento e orelhas do notch; ilhas separadas ou barra única, encostadas ou com respiro. A fase 1 (cores e
+  material) saiu na 0.10.0.
+- **Pequenos acertos da aparência** (revisão final da 0.10.0): aplicar a aparência antes de mostrar as janelas na
+  abertura (hoje pode piscar o Vidro escuro); não recalcular quando o Windows avisa sem mudar nada; tirar os avisos de
+  tema antigos das ilhas, painéis e doca; prévia da aba acompanhar o Windows e a troca de papel de parede; cor fora da
+  paleta aparecer no seletor; enum novo no perfil exige subir o esquema.
 
 ## Testes a fundo pendentes
 
@@ -32,4 +37,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
 - Barra do topo sem repetir bateria, volume e internet da barra de tarefas; logo novo.
 - Atualização automática pelo GitHub (0.7.2), permissões do Claude pelo notch (0.8.0), painel da mídia ao passar o
   mouse (0.8.1), consertos (0.8.2), ler e responder ao Claude pelo notch com lista de pendências (0.9.0), Descartar na
-  ficha (0.9.3), abrir a conversa certa no app do Claude (0.9.4).
+  ficha (0.9.3), abrir a conversa certa no app do Claude (0.9.4), aparência da doca, do
+  notch e das ilhas com sete temas, personalizar e diferenciar (0.10.0).

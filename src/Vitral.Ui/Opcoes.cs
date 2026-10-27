@@ -31,4 +31,34 @@ public static class Opcoes
 
     public static IReadOnlyList<Opcao<AlinhamentoOpcional>> Alinhamentos { get; } =
         [new("Não mexer", AlinhamentoOpcional.NaoMexer), new("Centro", AlinhamentoOpcional.Centro), new("Esquerda", AlinhamentoOpcional.Esquerda)];
+
+    /// Aba Aparência: o "Não mexer" / "do tema" dos campos anuláveis. Um item nulo nunca aparece selecionado numa
+    /// lista, então ele vale esta marca na tela e vira nulo no editor (conversor NuloComoMarca do App).
+    public static object Nulo { get; } = new();
+
+    public static IReadOnlyList<Opcao<object>> TemasAparencia { get; } =
+    [
+        new("Não mexer", Nulo), new("Automático", Core.Perfis.TemaAparencia.Automatico),
+        new("Vidro escuro", Core.Perfis.TemaAparencia.VidroEscuro), new("Preto sólido", Core.Perfis.TemaAparencia.PretoSolido),
+        new("Claro", Core.Perfis.TemaAparencia.Claro), new("Vidro colorido", Core.Perfis.TemaAparencia.VidroColorido),
+        new("Grafite", Core.Perfis.TemaAparencia.Grafite), new("Cristal", Core.Perfis.TemaAparencia.Cristal),
+    ];
+
+    public static IReadOnlyList<Opcao<object>> MateriaisAparencia { get; } =
+        [new("Do tema", Nulo), new("Vidro", Core.Perfis.MaterialParte.Vidro), new("Sólido", Core.Perfis.MaterialParte.Solido)];
+
+    public static IReadOnlyList<Opcao<object>> CantosAparencia { get; } =
+        [new("Do tema", Nulo), new("Retos", Core.Perfis.CantosParte.Retos), new("Suaves", Core.Perfis.CantosParte.Suaves), new("Redondos", Core.Perfis.CantosParte.Redondos)];
+
+    public static IReadOnlyList<Opcao<object>> FundosAparencia { get; } =
+    [
+        new("do tema", Nulo), new("Azul-noite", "#0A0F20"), new("Grafite", "#24262B"), new("Preto", "#0B0C10"),
+        new("Violeta", "#783CB4"), new("Verde-mar", "#1F6F5C"), new("Vinho", "#7A2E2E"), new("Claro", "#F4F4F6"),
+    ];
+
+    public static IReadOnlyList<Opcao<object>> DestaquesAparencia { get; } =
+    [
+        new("do tema", Nulo), new("Âmbar", "#F2B544"), new("Azul", "#4CC2FF"), new("Verde-água", "#3DDBB5"),
+        new("Coral", "#FF8A8A"), new("Branco", "#FFFFFF"), new("Terracota", "#D97757"),
+    ];
 }

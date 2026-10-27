@@ -7,4 +7,5 @@ namespace Vitral.Core.Retratos;
 /// <see cref="BarraTopo"/> nulo (retratos de antes da barra) significa "não mexer" na barra ao reverter.
 /// <see cref="IconesVisiveis"/> é a lista de ícones aplicada naquele momento (nula = não mexer), restaurada junto.
 public sealed record Retrato(DateTimeOffset Quando, string? PerfilAplicado, IReadOnlyList<ValorRegistro> Valores,
-    BarraTopoPerfil? BarraTopo = null, IReadOnlyList<string>? IconesVisiveis = null, BarraBaixoPerfil? BarraBaixo = null);
+    BarraTopoPerfil? BarraTopo = null, IReadOnlyList<string>? IconesVisiveis = null, BarraBaixoPerfil? BarraBaixo = null,
+    AparenciaPerfil? Aparencia = null);

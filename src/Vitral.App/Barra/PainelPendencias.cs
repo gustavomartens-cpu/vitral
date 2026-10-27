@@ -30,7 +30,9 @@ internal sealed class PainelPendencias : StackPanel
         Children.Clear();
         if (_pendencias.Quantas == 0)
         {
-            Children.Add(new TextBlock { Text = "Nenhuma sessão esperando", Foreground = (Brush)Application.Current.Resources["TextoSecundario"], Margin = new Thickness(8) });
+            var vazio = new TextBlock { Text = "Nenhuma sessão esperando", Margin = new Thickness(8) };
+            vazio.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
+            Children.Add(vazio);
             Vazia?.Invoke();
             return;
         }
@@ -40,21 +42,23 @@ internal sealed class PainelPendencias : StackPanel
 
     private Border Item(Pendencias.Pendencia p)
     {
-        var secundario = (Brush)Application.Current.Resources["TextoSecundario"];
         bool aberto = p == _aberta;
 
+        // Cores da aparência das ilhas (o painel desce delas), pelas chaves do tema.
         var cabeca = new TextBlock { TextTrimming = TextTrimming.CharacterEllipsis };
         cabeca.Inlines.Add(new Run(p.Sessao) { FontWeight = FontWeights.SemiBold });
-        cabeca.Inlines.Add(new Run($"   {(p.Tipo == TipoAviso.Esperando ? "esperando você" : "terminou")} · {p.Hora:HH:mm}") { Foreground = secundario, FontSize = 11 });
+        var quando = new Run($"   {(p.Tipo == TipoAviso.Esperando ? "esperando você" : "terminou")} · {p.Hora:HH:mm}") { FontSize = 11 };
+        quando.SetResourceReference(TextElement.ForegroundProperty, "TextoSecundario");
+        cabeca.Inlines.Add(quando);
         var textos = new StackPanel();
         textos.Children.Add(cabeca);
-        var cor = new SolidColorBrush(Color.FromRgb(0xC3, 0xC6, 0xCD));
         if (aberto)
         {
+            var inteiro = new TextBlock { Text = p.Completo, TextWrapping = TextWrapping.Wrap, LineHeight = 17 };
             textos.Children.Add(new ScrollViewer
             {
                 MaxHeight = 110, Margin = new Thickness(0, 4, 0, 0), VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Focusable = false,
-                Content = new TextBlock { Text = p.Completo, TextWrapping = TextWrapping.Wrap, Foreground = cor, LineHeight = 17 },
+                Content = inteiro,
             });
             var acoes = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(-3, 8, 0, 0) };
             acoes.Children.Add(Pilula.Criar("Abrir no Claude", Pilula.Estilo.Principal, () =>
@@ -68,10 +72,11 @@ internal sealed class PainelPendencias : StackPanel
         else
         {
             var primeira = p.Completo.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
-            textos.Children.Add(new TextBlock { Text = primeira, Foreground = cor, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 2, 0, 0) });
+            textos.Children.Add(new TextBlock { Text = primeira, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 2, 0, 0) });
         }
 
-        var fechar = new TextBlock { Text = "×", FontSize = 14, Foreground = secundario, Cursor = Cursors.Hand, Padding = new Thickness(6, 0, 2, 0), ToolTip = "Descartar" };
+        var fechar = new TextBlock { Text = "×", FontSize = 14, Cursor = Cursors.Hand, Padding = new Thickness(6, 0, 2, 0), ToolTip = "Descartar" };
+        fechar.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
         fechar.MouseLeftButtonUp += (_, e) => { e.Handled = true; _pendencias.Saiu(p); };
         var icone = JanelaNotch.IconeClaude(18);
         icone.Margin = new Thickness(0, 1, 10, 0);
@@ -83,9 +88,9 @@ internal sealed class PainelPendencias : StackPanel
         linha.Children.Add(fechar);
         linha.Children.Add(textos);
 
-        var fundo = new SolidColorBrush(Color.FromArgb(0x0D, 0xFF, 0xFF, 0xFF));
-        var item = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(8), Cursor = Cursors.Hand, Background = aberto ? fundo : Brushes.Transparent, Child = linha };
-        item.MouseEnter += (_, _) => item.Background = fundo;
+        var item = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(8), Cursor = Cursors.Hand, Background = Brushes.Transparent, Child = linha };
+        if (aberto) item.SetResourceReference(Border.BackgroundProperty, "Superficie");
+        item.MouseEnter += (_, _) => item.SetResourceReference(Border.BackgroundProperty, "Superficie");
         item.MouseLeave += (_, _) => { if (p != _aberta) item.Background = Brushes.Transparent; };
         item.MouseLeftButtonUp += (_, _) =>
         {
