@@ -37,5 +37,6 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
 - Barra do topo sem repetir bateria, volume e internet da barra de tarefas; logo novo.
 - Atualização automática pelo GitHub (0.7.2), permissões do Claude pelo notch (0.8.0), painel da mídia ao passar o
   mouse (0.8.1), consertos (0.8.2), ler e responder ao Claude pelo notch com lista de pendências (0.9.0), Descartar na
-  ficha (0.9.3), abrir a conversa certa no app do Claude (0.9.4), aparência da doca, do
+  ficha (0.9.3), abrir a conversa certa no app do Claude (0.9.4), notch certo depois de trocar de escala
+  (0.9.5), aparência da doca, do
   notch e das ilhas com sete temas, personalizar e diferenciar (0.10.0).
