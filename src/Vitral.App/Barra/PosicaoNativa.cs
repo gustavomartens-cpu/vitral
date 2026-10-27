@@ -24,15 +24,28 @@ internal static partial class PosicaoNativa
     private static double Escala(uint dpi) => dpi == 0 ? 1 : dpi / 96.0;
 
     /// Põe o ponto (x, y), em DIPs do monitor de escala dpi, na fração ancora da largura da janela (0 = borda esquerda,
-    /// 0,5 = centro, 1 = borda direita).
-    public static void Colocar(Window janela, double x, double y, uint dpi, double ancora = 0)
+    /// 0,5 = centro, 1 = borda direita). Com <paramref name="tamanho"/> (DIPs), a janela também volta a esse tamanho: ao
+    /// trocar de escala (desligar a tela do HDMI e ficar só o notebook a 125%), o WPF desenha na escala nova mas deixa a
+    /// HWND no tamanho em pixels da antiga e grava esse tamanho errado no Width/Height; o notch saía cortado dos lados e
+    /// embaixo (27/10).
+    public static void Colocar(Window janela, double x, double y, uint dpi, double ancora = 0, Size? tamanho = null)
     {
         var h = new WindowInteropHelper(janela).EnsureHandle();
-        double largura = janela.ActualWidth > 0 ? janela.ActualWidth : double.IsNaN(janela.Width) ? 0 : janela.Width;
-        double larguraPx = largura * VisualTreeHelper.GetDpi(janela).DpiScaleX;
+        var wpf = VisualTreeHelper.GetDpi(janela);
+        GetWindowRect(h, out var atual);
+        int larguraPx = atual.Dir - atual.Esq, alturaPx = atual.Base - atual.Topo;
+        if (tamanho is { } t)
+        {
+            janela.Width = t.Width;
+            janela.Height = t.Height;
+            larguraPx = (int)Math.Round(t.Width * wpf.DpiScaleX);
+            alturaPx = (int)Math.Round(t.Height * wpf.DpiScaleY);
+        }
+        else if (janela.ActualWidth > 0) larguraPx = (int)Math.Round(janela.ActualWidth * wpf.DpiScaleX);
+        bool mesmoTamanho = larguraPx == atual.Dir - atual.Esq && alturaPx == atual.Base - atual.Topo;
         double escala = Escala(dpi);
-        SetWindowPos(h, IntPtr.Zero, (int)Math.Round(x * escala - ancora * larguraPx), (int)Math.Round(y * escala), 0, 0,
-            SwpNoSize | SwpNoZOrder | SwpNoActivate);
+        SetWindowPos(h, IntPtr.Zero, (int)Math.Round(x * escala - ancora * larguraPx), (int)Math.Round(y * escala), larguraPx, alturaPx,
+            (tamanho is null || mesmoTamanho ? SwpNoSize : 0) | SwpNoZOrder | SwpNoActivate);
     }
 
     /// Onde a janela está, em DIPs do monitor de escala dpi (pela HWND, não pelo Left/Top do WPF).
