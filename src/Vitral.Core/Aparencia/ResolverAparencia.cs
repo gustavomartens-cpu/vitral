@@ -4,24 +4,24 @@ using Vitral.Core.Perfis;
 namespace Vitral.Core.Aparencia;
 
 /// Uma cor com alfa, sem depender do WPF.
-public readonly record struct Cor(byte A, byte R, byte G, byte B)
+public readonly record struct CorArgb(byte A, byte R, byte G, byte B)
 {
     /// "#RRGGBB" com o alfa dado; null se inválida.
-    public static Cor? DeHex(string? hex, byte alfa = 255)
+    public static CorArgb? DeHex(string? hex, byte alfa = 255)
     {
         if (hex is not { Length: 7 } || hex[0] != '#'
             || !uint.TryParse(hex.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var v)) return null;
-        return new Cor(alfa, (byte)(v >> 16), (byte)(v >> 8), (byte)v);
+        return new CorArgb(alfa, (byte)(v >> 16), (byte)(v >> 8), (byte)v);
     }
 
-    public Cor ComAlfa(byte alfa) => this with { A = alfa };
+    public CorArgb ComAlfa(byte alfa) => this with { A = alfa };
 }
 
 /// O que o Windows diz agora (lido pelo App): para o tema Automático e para a transparência.
 public sealed record VisualWindows(bool ModoEscuro, string CorDestaque, bool Transparencia);
 
 /// Os valores finais de uma parte. <paramref name="Desfoque"/>: vidro com desfoque do Windows (nunca no notch).
-public sealed record ValoresParte(MaterialParte Material, Cor Fundo, Cor Texto, Cor TextoSecundario, Cor Borda, Cor Destaque,
+public sealed record ValoresParte(MaterialParte Material, CorArgb Fundo, CorArgb Texto, CorArgb TextoSecundario, CorArgb Borda, CorArgb Destaque,
     CantosParte Cantos, bool Desfoque)
 {
     public double RaioPx => Cantos switch { CantosParte.Retos => 0, CantosParte.Suaves => 4, _ => 8 };
@@ -35,7 +35,7 @@ public static class ResolverAparencia
 {
     private sealed record Base(MaterialParte Material, string Fundo, int Opacidade, string? Destaque);
 
-    private static readonly Cor TextoEscuro = Cor.DeHex("#1B1D22")!.Value, TextoClaro = Cor.DeHex("#ECEEF2")!.Value;
+    private static readonly CorArgb TextoEscuro = CorArgb.DeHex("#1B1D22")!.Value, TextoClaro = CorArgb.DeHex("#ECEEF2")!.Value;
 
     public static ValoresAparencia Resolver(AparenciaPerfil? aparencia, VisualWindows windows)
     {
@@ -68,10 +68,10 @@ public static class ResolverAparencia
     private static ValoresParte Montar(Base b, AjustesAparencia? geral, AjustesAparencia? propria, bool ehNotch, VisualWindows w)
     {
         var material = propria?.Material ?? geral?.Material ?? b.Material;
-        var fundo = Cor.DeHex(propria?.CorFundo) ?? Cor.DeHex(geral?.CorFundo) ?? Cor.DeHex(b.Fundo)!.Value;
+        var fundo = CorArgb.DeHex(propria?.CorFundo) ?? CorArgb.DeHex(geral?.CorFundo) ?? CorArgb.DeHex(b.Fundo)!.Value;
         int opacidade = (propria?.Transparencia ?? geral?.Transparencia) is { } t ? 100 - Math.Clamp(t, 0, 100) : b.Opacidade;
-        var destaque = Cor.DeHex(propria?.CorDestaque) ?? Cor.DeHex(geral?.CorDestaque)
-            ?? Cor.DeHex(b.Destaque ?? w.CorDestaque) ?? Cor.DeHex("#F2B544")!.Value;
+        var destaque = CorArgb.DeHex(propria?.CorDestaque) ?? CorArgb.DeHex(geral?.CorDestaque)
+            ?? CorArgb.DeHex(b.Destaque ?? w.CorDestaque) ?? CorArgb.DeHex("#F2B544")!.Value;
         var cantos = propria?.Cantos ?? geral?.Cantos ?? CantosParte.Redondos;
 
         if (material == MaterialParte.Solido) opacidade = 100;
@@ -80,7 +80,7 @@ public static class ResolverAparencia
 
         bool escuro = Luminancia(fundo) > 0.5 && opacidade >= 50; // fundo claro e visível: texto escuro
         var texto = escuro ? TextoEscuro : TextoClaro;
-        var borda = escuro ? new Cor(Alfa(8), 0, 0, 0) : new Cor(Alfa(10), 255, 255, 255);
+        var borda = escuro ? new CorArgb(Alfa(8), 0, 0, 0) : new CorArgb(Alfa(10), 255, 255, 255);
         return new ValoresParte(material, fundo, texto, texto.ComAlfa(Alfa(62)), borda, destaque, cantos,
             Desfoque: material == MaterialParte.Vidro && !ehNotch);
     }
@@ -88,7 +88,7 @@ public static class ResolverAparencia
     private static byte Alfa(int porcento) => (byte)Math.Round(porcento / 100.0 * 255, MidpointRounding.AwayFromZero);
 
     /// Luminância relativa (WCAG), sem o alfa.
-    private static double Luminancia(Cor c)
+    private static double Luminancia(CorArgb c)
     {
         static double Canal(byte v) { double s = v / 255.0; return s <= 0.03928 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4); }
         return 0.2126 * Canal(c.R) + 0.7152 * Canal(c.G) + 0.0722 * Canal(c.B);

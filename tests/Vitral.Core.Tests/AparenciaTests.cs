@@ -9,7 +9,7 @@ public sealed class AparenciaTests
     private static readonly VisualWindows ClaroWin = Escuro with { ModoEscuro = false };
 
     private static ValoresAparencia R(AparenciaPerfil? a, VisualWindows? w = null) => ResolverAparencia.Resolver(a, w ?? Escuro);
-    private static Cor C(string hex, byte alfa = 255) => Cor.DeHex(hex, alfa)!.Value;
+    private static CorArgb C(string hex, byte alfa = 255) => CorArgb.DeHex(hex, alfa)!.Value;
 
     [Theory]
     [InlineData(TemaAparencia.VidroEscuro, MaterialParte.Vidro, "#0A0F20", 184, "#F2B544", MaterialParte.Solido, "#0B0C10", 255)]
@@ -68,8 +68,8 @@ public sealed class AparenciaTests
         Assert.Equal(C("#1B1D22"), R(new AparenciaPerfil(TemaAparencia.PretoSolido, Geral: new AjustesAparencia(CorFundo: "#F4F4F6"))).Doca.Texto);
         var claro = R(new AparenciaPerfil(TemaAparencia.Claro)).Ilhas;
         Assert.Equal(C("#1B1D22", 158), claro.TextoSecundario); // 62%
-        Assert.Equal(new Cor(20, 0, 0, 0), claro.Borda); // preto a 8%
-        Assert.Equal(new Cor(26, 255, 255, 255), R(new AparenciaPerfil(TemaAparencia.VidroEscuro)).Ilhas.Borda); // branco a 10%
+        Assert.Equal(new CorArgb(20, 0, 0, 0), claro.Borda); // preto a 8%
+        Assert.Equal(new CorArgb(26, 255, 255, 255), R(new AparenciaPerfil(TemaAparencia.VidroEscuro)).Ilhas.Borda); // branco a 10%
     }
 
     [Fact]
