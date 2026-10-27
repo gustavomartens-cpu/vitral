@@ -182,9 +182,10 @@ internal sealed partial class JanelaNotch
     private void AbrirNoClaude()
     {
         _janelaAnterior = IntPtr.Zero;
+        var conversa = _estado.RespostaAtual?.AppId;
         if (_respostaMostrada is { } id) _estado.DesistiuResposta(id);
         Desativar();
-        Claude.AbrirClaude.Trazer();
+        Claude.AbrirClaude.Trazer(conversa);
     }
 
     private void AbrirMensagem()

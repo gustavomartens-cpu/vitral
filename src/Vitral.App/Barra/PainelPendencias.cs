@@ -59,7 +59,7 @@ internal sealed class PainelPendencias : StackPanel
             var acoes = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(-3, 8, 0, 0) };
             acoes.Children.Add(Pilula.Criar("Abrir no Claude", Pilula.Estilo.Principal, () =>
             {
-                Claude.AbrirClaude.Trazer();
+                Claude.AbrirClaude.Trazer(p.AppId); // a conversa que originou a pendência
                 _pendencias.Saiu(p);
             }));
             acoes.Children.Add(Pilula.Criar("Descartar", Pilula.Estilo.Contorno, () => _pendencias.Saiu(p)));

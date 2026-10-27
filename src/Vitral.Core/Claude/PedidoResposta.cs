@@ -13,18 +13,21 @@ public sealed record PedidoResposta(string Id, string Sessao, string Completo, D
     /// O id da sessão do Claude: o aviso seguinte dela descarta a ficha.
     public string? SessaoId { get; init; }
 
+    /// A conversa no app do Claude ("local_…"): "abrir no Claude" vai direto a ela.
+    public string? AppId { get; init; }
+
     /// A ficha para o aviso de fim de tarefa (a mensagem inteira; sem ela, o resumo).
     public static PedidoResposta? DeAviso(AvisoClaude aviso, DateTime hora) =>
         aviso.Tipo != TipoAviso.Terminou ? null
-            : new PedidoResposta(Guid.NewGuid().ToString("N"), aviso.Sessao, aviso.Completo ?? aviso.Texto, hora) { SessaoId = aviso.SessaoId };
+            : new PedidoResposta(Guid.NewGuid().ToString("N"), aviso.Sessao, aviso.Completo ?? aviso.Texto, hora) { SessaoId = aviso.SessaoId, AppId = aviso.AppId };
 
-    public string ParaLinha() => JsonSerializer.Serialize(new Linha("Resposta", Id, Sessao, Completo, Hora, SessaoId), Opcoes);
+    public string ParaLinha() => JsonSerializer.Serialize(new Linha("Resposta", Id, Sessao, Completo, Hora, SessaoId, AppId), Opcoes);
 
     public static bool EhPedido(string? linha) => Ler(linha)?.Tipo == "Resposta";
 
     public static PedidoResposta? DeLinha(string? linha) =>
         Ler(linha) is { Tipo: "Resposta", Id: { } id, Sessao: { } s, Completo: { } c, Hora: { } h } l
-            ? new PedidoResposta(id, s, c, h) { SessaoId = l.SessaoId } : null;
+            ? new PedidoResposta(id, s, c, h) { SessaoId = l.SessaoId, AppId = l.AppId } : null;
 
     private static Linha? Ler(string? linha)
     {
@@ -33,7 +36,7 @@ public sealed record PedidoResposta(string Id, string Sessao, string Completo, D
         catch (JsonException) { return null; }
     }
 
-    private sealed record Linha(string? Tipo, string? Id, string? Sessao, string? Completo, DateTime? Hora, string? SessaoId);
+    private sealed record Linha(string? Tipo, string? Id, string? Sessao, string? Completo, DateTime? Hora, string? SessaoId, string? AppId);
 }
 
 /// O texto digitado no notch: a linha que volta pelo canal e o que o mensageiro devolve ao Claude no Stop.

@@ -23,6 +23,9 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     /// A janela da frente não era do app do Claude quando o aviso saiu: um "esperando você" entra nas pendências.
     public bool ForaDoApp { get; init; }
 
+    /// A conversa no app do Claude ("local_…"), para o clique abrir exatamente ela (ver <see cref="ConversaClaude"/>).
+    public string? AppId { get; init; }
+
     private static readonly JsonSerializerOptions OpcoesLinha = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
     /// O id da sessão do Claude (session_id): descarta só os pedidos dessa mesma sessão, mesmo com outras na pasta.
@@ -116,7 +119,7 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     [GeneratedRegex(@"\s+")] private static partial Regex Espacos();
 
     /// A linha que viaja pelo canal.
-    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId, Completo, ForaDoApp), OpcoesLinha);
+    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId, Completo, ForaDoApp, AppId), OpcoesLinha);
 
     public static AvisoClaude? DeLinha(string? linha)
     {
@@ -125,10 +128,10 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
         {
             var l = JsonSerializer.Deserialize<Linha>(linha, OpcoesLinha);
             return l is { Sessao: not null, Texto: not null } && Enum.TryParse<TipoAviso>(l.Tipo, out var tipo)
-                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId, Completo = l.Completo, ForaDoApp = l.ForaDoApp } : null;
+                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId, Completo = l.Completo, ForaDoApp = l.ForaDoApp, AppId = l.AppId } : null;
         }
         catch (JsonException) { return null; }
     }
 
-    private sealed record Linha(string? Tipo, string? Sessao, string? Texto, string? SessaoId, string? Completo, bool ForaDoApp);
+    private sealed record Linha(string? Tipo, string? Sessao, string? Texto, string? SessaoId, string? Completo, bool ForaDoApp, string? AppId);
 }
