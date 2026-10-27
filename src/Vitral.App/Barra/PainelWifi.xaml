@@ -10,7 +10,7 @@
             <TextBlock Text="WI-FI" Style="{StaticResource TituloPainel}" VerticalAlignment="Center" Margin="0" />
         </DockPanel>
 
-        <TextBlock Text="Este PC não tem Wi-Fi." Foreground="{StaticResource TextoSecundario}" Margin="0,4,0,8"
+        <TextBlock Text="Este PC não tem Wi-Fi." Foreground="{DynamicResource TextoSecundario}" Margin="0,4,0,8"
                    Visibility="{Binding SemAdaptador, Converter={StaticResource BoolParaVisivel}}" />
 
         <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto">
@@ -22,7 +22,7 @@
                                     Command="{Binding DataContext.EscolherCommand, ElementName=Raiz}" CommandParameter="{Binding}">
                                 <DockPanel>
                                     <TextBlock x:Name="Estado" DockPanel.Dock="Right" Text="&#xE72E;" FontFamily="{StaticResource FonteIcones}"
-                                               Foreground="{StaticResource TextoSecundario}" VerticalAlignment="Center" Visibility="Collapsed" />
+                                               Foreground="{DynamicResource TextoSecundario}" VerticalAlignment="Center" Visibility="Collapsed" />
                                     <TextBlock Text="{Binding Sinal, Converter={StaticResource SinalParaIcone}}" FontFamily="{StaticResource FonteIcones}"
                                                VerticalAlignment="Center" Margin="0,0,8,0" />
                                     <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
@@ -35,8 +35,8 @@
                                 <Setter TargetName="Estado" Property="Visibility" Value="Visible" />
                                 <Setter TargetName="Estado" Property="Text" Value="Conectado" />
                                 <Setter TargetName="Estado" Property="FontFamily" Value="{StaticResource FonteCorpo}" />
-                                <Setter TargetName="Estado" Property="Foreground" Value="{StaticResource Ambar}" />
-                                <Setter TargetName="Linha" Property="Background" Value="{StaticResource Selecao}" />
+                                <Setter TargetName="Estado" Property="Foreground" Value="{DynamicResource Ambar}" />
+                                <Setter TargetName="Linha" Property="Background" Value="{DynamicResource Selecao}" />
                             </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
@@ -51,17 +51,17 @@
                     <Style.Triggers><DataTrigger Binding="{Binding PedindoSenha}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
                 </Style>
             </StackPanel.Style>
-            <TextBlock FontSize="11" Foreground="{StaticResource TextoSecundario}" Margin="0,0,0,4">
+            <TextBlock FontSize="11" Foreground="{DynamicResource TextoSecundario}" Margin="0,0,0,4">
                 <Run Text="Senha de " /><Run Text="{Binding PedindoSenha.Nome, Mode=OneWay}" />
             </TextBlock>
             <PasswordBox x:Name="CaixaSenha" PasswordChanged="Senha_Mudou" KeyDown="Senha_Tecla"
-                         Background="{StaticResource Superficie}" Foreground="{StaticResource Texto}"
-                         BorderBrush="{StaticResource Borda}" Padding="8,5" />
+                         Background="{DynamicResource Superficie}" Foreground="{DynamicResource Texto}"
+                         BorderBrush="{DynamicResource Borda}" Padding="8,5" />
             <Button Content="Conectar" Style="{StaticResource BotaoPrimario}" HorizontalAlignment="Right" Margin="0,6,0,0"
                     Command="{Binding ConectarComSenhaCommand}" />
         </StackPanel>
 
-        <TextBlock Text="{Binding Mensagem}" Foreground="{StaticResource Ambar}" TextWrapping="Wrap" Margin="0,6,0,0">
+        <TextBlock Text="{Binding Mensagem}" Foreground="{DynamicResource Ambar}" TextWrapping="Wrap" Margin="0,6,0,0">
             <TextBlock.Style>
                 <Style TargetType="TextBlock">
                     <Style.Triggers><DataTrigger Binding="{Binding Mensagem}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
@@ -71,14 +71,14 @@
 
         <StackPanel Margin="0,8,0,0" Visibility="{Binding AvisoLocalizacao, Converter={StaticResource BoolParaVisivel}}">
             <TextBlock Text="Para ver redes por perto, permita a localização para apps da área de trabalho" TextWrapping="Wrap"
-                       Foreground="{StaticResource TextoSecundario}" FontSize="11" />
+                       Foreground="{DynamicResource TextoSecundario}" FontSize="11" />
             <TextBlock FontSize="11" Margin="0,4,0,0">
-                <Hyperlink Command="{Binding AbrirLocalizacaoCommand}" Foreground="{StaticResource Ambar}" TextDecorations="None">Abrir configurações</Hyperlink>
+                <Hyperlink Command="{Binding AbrirLocalizacaoCommand}" Foreground="{DynamicResource Ambar}" TextDecorations="None">Abrir configurações</Hyperlink>
             </TextBlock>
         </StackPanel>
 
         <TextBlock FontSize="11" Margin="0,10,0,0">
-            <Hyperlink Command="{Binding AbrirMaisCommand}" Foreground="{StaticResource TextoSecundario}" TextDecorations="None">Mais configurações de rede…</Hyperlink>
+            <Hyperlink Command="{Binding AbrirMaisCommand}" Foreground="{DynamicResource TextoSecundario}" TextDecorations="None">Mais configurações de rede…</Hyperlink>
         </TextBlock>
     </StackPanel>
 </UserControl>

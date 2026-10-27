@@ -7,11 +7,11 @@
         <TextBlock Text="BATERIA" Style="{StaticResource TituloPainel}" />
         <TextBlock>
             <Run Text="{Binding Porcentagem, Mode=OneWay}" FontSize="26" FontWeight="SemiBold" />
-            <Run Text="  " /><Run Text="{Binding Detalhe, Mode=OneWay}" Foreground="{StaticResource TextoSecundario}" />
+            <Run Text="  " /><Run Text="{Binding Detalhe, Mode=OneWay}" Foreground="{DynamicResource TextoSecundario}" />
         </TextBlock>
         <Grid Height="4" Margin="0,8,0,14">
-            <Border Background="{StaticResource Linha}" CornerRadius="2" />
-            <Border Background="{StaticResource AmbarGradiente}" CornerRadius="2" RenderTransformOrigin="0,0.5">
+            <Border Background="{DynamicResource Linha}" CornerRadius="2" />
+            <Border Background="{DynamicResource AmbarGradiente}" CornerRadius="2" RenderTransformOrigin="0,0.5">
                 <Border.RenderTransform><ScaleTransform ScaleX="{Binding Fracao}" /></Border.RenderTransform>
             </Border>
         </Grid>

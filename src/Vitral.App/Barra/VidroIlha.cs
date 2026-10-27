@@ -3,19 +3,22 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
+using Vitral.App.Tema;
+using Vitral.Core.Aparencia;
+using Vitral.Core.Perfis;
 
 namespace Vitral.App.Barra;
 
-/// Fundo das ilhas, decidido no teste de vidro (plano da barra do topo, Task 1): acrílico por
-/// SetWindowCompositionAttribute em janela sem camadas, a única técnica que manteve o desfoque com a janela
-/// inativa. Os cantos são os do DWM (~8 px). Com a transparência do Windows desligada: Noite a 85%, sólido.
+/// Fundo das ilhas, dos painéis e da doca, decidido no teste de vidro (plano da barra do topo, Task 1): acrílico por
+/// SetWindowCompositionAttribute em janela sem camadas, a única técnica que manteve o desfoque com a janela inativa.
+/// Cor, material e cantos vêm da aparência da parte (spec da aparência §5.2): vidro → acrílico tingido; sólido → fundo
+/// opaco; cantos pelo DWM (retos, pequenos ou padrão).
 internal static partial class VidroIlha
 {
     private const int WcaAccentPolicy = 19;
     private const int AccentDisabled = 0, AccentAcrylicBlurBehind = 4;
-    private const int DwmwaUseImmersiveDarkMode = 20, DwmwaWindowCornerPreference = 33, DwmwcpRound = 2;
-    private const uint TintaNoiteVidro = 0xB8200F0A; // ABGR de #B80A0F20 (NoiteVidro)
-    private static readonly Color Noite85 = Color.FromArgb(0xD9, 0x0A, 0x0F, 0x20);
+    private const int DwmwaUseImmersiveDarkMode = 20, DwmwaWindowCornerPreference = 33;
+    private const int DwmwcpNaoArredondar = 1, DwmwcpRound = 2, DwmwcpRoundSmall = 3;
 
     [StructLayout(LayoutKind.Sequential)] private struct Accent { public int Estado, Flags; public uint Cor; public int Animacao; }
     [StructLayout(LayoutKind.Sequential)] private struct DadosComposicao { public int Atributo; public IntPtr Dados; public int Tamanho; }
@@ -25,35 +28,51 @@ internal static partial class VidroIlha
     [LibraryImport("dwmapi.dll")] private static partial int DwmSetWindowAttribute(IntPtr janela, int atributo, ref int valor, int tamanho);
     [LibraryImport("dwmapi.dll")] private static partial int DwmExtendFrameIntoClientArea(IntPtr janela, ref Margens margens);
 
-    /// Chamado no construtor da ilha, antes de ela ser mostrada.
-    public static void Preparar(Window janela, Border casca)
+    private static readonly DependencyProperty ParteProperty =
+        DependencyProperty.RegisterAttached("Parte", typeof(ParteAparencia), typeof(VidroIlha), new PropertyMetadata(ParteAparencia.Ilhas));
+
+    /// Chamado no construtor da janela, antes de ela ser mostrada: a janela passa a seguir a aparência da parte.
+    public static void Preparar(Window janela, Border casca, ParteAparencia parte = ParteAparencia.Ilhas)
     {
         janela.AllowsTransparency = false;
         janela.Background = Brushes.Transparent;
-        casca.CornerRadius = new CornerRadius(8);
+        janela.SetValue(ParteProperty, parte);
+        var servico = ServicoAparencia.Instancia;
+        servico.Registrar(janela, parte);
+        janela.SetResourceReference(Control.ForegroundProperty, "Texto");
+        casca.SetResourceReference(Border.BorderBrushProperty, "BordaVidro");
+        Action aoMudar = () => Atualizar(janela, casca);
+        servico.Mudou += aoMudar;
+        janela.Closed += (_, _) => servico.Mudou -= aoMudar;
         janela.SourceInitialized += (_, _) => Atualizar(janela, casca);
     }
 
-    /// Reaplica (por exemplo quando a transparência do Windows muda).
+    /// Reaplica (a aparência ou a transparência do Windows mudou).
     public static void Atualizar(Window janela, Border casca)
     {
+        var v = ServicoAparencia.Instancia.Valores((ParteAparencia)janela.GetValue(ParteProperty));
+        casca.CornerRadius = new CornerRadius(v.RaioPx);
         var h = new WindowInteropHelper(janela).Handle;
         if (h == IntPtr.Zero) return;
-        int sim = 1, canto = DwmwcpRound;
-        DwmSetWindowAttribute(h, DwmwaUseImmersiveDarkMode, ref sim, sizeof(int));
+        int escuro = ServicoAparencia.Luminancia(v.Texto) > 0.5 ? 1 : 0; // texto claro = fundo escuro
+        int canto = v.Cantos switch { CantosParte.Retos => DwmwcpNaoArredondar, CantosParte.Suaves => DwmwcpRoundSmall, _ => DwmwcpRound };
+        DwmSetWindowAttribute(h, DwmwaUseImmersiveDarkMode, ref escuro, sizeof(int));
         DwmSetWindowAttribute(h, DwmwaWindowCornerPreference, ref canto, sizeof(int));
 
-        bool vidro = Vidro.TransparenciaLigada();
-        if (HwndSource.FromHwnd(h)?.CompositionTarget is { } alvo) alvo.BackgroundColor = vidro ? Colors.Transparent : Noite85;
+        bool vidro = v.Desfoque;
+        var opaco = ServicoAparencia.Cor(v.Fundo with { A = 255 });
+        if (HwndSource.FromHwnd(h)?.CompositionTarget is { } alvo) alvo.BackgroundColor = vidro ? Colors.Transparent : opaco;
         var m = vidro ? new Margens { Esq = -1, Dir = -1, Topo = -1, Base = -1 } : new Margens();
         DwmExtendFrameIntoClientArea(h, ref m);
-        DefinirAcento(h, vidro ? AccentAcrylicBlurBehind : AccentDisabled);
-        casca.Background = vidro ? Brushes.Transparent : new SolidColorBrush(Noite85);
+        DefinirAcento(h, vidro ? AccentAcrylicBlurBehind : AccentDisabled, v.Fundo);
+        casca.Background = vidro ? Brushes.Transparent : ServicoAparencia.Pincel(v.Fundo with { A = 255 });
     }
 
-    private static void DefinirAcento(IntPtr h, int estado)
+    private static void DefinirAcento(IntPtr h, int estado, CorArgb tinta)
     {
-        var acento = new Accent { Estado = estado, Flags = 2, Cor = TintaNoiteVidro };
+        // A tinta do acrílico é ABGR.
+        uint cor = (uint)tinta.A << 24 | (uint)tinta.B << 16 | (uint)tinta.G << 8 | tinta.R;
+        var acento = new Accent { Estado = estado, Flags = 2, Cor = cor };
         int tamanho = Marshal.SizeOf<Accent>();
         IntPtr ptr = Marshal.AllocHGlobal(tamanho);
         try

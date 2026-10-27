@@ -11,11 +11,11 @@
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Text" Value="Mudo" />
-                                <Setter Property="Foreground" Value="{StaticResource TextoSecundario}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextoSecundario}" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Mudo}" Value="True">
                                         <Setter Property="Text" Value="Mudo ●" />
-                                        <Setter Property="Foreground" Value="{StaticResource Ambar}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource Ambar}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -39,7 +39,7 @@
                         <Button Style="{StaticResource LinhaPainel}" Margin="0,1"
                                 Command="{Binding DataContext.EscolherCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
                             <DockPanel>
-                                <TextBlock x:Name="Marca" DockPanel.Dock="Right" Text="●" Foreground="{StaticResource Ambar}" Visibility="Collapsed" />
+                                <TextBlock x:Name="Marca" DockPanel.Dock="Right" Text="●" Foreground="{DynamicResource Ambar}" Visibility="Collapsed" />
                                 <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
                             </DockPanel>
                         </Button>
