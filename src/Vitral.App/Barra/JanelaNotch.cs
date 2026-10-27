@@ -8,6 +8,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Vitral.App.Tema;
+using Shape = System.Windows.Shapes.Shape;
 using Vitral.Core.Claude;
 using Vitral.Ui.Barra;
 
@@ -25,7 +26,6 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static partial IntPtr GetLong(IntPtr h, int i);
     [LibraryImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static partial IntPtr SetLong(IntPtr h, int i, IntPtr v);
 
-    private static readonly Brush Corpo = Congelado(new SolidColorBrush(Color.FromRgb(0x0B, 0x0C, 0x10)));
     private static readonly Brush CorClaude = Congelado(new SolidColorBrush(Color.FromRgb(0xD9, 0x77, 0x57)));
 
     public static readonly DependencyProperty LarguraCorpoProperty =
@@ -39,8 +39,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     public double AlturaCorpo { get => (double)GetValue(AlturaCorpoProperty); set => SetValue(AlturaCorpoProperty, value); }
     public double RaioCorpo { get => (double)GetValue(RaioCorpoProperty); set => SetValue(RaioCorpoProperty, value); }
 
-    private readonly Border _topo = new() { Background = Corpo, Height = PosicaoIlhas.NotchSobra + 1, VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Center };
-    private readonly Path _forma = new() { Fill = Corpo, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
+    private readonly Border _topo = new() { Height = PosicaoIlhas.NotchSobra + 1, VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Center };
+    private readonly Path _forma = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
     // Sobre o corpo opaco, o fundo transparente recebe o clique em qualquer ponto; fora do corpo, o clique atravessa.
     private readonly Grid _conteudo = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Background = Brushes.Transparent, ClipToBounds = true };
     private readonly FrameworkElement _relogio;
@@ -92,18 +92,25 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         ShowActivated = false;
         Width = NotchMedidas.JanelaLargura;
         Height = NotchMedidas.JanelaAltura;
-        Foreground = (Brush)Application.Current.Resources["Texto"];
+        // Cores da aparência do notch (spec da aparência §5.2): as chaves do tema redefinidas para esta janela.
+        ServicoAparencia.Instancia.Registrar(this, ParteAparencia.Notch);
+        SetResourceReference(ForegroundProperty, "Texto");
         FontFamily = (FontFamily)Application.Current.Resources["FonteCorpo"];
         FontSize = 12;
+        _topo.SetResourceReference(Border.BackgroundProperty, "Corpo");
+        _forma.SetResourceReference(Shape.FillProperty, "Corpo");
 
         _relogio = relogio;
         _relogio.IsHitTestVisible = false; // o clique é do notch (decide entre calendário e Claude)
         _ponto = new Ellipse
         {
             Width = 6, Height = 6, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed,
-            Fill = (Brush)Application.Current.Resources["Ambar"],
-            Effect = new System.Windows.Media.Effects.DropShadowEffect { Color = (Color)Application.Current.Resources["CorAmbar"], BlurRadius = 8, ShadowDepth = 0, Opacity = 0.9 },
         };
+        _ponto.SetResourceReference(Shape.FillProperty, "Ambar");
+        AplicarBrilho();
+        Action aoMudar = AplicarBrilho;
+        ServicoAparencia.Instancia.Mudou += aoMudar;
+        Closed += (_, _) => ServicoAparencia.Instancia.Mudou -= aoMudar;
         _linhaRelogio.Children.Add(_relogio);
         _linhaRelogio.Children.Add(_ponto);
         MontarAviso();
@@ -176,6 +183,13 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         return imagem;
     }
 
+    /// O brilho do ponto de lembrete no destaque do notch (o efeito não aceita referência dinâmica: é refeito a cada
+    /// mudança de aparência).
+    private void AplicarBrilho() => _ponto.Effect = new System.Windows.Media.Effects.DropShadowEffect
+    {
+        Color = ServicoAparencia.Cor(ServicoAparencia.Instancia.Valores(ParteAparencia.Notch).Destaque), BlurRadius = 8, ShadowDepth = 0, Opacity = 0.9,
+    };
+
     internal static Image IconeClaude(double tamanho) => new()
     {
         Width = tamanho, Height = tamanho, Source = SimboloClaude, VerticalAlignment = VerticalAlignment.Center,
@@ -187,11 +201,11 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _simbolo.Children.Add(IconeClaude(22));
         _logoVitral.Source = (ImageSource)Application.Current.Resources["Logo"];
         _simbolo.Children.Add(_logoVitral);
-        _detalhe.Foreground = (Brush)Application.Current.Resources["TextoSecundario"];
+        _detalhe.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
         var textos = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         textos.Children.Add(_titulo);
         textos.Children.Add(_detalhe);
-        _abrir.Foreground = (Brush)Application.Current.Resources["Ambar"];
+        _abrir.SetResourceReference(TextBlock.ForegroundProperty, "Ambar");
         var linha = new DockPanel();
         DockPanel.SetDock(_simbolo, Dock.Left);
         DockPanel.SetDock(_abrir, Dock.Right);
@@ -206,7 +220,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     {
         var icone = IconeClaude(18);
         icone.Margin = new Thickness(0, 0, 8, 0);
-        _esquerdaSessao.Foreground = (Brush)Application.Current.Resources["TextoSecundario"];
+        _esquerdaSessao.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
         var textos = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         textos.Children.Add(_esquerdaTitulo);
         textos.Children.Add(_esquerdaSessao);
@@ -317,11 +331,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     {
         var icone = IconeClaude(22);
         icone.Margin = new Thickness(0, 0, 10, 0);
-        _pedidoSessao.Foreground = (Brush)Application.Current.Resources["TextoSecundario"];
-        _pedidoFila.Foreground = (Brush)Application.Current.Resources["TextoSecundario"];
+        _pedidoSessao.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
+        _pedidoFila.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
         _pedidoResumo.FontFamily = new FontFamily("Cascadia Mono, Consolas");
-        _pedidoResumo.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD8, 0x8A));
-        var codigo = new Border { Background = new SolidColorBrush(Color.FromArgb(0x12, 0xFF, 0xFF, 0xFF)), CornerRadius = new CornerRadius(5), Padding = new Thickness(6, 1, 6, 1), Child = _pedidoResumo };
+        _pedidoResumo.SetResourceReference(TextBlock.ForegroundProperty, "Ambar"); // o comando no destaque do notch
+        var codigo = new Border { CornerRadius = new CornerRadius(5), Padding = new Thickness(6, 1, 6, 1), Child = _pedidoResumo };
+        codigo.SetResourceReference(Border.BackgroundProperty, "Superficie");
         var linhaResumo = new DockPanel { Margin = new Thickness(0, 2, 0, 0), LastChildFill = true };
         DockPanel.SetDock(_pedidoSessao, Dock.Left);
         linhaResumo.Children.Add(_pedidoSessao);
@@ -341,8 +356,11 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _botoes.Children.Add(_botaoSempre);
         _botoes.Children.Add(BotaoPedido("Negar", EscolhaPermissao.Negar, perigo: true));
 
-        var trilho = new Border { Height = 2, Margin = new Thickness(0, 9, 0, 0), CornerRadius = new CornerRadius(1), Background = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)) };
-        trilho.Child = new Border { Background = new SolidColorBrush(Color.FromRgb(0xE6, 0xE6, 0xE6)), CornerRadius = new CornerRadius(1), RenderTransform = _tempoRestante, RenderTransformOrigin = new Point(0, 0.5) };
+        var trilho = new Border { Height = 2, Margin = new Thickness(0, 9, 0, 0), CornerRadius = new CornerRadius(1) };
+        trilho.SetResourceReference(Border.BackgroundProperty, "Linha");
+        var barra = new Border { CornerRadius = new CornerRadius(1), RenderTransform = _tempoRestante, RenderTransformOrigin = new Point(0, 0.5) };
+        barra.SetResourceReference(Border.BackgroundProperty, "Texto");
+        trilho.Child = barra;
 
         _painelPedido.Children.Add(linha);
         _painelPedido.Children.Add(_botoes);
@@ -370,8 +388,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
                 EscolhaPermissao.SempreNaSessao => "✓ Sempre nesta sessão",
                 _ => "Negado",
             };
-            _confirmacao.Foreground = _estado.UltimaEscolha == EscolhaPermissao.Negar
-                ? new SolidColorBrush(Color.FromRgb(0xFF, 0x8A, 0x8A)) : (Brush)Application.Current.Resources["Texto"];
+            _confirmacao.SetResourceReference(TextBlock.ForegroundProperty, _estado.UltimaEscolha == EscolhaPermissao.Negar ? "Perigo" : "Texto");
         }
         _pedidoFila.Text = _estado.NaFila > 0 ? $"+{_estado.NaFila}" : "";
         if (_estado.PedidoAtual is not { } p || _pedidoMostrado == p.Id) return;

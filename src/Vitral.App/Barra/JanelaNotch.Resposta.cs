@@ -22,8 +22,6 @@ internal sealed partial class JanelaNotch
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool SetForegroundWindow(IntPtr h);
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool IsWindow(IntPtr h);
 
-    private static readonly Brush CorBarra = Congelado(new SolidColorBrush(Color.FromRgb(0xE6, 0xE6, 0xE6)));
-    private static readonly Brush CorBarraParada = Congelado(new SolidColorBrush(Color.FromRgb(0x9C, 0xA0, 0xAA)));
 
     private readonly StackPanel _painelResposta = new() { VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(18, 12, 18, 10), Opacity = 0, Visibility = Visibility.Collapsed };
     private readonly TextBlock _respostaSessao = new() { FontSize = 11, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
@@ -43,7 +41,7 @@ internal sealed partial class JanelaNotch
     private readonly Dictionary<string, TaskCompletionSource<string?>> _esperandoResposta = [];
     private Border _enviar = null!;
     private string? _respostaMostrada;
-    private bool _mensagemAberta, _ativada, _devolverFoco;
+    private bool _mensagemAberta, _ativada, _devolverFoco, _barraParada;
     private IntPtr _janelaAnterior;
 
     /// As sessões que ficaram sem resposta (a lista que desce do notch).
@@ -63,16 +61,17 @@ internal sealed partial class JanelaNotch
 
     private void MontarResposta()
     {
-        var secundario = (Brush)Application.Current.Resources["TextoSecundario"];
-        _respostaSessao.Foreground = secundario;
-        _verTudo.Foreground = secundario;
-        _dicaCaixa.Foreground = secundario;
-        _caixa.Foreground = (Brush)Application.Current.Resources["Texto"];
-        _caixa.CaretBrush = Brushes.White;
+        // Cores da aparência do notch, pelas chaves do tema.
+        _respostaSessao.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
+        _verTudo.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
+        _dicaCaixa.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
+        _caixa.SetResourceReference(Control.ForegroundProperty, "Texto");
+        _caixa.SetResourceReference(System.Windows.Controls.Primitives.TextBoxBase.CaretBrushProperty, "Texto");
 
         var icone = IconeClaude(22);
         icone.Margin = new Thickness(0, 0, 10, 0);
-        var abrir = new TextBlock { Text = "abrir no Claude ›", FontSize = 11, Foreground = secundario, Cursor = Cursors.Hand, VerticalAlignment = VerticalAlignment.Center };
+        var abrir = new TextBlock { Text = "abrir no Claude ›", FontSize = 11, Cursor = Cursors.Hand, VerticalAlignment = VerticalAlignment.Center };
+        abrir.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
         abrir.MouseLeftButtonUp += (_, e) => { e.Handled = true; AbrirNoClaude(); };
         var topo = new DockPanel { LastChildFill = true };
         DockPanel.SetDock(icone, Dock.Left);
@@ -85,7 +84,7 @@ internal sealed partial class JanelaNotch
         topo.Children.Add(titulo);
 
         // A mensagem: duas linhas esmaecidas; "ver tudo" (ou a roda do mouse) abre até ~10 linhas roláveis.
-        _respostaTexto.Foreground = new SolidColorBrush(Color.FromRgb(0xD6, 0xD8, 0xDE));
+        _respostaTexto.SetResourceReference(TextBlock.ForegroundProperty, "Texto");
         _respostaRolagem.Content = _respostaTexto;
         _respostaRolagem.PreviewMouseWheel += (_, e) => { if (!_mensagemAberta) { AbrirMensagem(); e.Handled = true; } };
         _verTudo.MouseLeftButtonUp += (_, e) => { e.Handled = true; AbrirMensagem(); };
@@ -96,9 +95,10 @@ internal sealed partial class JanelaNotch
         var moldura = new Border
         {
             CornerRadius = new CornerRadius(14), BorderThickness = new Thickness(1), Padding = new Thickness(12, 4, 12, 4), MinHeight = 28,
-            BorderBrush = new SolidColorBrush(Color.FromArgb(0x2E, 0xFF, 0xFF, 0xFF)), Background = new SolidColorBrush(Color.FromArgb(0x0D, 0xFF, 0xFF, 0xFF)),
             Child = campo, Cursor = Cursors.IBeam,
         };
+        moldura.SetResourceReference(Border.BorderBrushProperty, "PilulaBorda");
+        moldura.SetResourceReference(Border.BackgroundProperty, "Superficie");
         moldura.PreviewMouseDown += (_, _) => Ativar();
         _enviar = Pilula.Criar("Enviar", Pilula.Estilo.Principal, Enviar);
         _enviar.VerticalAlignment = VerticalAlignment.Bottom;
@@ -134,8 +134,9 @@ internal sealed partial class JanelaNotch
         // Shift+Enter faz a caixa crescer: o corpo do notch acompanha.
         _caixa.SizeChanged += (_, _) => { if (_estado.Modo == ModoNotch.Resposta) Ajustar(animar: false); };
 
-        var trilho = new Border { Height = 2, Margin = new Thickness(0, 9, 0, 0), CornerRadius = new CornerRadius(1), Background = new SolidColorBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF)) };
-        _barraResposta.Background = CorBarra;
+        var trilho = new Border { Height = 2, Margin = new Thickness(0, 9, 0, 0), CornerRadius = new CornerRadius(1) };
+        trilho.SetResourceReference(Border.BackgroundProperty, "Linha");
+        PararBarra(false);
         _barraResposta.RenderTransform = _tempoResposta;
         _barraResposta.RenderTransformOrigin = new Point(0, 0.5);
         trilho.Child = _barraResposta;
@@ -151,6 +152,13 @@ internal sealed partial class JanelaNotch
         {
             if (_esperandoResposta.Remove(pedido.Id, out var espera)) espera.TrySetResult(texto);
         };
+    }
+
+    /// A barra de tempo no texto do notch; parada (o Gustavo começou a digitar), no texto secundário.
+    private void PararBarra(bool parada)
+    {
+        _barraParada = parada;
+        _barraResposta.SetResourceReference(Border.BackgroundProperty, parada ? "TextoSecundario" : "Texto");
     }
 
     private void LigarEnviar()
@@ -264,7 +272,7 @@ internal sealed partial class JanelaNotch
             _caixa.Text = _estado.Rascunho; // volta com o texto, se um pedido de permissão passou à frente
             LigarEnviar();
             FecharMensagem();
-            _barraResposta.Background = CorBarra;
+            PararBarra(false);
             double falta = Math.Max(0, EstadoNotch.TempoResposta - (DateTime.Now - (_estado.ChegadaDaResposta ?? DateTime.Now)).TotalSeconds);
             _tempoResposta.BeginAnimation(ScaleTransform.ScaleXProperty, Movimento.Ligado && !_estado.Digitando
                 ? new DoubleAnimation(falta / EstadoNotch.TempoResposta, 0, new Duration(TimeSpan.FromSeconds(falta)))
@@ -272,13 +280,13 @@ internal sealed partial class JanelaNotch
         }
         var fila = _estado.NaFilaResposta > 0 ? $"  +{_estado.NaFilaResposta}" : "";
         _respostaSessao.Text = $"{p.Sessao} · {p.Hora:HH:mm}{fila}";
-        if (_estado.Digitando && _barraResposta.Background != CorBarraParada)
+        if (_estado.Digitando && !_barraParada)
         {
             // Começou a digitar: a barra para onde estava e fica cinza.
             var agora = _tempoResposta.ScaleX;
             _tempoResposta.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             _tempoResposta.ScaleX = agora;
-            _barraResposta.Background = CorBarraParada;
+            PararBarra(true);
         }
     }
 
