@@ -83,16 +83,15 @@ internal sealed class ServicoAparencia : IControleAparencia
         d["Selecao"] = Pincel(v.Destaque.ComAlfa(64));
         d["NoiteVidro"] = Pincel(v.Fundo);
         d["Noite"] = Pincel(v.Fundo.ComAlfa(255));
-        d["FundoMenu"] = Pincel(v.Fundo.ComAlfa(0xDB));
+        d["FundoMenu"] = Pincel(v.FundoMenu);
         d["HoverMenu"] = Pincel(v.Destaque.ComAlfa(0x29));
         d["SeparadorMenu"] = Pincel(v.Texto.ComAlfa(0x17));
-        // Corpo do notch e as pílulas (spec §5.2): a principal inverte texto e fundo; o perigo é vermelho legível.
-        bool textoClaro = Luminancia(v.Texto) > 0.5;
+        // Corpo do notch e as pílulas (spec §5.2): a principal inverte as cores do texto; o perigo é vermelho legível.
+        bool textoClaro = v.TextoClaro;
         var perigo = textoClaro ? new CorArgb(255, 0xFF, 0x8A, 0x8A) : new CorArgb(255, 0xC6, 0x28, 0x28);
-        d["Corpo"] = Pincel(v.Fundo);
         d["PilulaFundo"] = Pincel(v.Texto);
         d["PilulaFundoHover"] = Pincel(textoClaro ? new CorArgb(255, 255, 255, 255) : new CorArgb(255, 0, 0, 0));
-        d["PilulaTexto"] = Pincel(v.Fundo.ComAlfa(255));
+        d["PilulaTexto"] = Pincel(v.TextoInverso);
         d["PilulaBorda"] = Pincel(v.Texto.ComAlfa(0x47));
         d["Perigo"] = Pincel(perigo);
         d["PerigoHover"] = Pincel(perigo.ComAlfa(0x29));

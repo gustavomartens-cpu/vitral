@@ -41,6 +41,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
     private readonly Border _topo = new() { Height = PosicaoIlhas.NotchSobra + 1, VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly Path _forma = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
+    private readonly Grid _corpo = new();
     // Sobre o corpo opaco, o fundo transparente recebe o clique em qualquer ponto; fora do corpo, o clique atravessa.
     private readonly Grid _conteudo = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Background = Brushes.Transparent, ClipToBounds = true };
     private readonly FrameworkElement _relogio;
@@ -97,8 +98,6 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         SetResourceReference(ForegroundProperty, "Texto");
         FontFamily = (FontFamily)Application.Current.Resources["FonteCorpo"];
         FontSize = 12;
-        _topo.SetResourceReference(Border.BackgroundProperty, "Corpo");
-        _forma.SetResourceReference(Shape.FillProperty, "Corpo");
 
         _relogio = relogio;
         _relogio.IsHitTestVisible = false; // o clique é do notch (decide entre calendário e Claude)
@@ -107,8 +106,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             Width = 6, Height = 6, Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed,
         };
         _ponto.SetResourceReference(Shape.FillProperty, "Ambar");
-        AplicarBrilho();
-        Action aoMudar = AplicarBrilho;
+        AplicarAparencia();
+        Action aoMudar = AplicarAparencia;
         ServicoAparencia.Instancia.Mudou += aoMudar;
         Closed += (_, _) => ServicoAparencia.Instancia.Mudou -= aoMudar;
         _linhaRelogio.Children.Add(_relogio);
@@ -139,8 +138,9 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         // tela) também é pintado, para a costura com a borda não aparecer.
         _forma.Margin = new Thickness(0, PosicaoIlhas.NotchSobra, 0, 0);
         var raiz = new Grid(); // sem fundo: a parte transparente deixa o clique passar
-        raiz.Children.Add(_topo);
-        raiz.Children.Add(_forma);
+        _corpo.Children.Add(_topo);
+        _corpo.Children.Add(_forma);
+        raiz.Children.Add(_corpo);
         raiz.Children.Add(_conteudo);
         Content = raiz;
 
@@ -185,10 +185,20 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
     /// O brilho do ponto de lembrete no destaque do notch (o efeito não aceita referência dinâmica: é refeito a cada
     /// mudança de aparência).
-    private void AplicarBrilho() => _ponto.Effect = new System.Windows.Media.Effects.DropShadowEffect
+    /// O corpo na cor da aparência e o brilho do ponto no destaque. O topo e a forma se sobrepõem em 1 px (costura com a
+    /// borda da tela): pintados opacos e com a transparência no grupo, a sobreposição não vira uma linha mais escura.
+    private void AplicarAparencia()
     {
-        Color = ServicoAparencia.Cor(ServicoAparencia.Instancia.Valores(ParteAparencia.Notch).Destaque), BlurRadius = 8, ShadowDepth = 0, Opacity = 0.9,
-    };
+        var v = ServicoAparencia.Instancia.Valores(ParteAparencia.Notch);
+        var corpo = ServicoAparencia.Pincel(v.Fundo.ComAlfa(255));
+        _topo.Background = corpo;
+        _forma.Fill = corpo;
+        _corpo.Opacity = v.Fundo.A / 255.0;
+        _ponto.Effect = new System.Windows.Media.Effects.DropShadowEffect
+        {
+            Color = ServicoAparencia.Cor(v.Destaque), BlurRadius = 8, ShadowDepth = 0, Opacity = 0.9,
+        };
+    }
 
     internal static Image IconeClaude(double tamanho) => new()
     {

@@ -372,9 +372,9 @@
                                 <Condition Property="IsHighlighted" Value="True" />
                                 <Condition Property="tema:Efeitos.Perigo" Value="True" />
                             </MultiTrigger.Conditions>
-                            <Setter TargetName="Fundo" Property="Background" Value="#2EE85454" />
-                            <Setter TargetName="Icone" Property="TextElement.Foreground" Value="#FFFF8A8A" />
-                            <Setter TargetName="Texto" Property="TextElement.Foreground" Value="#FFFF8A8A" />
+                            <Setter TargetName="Fundo" Property="Background" Value="{DynamicResource PerigoHover}" />
+                            <Setter TargetName="Icone" Property="TextElement.Foreground" Value="{DynamicResource Perigo}" />
+                            <Setter TargetName="Texto" Property="TextElement.Foreground" Value="{DynamicResource Perigo}" />
                             <MultiTrigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard><DoubleAnimation Storyboard.TargetName="Passo" Storyboard.TargetProperty="X" To="3" Duration="0:0:0.12" /></Storyboard>

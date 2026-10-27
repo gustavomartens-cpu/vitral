@@ -33,8 +33,7 @@
     <SolidColorBrush x:Key="FundoMenu" Color="#DB1E2026" />
     <SolidColorBrush x:Key="HoverMenu" Color="#29F2B544" />
     <SolidColorBrush x:Key="SeparadorMenu" Color="#17FFFFFF" />
-    <!-- Corpo do notch e botões em pílula das fichas (a aparência redefine por parte) -->
-    <SolidColorBrush x:Key="Corpo" Color="#FF0B0C10" />
+    <!-- Botões em pílula das fichas (a aparência redefine por parte) -->
     <SolidColorBrush x:Key="PilulaFundo" Color="#FFF2F2F2" />
     <SolidColorBrush x:Key="PilulaFundoHover" Color="#FFFFFFFF" />
     <SolidColorBrush x:Key="PilulaTexto" Color="#FF111111" />

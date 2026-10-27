@@ -25,6 +25,31 @@ public sealed record ValoresParte(MaterialParte Material, CorArgb Fundo, CorArgb
     CantosParte Cantos, bool Desfoque)
 {
     public double RaioPx => Cantos switch { CantosParte.Retos => 0, CantosParte.Suaves => 4, _ => 8 };
+
+    private static readonly CorArgb Escuro = new(255, 0x1B, 0x1D, 0x22), Claro = new(255, 0xEC, 0xEE, 0xF2);
+
+    public bool TextoClaro => Luminancia(Texto) > 0.5;
+
+    /// Texto sobre o próprio texto (a pílula principal inverte as cores). Não vem do fundo: no Cristal o fundo é branco
+    /// quase transparente e o texto é claro.
+    public CorArgb TextoInverso => TextoClaro ? Escuro : Claro;
+
+    /// Fundo do menu de contexto (quase opaco, sem desfoque): o fundo da parte se ele contrasta com o texto; senão um
+    /// neutro do lado certo.
+    public CorArgb FundoMenu => Contraste(Texto, Fundo.ComAlfa(255)) >= 4.5 ? Fundo.ComAlfa(0xDB)
+        : (TextoClaro ? new CorArgb(0xDB, 0x1E, 0x20, 0x26) : new CorArgb(0xDB, 0xFA, 0xFA, 0xFC));
+
+    public static double Luminancia(CorArgb c)
+    {
+        static double Canal(byte v) { double s = v / 255.0; return s <= 0.03928 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4); }
+        return 0.2126 * Canal(c.R) + 0.7152 * Canal(c.G) + 0.0722 * Canal(c.B);
+    }
+
+    private static double Contraste(CorArgb a, CorArgb b)
+    {
+        double x = Luminancia(a), y = Luminancia(b);
+        return (Math.Max(x, y) + 0.05) / (Math.Min(x, y) + 0.05);
+    }
 }
 
 public sealed record ValoresAparencia(ValoresParte Doca, ValoresParte Notch, ValoresParte Ilhas);

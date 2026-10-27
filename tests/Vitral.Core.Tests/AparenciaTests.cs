@@ -122,4 +122,34 @@ public sealed class AparenciaTests
     [InlineData(CantosParte.Redondos, 8)]
     public void Cantos_em_px(CantosParte cantos, double px) =>
         Assert.Equal(px, R(new AparenciaPerfil(TemaAparencia.VidroEscuro, Geral: new AjustesAparencia(Cantos: cantos))).Doca.RaioPx);
+
+    private static double Lum(CorArgb c)
+    {
+        static double K(byte v) { double s = v / 255.0; return s <= 0.03928 ? s / 12.92 : Math.Pow((s + 0.055) / 1.055, 2.4); }
+        return 0.2126 * K(c.R) + 0.7152 * K(c.G) + 0.0722 * K(c.B);
+    }
+
+    private static double Contraste(CorArgb a, CorArgb b)
+    {
+        double x = Lum(a), y = Lum(b);
+        return (Math.Max(x, y) + 0.05) / (Math.Min(x, y) + 0.05);
+    }
+
+    // Revisão final, Important 1: no Cristal o fundo é branco quase transparente e o texto é claro; a pílula principal
+    // (fundo = texto) e o menu (fundo quase opaco) não podem derivar a cor do fundo da parte.
+    [Theory]
+    [InlineData(TemaAparencia.Cristal)]
+    [InlineData(TemaAparencia.Claro)]
+    [InlineData(TemaAparencia.VidroEscuro)]
+    [InlineData(TemaAparencia.VidroColorido)]
+    public void Pilula_e_menu_ficam_legiveis_em_todo_tema(TemaAparencia tema)
+    {
+        foreach (var p in new[] { R(new(tema)).Doca, R(new(tema)).Notch, R(new(tema)).Ilhas })
+        {
+            Assert.True(Contraste(p.Texto, p.TextoInverso) >= 4.5, $"{tema}: pílula");
+            Assert.True(Contraste(p.Texto, p.FundoMenu.ComAlfa(255)) >= 4.5, $"{tema}: menu");
+        }
+        var cristalClaro = R(new(TemaAparencia.Cristal, new AjustesAparencia(CorFundo: "#F4F4F6", Transparencia: 70))).Ilhas;
+        Assert.True(Contraste(cristalClaro.Texto, cristalClaro.FundoMenu.ComAlfa(255)) >= 4.5);
+    }
 }
