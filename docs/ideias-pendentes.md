@@ -2,19 +2,24 @@
 
 Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conversa de desenho antes de virar plano.
 
-## Depois da resposta pelo notch (0.9.0)
+## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)
 
-- Responder às pendências pelo próprio notch (hoje elas só abrem o app).
-- Abrir o app do Claude direto na conversa certa (o protocolo `claude://` existe, sem formato conhecido).
+- **Compromissos no calendário do notch** (Google e/ou Outlook): exige login na conta dentro do Vitral.
+- **Notificações de outros apps no notch**, e respostas por ali: precisa de identidade de pacote para ler as
+  notificações do Windows.
+- **Customização visual da doca, do notch e das laterais:** estilos diferentes, como já existe para a barra de tarefas
+  do Windows (hoje a doca, o notch e as ilhas têm um visual só).
 
-## Notch "vivo" (25/10/2026)
+## Testes a fundo pendentes
 
-- Notificações de outros apps chegando pelo notch e respostas por ali (precisa de identidade de pacote para ler as
-  notificações).
+As opções do perfil têm testes da regra, mas nunca foram conferidas de ponta a ponta no Windows: cores e tema, barra
+de tarefas (ocultar automaticamente, selos, alinhamento, pesquisa, visão de tarefas, agrupar, todos os monitores,
+piscar, ícones perto do relógio), Iniciar, Janelas, e "Testar (20 s)", "Desfazer" e "Voltar ao Windows original".
 
-## Calendário
+## Descartado
 
-- **Compromissos no calendário do notch** (Google ou Outlook): exige login na conta dentro do Vitral.
+- Responder às pendências pelo notch (27/10/2026): a pendência existe para abrir a conversa no app, com tempo para
+  rever.
 
 ## Símbolo do Claude no notch (26/10/2026)
 
@@ -26,4 +31,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
 - Painéis próprios e notch (barra do topo v2), notch vivo com avisos do Claude, faixa da doca no notebook (0.7.1).
 - Barra do topo sem repetir bateria, volume e internet da barra de tarefas; logo novo.
 - Atualização automática pelo GitHub (0.7.2), permissões do Claude pelo notch (0.8.0), painel da mídia ao passar o
-  mouse (0.8.1), consertos (0.8.2), ler e responder ao Claude pelo notch com lista de pendências (0.9.0).
+  mouse (0.8.1), consertos (0.8.2), ler e responder ao Claude pelo notch com lista de pendências (0.9.0), Descartar na
+  ficha (0.9.3), abrir a conversa certa no app do Claude (0.9.4).
