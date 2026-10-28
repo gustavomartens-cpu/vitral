@@ -1,0 +1,49 @@
+<Window x:Class="Vitral.App.Agenda.JanelaContas"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Contas da agenda" Icon="/Recursos/vitral.ico" Width="460" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Foreground="{StaticResource Texto}" FontFamily="{StaticResource FonteCorpo}" Background="{StaticResource Noite}">
+    <!-- Contas da agenda (spec da agenda §5.3): da máquina, não do perfil -->
+    <StackPanel Margin="22,18,22,20">
+        <TextBlock Text="Contas da agenda" FontFamily="{StaticResource FonteTitulo}" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock Text="O Vitral só lê a agenda. O acesso fica guardado só neste computador, no seu usuário do Windows."
+                   FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,4,0,12" />
+
+        <TextBlock x:Name="SemContas" Text="Nenhuma conta ligada." FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,0,0,8" />
+        <ItemsControl x:Name="Lista" Focusable="False">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{StaticResource CartaoVidro}" Padding="12,10" Margin="0,0,0,8">
+                        <DockPanel>
+                            <Ellipse DockPanel.Dock="Left" Width="10" Height="10" Margin="0,0,10,0" VerticalAlignment="Center"
+                                     Fill="{Binding Cor, Converter={StaticResource CorParaPincel}}" />
+                            <Button DockPanel.Dock="Right" Content="Remover" Style="{StaticResource BotaoVidro}" Padding="10,4" FontSize="11.5"
+                                    Click="Remover_Click" Margin="6,0,0,0" />
+                            <Button x:Name="EntrarDeNovo" DockPanel.Dock="Right" Content="Entrar de novo" Style="{StaticResource BotaoVidro}" Padding="10,4"
+                                    FontSize="11.5" Click="EntrarDeNovo_Click" Visibility="{Binding PrecisaEntrar, Converter={StaticResource BoolParaVisivel}}" />
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Email}" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                                <TextBlock FontSize="11" Foreground="{StaticResource TextoSecundario}">
+                                    <Run Text="{Binding Provedor, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Estado, Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <UniformGrid Columns="2" Margin="0,4,0,0">
+            <Button x:Name="EntrarGoogle" Content="Entrar com Google" Style="{StaticResource BotaoVidro}" Margin="0,0,4,0" Click="EntrarGoogle_Click" />
+            <Button x:Name="EntrarMicrosoft" Content="Entrar com Microsoft" Style="{StaticResource BotaoVidro}" Margin="4,0,0,0" Click="EntrarMicrosoft_Click" />
+        </UniformGrid>
+        <TextBlock x:Name="Mensagem" FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed" />
+
+        <Grid Margin="0,16,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <TextBlock Text="Avisar antes" VerticalAlignment="Center" />
+            <ListBox x:Name="Antecedencia" Grid.Column="1" Style="{StaticResource SeletorPilula}" SelectionChanged="Antecedencia_Mudou" />
+        </Grid>
+    </StackPanel>
+</Window>

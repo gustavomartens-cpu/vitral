@@ -5,7 +5,8 @@ using Vitral.Core.Agenda;
 
 namespace Vitral.Ui.Barra;
 
-public sealed record DiaCalendario(int Numero, bool DoMes, bool Hoje, bool TemCompromisso = false, DateOnly Data = default);
+public sealed record DiaCalendario(int Numero, bool DoMes, bool Hoje, bool TemCompromisso = false, DateOnly Data = default,
+    bool Escolhido = false);
 
 /// Um compromisso na lista do dia. <paramref name="Horario"/>: "Dia inteiro" ou "14:30–15:30".
 public sealed record ItemCompromisso(string Horario, string Titulo, string Cor, Uri? LinkReuniao, Uri? LinkEvento);
@@ -24,6 +25,7 @@ public sealed partial class CalendarioViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _dataPorExtenso = "";
     [ObservableProperty] private IReadOnlyList<DiaCalendario> _dias = [];
     [ObservableProperty] private DateOnly _diaEscolhido;
+    [ObservableProperty] private string _tituloDoDia = "Hoje";
     [ObservableProperty] private IReadOnlyList<ItemCompromisso> _doDia = [];
     [ObservableProperty] private string? _situacao;
     [ObservableProperty] private bool _temContas;
@@ -64,6 +66,7 @@ public sealed partial class CalendarioViewModel : ObservableObject, IDisposable
     {
         if (!dia.DoMes) { AbrirDia(dia.Data); return; } // dia do mês vizinho: vai para o mês dele
         DiaEscolhido = dia.Data;
+        Montar(); // a marca do dia escolhido
         MontarDia();
     }
 
@@ -75,7 +78,8 @@ public sealed partial class CalendarioViewModel : ObservableObject, IDisposable
         Dias = Enumerable.Range(0, 42)
             .Select(i => inicio.AddDays(i))
             .Select(d => new DiaCalendario(d.Day, d.Month == _mes.Month, d == hoje,
-                d.Month == _mes.Month && marcados?.Contains(d.Day) == true, DateOnly.FromDateTime(d)))
+                d.Month == _mes.Month && marcados?.Contains(d.Day) == true, DateOnly.FromDateTime(d),
+                _agenda is not null && DateOnly.FromDateTime(d) == DiaEscolhido))
             .ToList();
         Titulo = _mes.ToString("MMMM 'de' yyyy", PtBr);
         DataPorExtenso = hoje.ToString("dddd, d 'de' MMMM 'de' yyyy", PtBr);
@@ -84,6 +88,7 @@ public sealed partial class CalendarioViewModel : ObservableObject, IDisposable
     private void MontarDia()
     {
         if (_agenda is null) return;
+        TituloDoDia = DiaEscolhido == Hoje_ ? "Hoje" : DiaEscolhido.ToString("dddd, d 'de' MMMM", PtBr);
         var fuso = _agenda.Fuso;
         DoDia = RegrasAgenda.DoDia(_agenda.Compromissos, DiaEscolhido, fuso).Select(c => new ItemCompromisso(
             c.DiaInteiro ? "Dia inteiro" : $"{Hora(c.Inicio, fuso)}–{Hora(c.Fim, fuso)}", c.Titulo, c.Conta.Cor, c.LinkReuniao, c.LinkEvento)).ToList();

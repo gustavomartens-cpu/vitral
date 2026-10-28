@@ -59,6 +59,8 @@ public partial class App : Application
         _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m), _bandejaApps);
         _agenda = new Agenda.ServicoAgendaApp(config);
         _barra.Agenda = _agenda;
+        _agenda.Lembrar += a => _barra?.Lembrar(a);
+        _agenda.Sumiu += id => _barra?.SumiuDaAgenda(id);
         _estadoBarra = new EstadoBarra(_barra, config, registro, _notificador); // também cuida do relógio de baixo
         var estadoIcones = new EstadoIcones(config);
         _barraWindows = new Doca.BarraDoWindows(registro, _notificador);
@@ -127,7 +129,7 @@ public partial class App : Application
 
     internal void MostrarJanela()
     {
-        _janela ??= new JanelaPrincipal(Principal, Inicializacao, Atualizador, VersaoAtual);
+        _janela ??= new JanelaPrincipal(Principal, Inicializacao, Atualizador, VersaoAtual) { Agenda = _agenda };
         _janela.Show();
         if (_janela.WindowState == WindowState.Minimized) _janela.WindowState = WindowState.Normal;
         _janela.Activate();

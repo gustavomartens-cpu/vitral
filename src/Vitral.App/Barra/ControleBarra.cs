@@ -147,6 +147,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             notch = new JanelaNotch(new IlhaRelogio());
             notch.Pediu += p => _coordenador.Alternar(p, DateTime.Now);
             notch.PediuReiniciar += () => Reiniciar?.Invoke();
+            notch.CalendarioNoDia += dia => _vmCalendario?.AbrirDia(dia); // o aviso da agenda abre o calendário no dia
             notch.LarguraNormalMudou += Posicionar;
             notch.SizeChanged += (_, _) => Posicionar(); // a HWND pode mudar de tamanho ao trocar de escala
             // Depois de o WPF terminar a troca de escala dele, que deixa a HWND no tamanho antigo (PosicaoNativa.Colocar)
@@ -191,6 +192,12 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         if (_relogio is { IsVisible: true } notch) notch.Avisar(aviso);
         else if (aviso.Tipo == Vitral.Core.Claude.TipoAviso.Atualizacao) _atualizacaoGuardada = aviso;
     }
+
+    /// Um compromisso entrou na antecedência (spec da agenda §5.5). Com o notch escondido (tela cheia), o estado guarda
+    /// o aviso e ele vira lembrete; sem a barra do topo, não há onde avisar.
+    public void Lembrar(Vitral.Ui.Barra.AvisoAgenda aviso) => _relogio?.Lembrar(aviso);
+
+    public void SumiuDaAgenda(string idCompromisso) => _relogio?.SumiuDaAgenda(idCompromisso);
 
     private Vitral.Core.Claude.AvisoClaude? _atualizacaoGuardada;
 
@@ -281,7 +288,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             case Painel.Calendario when _fontes is not null:
                 _vmCalendario = Guardar(new CalendarioViewModel(_fontes.Agora, Agenda?.Agenda));
                 if (Agenda is not null) _ = Agenda.AtualizarAgora(); // ao abrir o painel (spec da agenda §5.2)
-                nova = new JanelaPainel("Calendário", 248) { Conteudo = new PainelCalendario(), DataContext = _vmCalendario };
+                nova = new JanelaPainel("Calendário", 280) { Conteudo = new PainelCalendario(), DataContext = _vmCalendario };
                 break;
             case Painel.Volume when _fontes is not null:
                 nova = new JanelaPainel("Volume", 280) { Conteudo = new PainelVolume(), DataContext = Guardar(new PainelVolumeViewModel(_fontes.Volume, _fontes.Dispositivos)) };

@@ -101,8 +101,13 @@ public sealed class CalendarioTests
         var (vm, _, _) = await ComAgenda(_agora, C("a", 25, 14), C("reuniao", 28, 9));
         Assert.Equal(new DateOnly(2026, 10, 25), vm.DiaEscolhido);
         Assert.Equal(["a"], vm.DoDia.Select(i => i.Titulo));
+        Assert.Equal("Hoje", vm.TituloDoDia);
+        Assert.True(vm.Dias.Single(d => d.DoMes && d.Numero == 25).Escolhido);
         vm.EscolherDiaCommand.Execute(vm.Dias.Single(d => d.DoMes && d.Numero == 28));
         Assert.Equal(new DateOnly(2026, 10, 28), vm.DiaEscolhido);
+        Assert.Equal("quarta-feira, 28 de outubro", vm.TituloDoDia);
+        Assert.True(vm.Dias.Single(d => d.DoMes && d.Numero == 28).Escolhido);
+        Assert.False(vm.Dias.Single(d => d.DoMes && d.Numero == 25).Escolhido);
         var item = Assert.Single(vm.DoDia);
         Assert.Equal(("09:00–10:00", "#4C7DF0", "https://meet.google.com/abc-defg-hij"), (item.Horario, item.Cor, item.LinkReuniao?.ToString()));
     }

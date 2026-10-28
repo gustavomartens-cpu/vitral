@@ -87,6 +87,36 @@ public partial class JanelaPrincipal : Window
     }
 
     /// Liga ou desliga os ganchos do Claude Code; em falha, a caixa volta ao que está no arquivo.
+    private Agenda.ServicoAgendaApp? _agenda;
+
+    /// A agenda (spec da agenda §5.3): a caixa "Agenda no notch" e o link "Contas…" da barra lateral.
+    internal Agenda.ServicoAgendaApp? Agenda
+    {
+        get => _agenda;
+        set
+        {
+            _agenda = value;
+            _carregandoAgenda = true;
+            AgendaNoNotch.IsChecked = value?.Config.Avisar ?? false;
+            AgendaNoNotch.IsEnabled = value is not null;
+            _carregandoAgenda = false;
+        }
+    }
+
+    private bool _carregandoAgenda;
+
+    private void AgendaNoNotch_Mudou(object sender, RoutedEventArgs e)
+    {
+        if (_carregandoAgenda || _agenda is null) return;
+        _agenda.DefinirAvisar(AgendaNoNotch.IsChecked == true);
+    }
+
+    private void ContasAgenda_Click(object sender, RoutedEventArgs e)
+    {
+        if (_agenda is null) return;
+        new Agenda.JanelaContas(_agenda) { Owner = this }.ShowDialog();
+    }
+
     private void AvisosClaude_Mudou(object sender, RoutedEventArgs e)
     {
         if (_carregando) return;

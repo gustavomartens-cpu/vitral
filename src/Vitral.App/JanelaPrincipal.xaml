@@ -70,6 +70,15 @@
                     <CheckBox x:Name="AvisosClaude" Content="Avisos do Claude no notch" Foreground="{StaticResource Texto}" Margin="0,6,0,0"
                               FocusVisualStyle="{StaticResource FocoVitral}"
                               Checked="AvisosClaude_Mudou" Unchecked="AvisosClaude_Mudou" />
+                    <!-- Agenda no notch (spec da agenda §5.3): avisos ligados e as contas, da máquina -->
+                    <DockPanel Margin="0,6,0,0">
+                        <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" FontSize="12">
+                            <Hyperlink Click="ContasAgenda_Click" Foreground="{StaticResource Ambar}" TextDecorations="None">Contas…</Hyperlink>
+                        </TextBlock>
+                        <CheckBox x:Name="AgendaNoNotch" Content="Agenda no notch" Foreground="{StaticResource Texto}"
+                                  FocusVisualStyle="{StaticResource FocoVitral}"
+                                  Checked="AgendaNoNotch_Mudou" Unchecked="AgendaNoNotch_Mudou" />
+                    </DockPanel>
                     <TextBlock x:Name="TextoBuild" Margin="0,8,0,0" FontSize="11" Foreground="{StaticResource TextoSecundario}" />
                     <!-- Versão e atualização automática (spec da atualização §5.4) -->
                     <TextBlock x:Name="TextoVersao" Margin="0,2,0,0" FontSize="11" Foreground="{StaticResource TextoSecundario}" />
