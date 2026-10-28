@@ -72,6 +72,14 @@ internal sealed partial class JanelaIlha : Window
         VidroIlha.Atualizar(this, _casca);
     }
 
+    /// Barra única: sem vidro nem borda, sobre o fundo da barra. Só refaz quando muda.
+    public void AplicarSemVidro(bool semVidro)
+    {
+        if (VidroIlha.SemVidro(this) == semVidro) return;
+        VidroIlha.DefinirSemVidro(this, semVidro);
+        VidroIlha.Atualizar(this, _casca);
+    }
+
     public object? Conteudo
     {
         get => _casca.Child;

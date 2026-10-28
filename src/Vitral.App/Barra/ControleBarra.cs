@@ -14,6 +14,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     private Fontes? _fontes;
     private JanelaIlha? _midia, _status;
     private JanelaNotch? _relogio; // o notch vivo (spec do notch vivo §3)
+    private JanelaFundoBarra? _fundo; // barra única (spec das formas §5.2)
     private IlhaMidiaViewModel? _vmMidia;
     private IlhaRelogioViewModel? _vmRelogio;
     private IlhaStatusViewModel? _vmStatus;
@@ -203,9 +204,12 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     /// A ilha de mídia some quando nada toca; todas somem com um app em tela cheia.
     private void AtualizarVisibilidadeMidia()
     {
+        bool fundoNovo = _fundo is not null && !_fundo.IsVisible && !_telaCheia;
+        Mostrar(_fundo, !_telaCheia); // primeiro o fundo, para as ilhas e o notch ficarem na frente dele
         Mostrar(_midia, !_telaCheia && _vmMidia?.Visivel == true);
         Mostrar(_relogio, !_telaCheia);
         Mostrar(_status, !_telaCheia);
+        if (fundoNovo) TrazerIlhasParaFrente();
     }
 
     private static void Mostrar(Window? janela, bool visivel)
@@ -378,6 +382,10 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             var formas = Tema.ServicoFormas.Instancia.Atual;
             _midia?.AplicarCantosRetos(formas.Ilhas.CantosRetos);
             _status?.AplicarCantosRetos(formas.Ilhas.CantosRetos);
+            bool unica = formas.Ilhas.Disposicao == Core.Perfis.DisposicaoIlhas.BarraUnica;
+            _midia?.AplicarSemVidro(unica);
+            _status?.AplicarSemVidro(unica);
+            AjustarFundo(unica, PosicaoIlhas.Barra(monitor, formas.Ilhas), formas.Ilhas.CantosRetos, p.Dpi);
             var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0,
                 formas.Ilhas, formas.Notch);
             if (_midia is not null) PosicaoNativa.Colocar(_midia, m.X, m.Y, p.Dpi);
@@ -385,6 +393,27 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             if (_status is not null) PosicaoNativa.Colocar(_status, s.X + s.Largura, s.Y, p.Dpi, ancora: 1);
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("ControleBarra.Posicionar", e); }
+    }
+
+    /// Barra única: o fundo de vidro de lado a lado, criado na primeira vez e fechado ao voltar para ilhas separadas.
+    private void AjustarFundo(bool unica, Retangulo barra, bool cantosRetos, uint dpi)
+    {
+        if (!unica)
+        {
+            _fundo?.Close();
+            _fundo = null;
+            return;
+        }
+        _fundo ??= new JanelaFundoBarra();
+        _fundo.AplicarCantosRetos(cantosRetos);
+        PosicaoNativa.Colocar(_fundo, barra.X, barra.Y, dpi, tamanho: new Size(barra.Largura, barra.Altura));
+        AtualizarVisibilidadeMidia();
+    }
+
+    private void TrazerIlhasParaFrente()
+    {
+        foreach (var janela in new Window?[] { _midia, _status, _relogio })
+            if (janela?.IsVisible == true) PosicaoNativa.TrazerParaFrente(janela);
     }
 
     private void AoRecriar()
@@ -426,6 +455,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             FecharPaineis();
             _midia?.Close();
             _relogio?.Close();
+            _fundo?.Close();
+            _fundo = null;
             _status?.Close();
             _midia = _status = null;
             _relogio = null;
