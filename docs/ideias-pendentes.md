@@ -4,7 +4,11 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 
 ## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)
 
-- **Compromissos no calendário do notch** (Google e/ou Outlook): exige login na conta dentro do Vitral.
+- **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir
+  o dia inteiro do Outlook na tela.
+- **Pequenos acertos da agenda** (revisão final da 0.12.0): clique num aviso do Claude deixa o lembrete da agenda vivo
+  sem o ponto; compromisso preso na fila atrás de ficha longa pode aparecer já terminado; login do Google lento ou com a
+  API desligada sem mensagem clara; login da Microsoft sem limite de tempo; escolher outras agendas além da principal.
 - **Notificações de outros apps no notch**, e respostas por ali: precisa de identidade de pacote para ler as
   notificações do Windows.
 - **Pequenos acertos da aparência** (revisões finais da 0.10.0 e da 0.11.0): não recalcular quando o Windows avisa sem
@@ -37,4 +41,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   ficha (0.9.3), abrir a conversa certa no app do Claude (0.9.4), notch certo depois de trocar de escala
   (0.9.5), aparência da doca, do
   notch e das ilhas com sete temas, personalizar e diferenciar (0.10.0), formas da doca, do notch e das ilhas e
-  ícone da bateria pelo nível (0.11.0).
+  ícone da bateria pelo nível (0.11.0), compromissos do Google Agenda no notch: lista do dia,
+  pontinhos na grade, aviso antes com Entrar (0.12.0).
