@@ -72,6 +72,10 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private readonly TextBlock _esquerdaSessao = new() { FontSize = 10, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly EstadoNotch _estado = new(() => DateTime.Now);
     private readonly DispatcherTimer _tique = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    // Lembrete da agenda: confere de vez em quando se o compromisso já acabou (o _tique só corre com aviso ou mouse).
+    private readonly DispatcherTimer _tiqueAgenda = new() { Interval = TimeSpan.FromSeconds(15) };
+    private readonly TextBlock _iconeAgenda = new() { Text = "", FontSize = 20, Visibility = Visibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+    private Border? _entrar;
 
     public event Action<Painel>? Pediu;
 
@@ -154,6 +158,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             if (_esperando.Remove(pedido.Id, out var espera)) espera.TrySetResult(escolha);
         };
         _tique.Tick += (_, _) => _estado.Tique();
+        _tiqueAgenda.Tick += (_, _) => _estado.Tique();
         _conteudo.MouseEnter += (_, _) => { _estado.MouseEntrou(); _tique.Start(); };
         _conteudo.MouseLeave += (_, _) => { _estado.MouseSaiu(); if (_estado.Modo is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta)) _tique.Stop(); };
         _estado.Pendencias.Mudou += () => { if (_estado.Laterais) AtualizarEsquerda(); };
@@ -167,7 +172,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             var h = new WindowInteropHelper(this).Handle;
             SetLong(h, GwlExStyle, (IntPtr)((long)GetLong(h, GwlExStyle) | WsExToolWindow | WsExNoActivate));
         };
-        Closed += (_, _) => { _tique.Stop(); SoltarPedidos(); SoltarRespostas(); };
+        Closed += (_, _) => { _tique.Stop(); _tiqueAgenda.Stop(); SoltarPedidos(); SoltarRespostas(); };
     }
 
     /// Símbolo do Claude (a partícula com raios abertos), desenhado em vetor no laranja dele. Marca da Anthropic: uso
@@ -232,6 +237,14 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _simbolo.Children.Add(IconeClaude(22));
         _logoVitral.Source = (ImageSource)Application.Current.Resources["Logo"];
         _simbolo.Children.Add(_logoVitral);
+        // Aviso da agenda (spec da agenda §5.5): o ícone de calendário e a pílula "Entrar" quando há link de reunião.
+        _iconeAgenda.FontFamily = (FontFamily)Application.Current.Resources["FonteIcones"];
+        _iconeAgenda.SetResourceReference(TextBlock.ForegroundProperty, "Ambar");
+        _simbolo.Children.Add(_iconeAgenda);
+        _entrar = Pilula.Criar("Entrar", Pilula.Estilo.Principal, EntrarNaReuniao);
+        _entrar.Margin = new Thickness(12, 0, 0, 0);
+        _entrar.VerticalAlignment = VerticalAlignment.Center;
+        _entrar.Visibility = Visibility.Collapsed;
         _detalhe.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
         var textos = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         textos.Children.Add(_titulo);
@@ -240,7 +253,9 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         var linha = new DockPanel();
         DockPanel.SetDock(_simbolo, Dock.Left);
         DockPanel.SetDock(_abrir, Dock.Right);
+        DockPanel.SetDock(_entrar, Dock.Right);
         linha.Children.Add(_simbolo);
+        linha.Children.Add(_entrar);
         linha.Children.Add(_abrir);
         linha.Children.Add(textos);
         _painelAviso.Children.Add(linha);
@@ -277,11 +292,46 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     };
 
     /// Um aviso chegou pelo canal.
-    public void Avisar(AvisoClaude aviso)
+    public void Avisar(AvisoClaude aviso) => _estado.Chegou(aviso);
+
+    /// Um compromisso entrou na antecedência (spec da agenda §5.5): espera a vez como os outros avisos.
+    public void Lembrar(AvisoAgenda aviso) => _estado.Lembrou(aviso);
+
+    /// O compromisso foi cancelado: sai da fila e do lembrete.
+    public void SumiuDaAgenda(string idCompromisso) => _estado.Sumiu(idCompromisso);
+
+    /// O texto do aviso que está na tela: o da agenda ou o do Claude (os da agenda esperam a vez, então o texto é montado
+    /// quando o aviso aparece, e não quando chega).
+    private void PreencherAviso()
     {
-        bool atualizacao = aviso.Tipo == TipoAviso.Atualizacao;
-        _simbolo.Children[0].Visibility = atualizacao ? Visibility.Collapsed : Visibility.Visible;
+        bool agenda = _estado.AvisoEhDaAgenda && _estado.AvisoAgendaAtual is not null;
+        var aviso = _estado.Aviso;
+        bool atualizacao = !agenda && aviso?.Tipo == TipoAviso.Atualizacao;
+        _simbolo.Children[0].Visibility = !agenda && !atualizacao ? Visibility.Visible : Visibility.Collapsed;
         _logoVitral.Visibility = atualizacao ? Visibility.Visible : Visibility.Collapsed;
+        _iconeAgenda.Visibility = agenda ? Visibility.Visible : Visibility.Collapsed;
+        if (agenda)
+        {
+            var c = _estado.AvisoAgendaAtual!.Compromisso;
+            int minutos = (int)Math.Ceiling((c.Inicio - DateTimeOffset.Now).TotalMinutes);
+            _titulo.Text = $"{c.Titulo} · {(minutos > 0 ? $"em {minutos} min" : "agora")}";
+            string onde = c.LinkReuniao?.Host switch
+            {
+                "meet.google.com" => "Google Meet",
+                "teams.microsoft.com" => "Microsoft Teams",
+                { } h when h.EndsWith("zoom.us", StringComparison.OrdinalIgnoreCase) => "Zoom",
+                _ => c.Local ?? "",
+            };
+            string horario = $"{c.Inicio.ToLocalTime():HH:mm}–{c.Fim.ToLocalTime():HH:mm}";
+            _detalhe.Text = onde.Length > 0 ? $"{horario} · {onde}" : horario;
+            _abrir.Text = "agenda ›";
+            _abrir.Visibility = c.LinkReuniao is null ? Visibility.Visible : Visibility.Collapsed;
+            _entrar!.Visibility = c.LinkReuniao is null ? Visibility.Collapsed : Visibility.Visible;
+            return;
+        }
+        _abrir.Visibility = Visibility.Visible;
+        _entrar!.Visibility = Visibility.Collapsed;
+        if (aviso is null) return;
         _abrir.Text = atualizacao ? "reiniciar ›" : "abrir ›";
         _titulo.Text = aviso.Tipo switch
         {
@@ -291,8 +341,16 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         };
         _detalhe.Text = atualizacao ? "clique para reiniciar e atualizar"
             : string.IsNullOrEmpty(aviso.Texto) ? aviso.Sessao : $"{aviso.Sessao} · {aviso.Texto}";
-        _estado.Chegou(aviso);
     }
+
+    /// A pílula "Entrar": abre o link da reunião e encerra o aviso.
+    private void EntrarNaReuniao()
+    {
+        if (_estado.EntrarNaReuniao() is { } link) PainelCalendario.Abrir(link);
+    }
+
+    /// O clique no aviso (ou no lembrete) da agenda: o calendário abre no dia do compromisso.
+    public event Action<DateOnly>? CalendarioNoDia;
 
     /// O retângulo visível do corpo no estado normal, em DIPs do monitor de escala dpi (o calendário se apoia nele).
     public Retangulo AreaDoRelogio(uint dpi)
@@ -323,7 +381,10 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         switch (_estado.Clicou(parte))
         {
             case AcaoNotch.AbrirClaude: Claude.AbrirClaude.Trazer(conversa); break;
-            case AcaoNotch.AbrirCalendario: Pediu?.Invoke(Painel.Calendario); break;
+            case AcaoNotch.AbrirCalendario:
+                Pediu?.Invoke(Painel.Calendario);
+                if (_estado.DiaPedido is { } dia) CalendarioNoDia?.Invoke(dia);
+                break;
             case AcaoNotch.AbrirNotificacoes: Atalhos.CentralDeNotificacoes(); break;
             case AcaoNotch.Reiniciar: PediuReiniciar?.Invoke(); break;
             case AcaoNotch.AbrirPendencias: Pediu?.Invoke(Painel.Pendencias); break;
@@ -333,6 +394,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private void AoMudarEstado()
     {
         if (_estado.Modo is ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta || IsMouseOver) _tique.Start(); else _tique.Stop();
+        if (_estado.AvisoAgendaAtual is not null) _tiqueAgenda.Start(); else _tiqueAgenda.Stop();
         Ajustar(animar: true);
     }
 
@@ -465,6 +527,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         }
         else if (modo == ModoNotch.Aviso)
         {
+            PreencherAviso();
             _painelAviso.Visibility = Visibility.Visible;
             _painelAviso.Measure(new Size(NotchMedidas.LarguraMaxAviso, double.PositiveInfinity));
             largura = Math.Min(NotchMedidas.LarguraMaxAviso, Math.Ceiling(_painelAviso.DesiredSize.Width));

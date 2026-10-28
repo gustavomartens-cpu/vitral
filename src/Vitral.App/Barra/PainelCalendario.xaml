@@ -25,20 +25,88 @@
             <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="7" Rows="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border x:Name="Dia" CornerRadius="6" Margin="2" Height="26">
-                        <TextBlock x:Name="Numero" Text="{Binding Numero}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border x:Name="Dia" CornerRadius="6" Margin="2" Height="26" Background="Transparent" Cursor="Hand" BorderThickness="1" BorderBrush="Transparent">
+                        <Border.InputBindings>
+                            <MouseBinding Gesture="LeftClick" CommandParameter="{Binding}"
+                                          Command="{Binding DataContext.EscolherDiaCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                        </Border.InputBindings>
+                        <Grid>
+                            <TextBlock x:Name="Numero" Text="{Binding Numero}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <!-- Dia com compromisso (spec da agenda §5.4) -->
+                            <Ellipse x:Name="Ponto" Width="4" Height="4" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,2"
+                                     Fill="{DynamicResource Ambar}" Visibility="Collapsed" />
+                        </Grid>
                     </Border>
                     <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding TemCompromisso}" Value="True"><Setter TargetName="Ponto" Property="Visibility" Value="Visible" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Escolhido}" Value="True"><Setter TargetName="Dia" Property="BorderBrush" Value="{DynamicResource Ambar}" /></DataTrigger>
                         <DataTrigger Binding="{Binding DoMes}" Value="False"><Setter TargetName="Numero" Property="Opacity" Value="0.3" /></DataTrigger>
                         <DataTrigger Binding="{Binding Hoje}" Value="True">
                             <Setter TargetName="Dia" Property="Background" Value="{DynamicResource Ambar}" />
                             <Setter TargetName="Numero" Property="Foreground" Value="{DynamicResource TextoSobreAmbar}" />
                             <Setter TargetName="Numero" Property="FontWeight" Value="SemiBold" />
+                            <Setter TargetName="Ponto" Property="Fill" Value="{DynamicResource TextoSobreAmbar}" />
                         </DataTrigger>
                     </DataTemplate.Triggers>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+        <!-- Compromissos do dia escolhido (spec da agenda §5.4) -->
+        <StackPanel Margin="0,8,0,0">
+            <StackPanel.Style>
+                <Style TargetType="StackPanel">
+                    <Setter Property="Visibility" Value="Visible" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding TemContas}" Value="False"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </StackPanel.Style>
+            <Border Height="1" Background="{DynamicResource Linha}" Margin="0,0,0,8" />
+            <TextBlock Text="{Binding TituloDoDia}" FontWeight="SemiBold" FontSize="11.5" Margin="0,0,0,6" />
+            <TextBlock Text="Nenhum compromisso." FontSize="11" Foreground="{DynamicResource TextoSecundario}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding DoDia.Count}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <ItemsControl ItemsSource="{Binding DoDia}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border x:Name="Linha" CornerRadius="6" Padding="4,4,4,4" Background="Transparent" Cursor="Hand"
+                                MouseLeftButtonUp="Compromisso_Clique" ToolTip="Abrir na agenda">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Left" Width="3" CornerRadius="1.5" Margin="0,1,8,1" Background="{Binding Cor, Converter={StaticResource CorParaPincel}}" />
+                                <Border x:Name="Entrar" DockPanel.Dock="Right" CornerRadius="9" Padding="9,1,9,2" Margin="6,0,0,0" VerticalAlignment="Center"
+                                        Background="{DynamicResource Ambar}" Cursor="Hand" MouseLeftButtonUp="Entrar_Clique" ToolTip="Entrar na reunião">
+                                    <TextBlock Text="Entrar" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource TextoSobreAmbar}" />
+                                </Border>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Titulo}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Horario}" FontSize="10.5" Foreground="{DynamicResource TextoSecundario}" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding LinkReuniao}" Value="{x:Null}"><Setter TargetName="Entrar" Property="Visibility" Value="Collapsed" /></DataTrigger>
+                            <Trigger SourceName="Linha" Property="IsMouseOver" Value="True"><Setter TargetName="Linha" Property="Background" Value="{DynamicResource SuperficieHover}" /></Trigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+        <TextBlock Text="{Binding Situacao}" Margin="0,6,0,0" FontSize="10.5" Foreground="{DynamicResource TextoSecundario}" TextWrapping="Wrap">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Situacao}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
         <TextBlock Margin="0,10,0,0" FontSize="11" Foreground="{DynamicResource TextoSecundario}" TextWrapping="Wrap">
             <Run Text="{Binding DataPorExtenso, Mode=OneWay}" /><Run Text=" · " />
             <Hyperlink Command="{Binding HojeCommand}" Foreground="{DynamicResource Ambar}" TextDecorations="None">Hoje</Hyperlink>

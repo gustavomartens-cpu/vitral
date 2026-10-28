@@ -70,6 +70,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         if (atual is not null && PedidoAtual is { } seguinte && seguinte != atual) _mostrou = agora(); // outro tomou a ficha
         AvisoNasRespostas(aviso);
         Aviso = aviso;
+        AvisoEhDaAgenda = false; // o do Claude toma o aviso; o da agenda, se havia, fica no lembrete
         Pendente = true;
         if (aviso.Tipo != TipoAviso.Atualizacao) PedidoPerdido = false; // a lateral passa a mostrar o aviso novo
         // O pedido ou a ficha de outra sessão continuam na frente.
@@ -121,7 +122,11 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         else if (perdeu) Mudou?.Invoke();
         if (TiqueResposta(t) && Modo == ModoNotch.Resposta) Avancar(semResposta: false);
 
-        if (Modo == ModoNotch.Aviso && !_mouse && (t - _inicio).TotalSeconds >= Duracao) Ir(ModoNotch.Lembrete);
+        TiqueAgenda(t);
+        if (Modo == ModoNotch.Aviso && !_mouse && (t - _inicio).TotalSeconds >= Duracao)
+        {
+            if (!MostrarAgenda()) Ir(ModoNotch.Lembrete); // um aviso da agenda esperando entra no lugar
+        }
         else if (Modo is ModoNotch.Normal or ModoNotch.Lembrete && _mouse && !Laterais && (t - _entrou).TotalSeconds >= EsperaLaterais)
         {
             Laterais = true;
@@ -140,7 +145,8 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
             Pendente = true;
         }
         if (_respostas.Count > 0) { MostrarResposta(); return; }
-        Ir(Pendente ? ModoNotch.Lembrete : ModoNotch.Normal, forcar: true);
+        if (MostrarAgenda()) return;
+        Ir(Pendente || AvisoAgendaAtual is not null ? ModoNotch.Lembrete : ModoNotch.Normal, forcar: true);
     }
 
     /// O Claude largou o pedido (respondido no app, o gancho fechou): sai da fila sem contar como sem resposta.
@@ -185,7 +191,8 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
             : Pendencias.Quantas > 0 ? AcaoNotch.AbrirPendencias
             : Aviso?.Tipo == TipoAviso.Atualizacao && Pendente ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         // O clique no próprio aviso segue o aviso (a ordem das pendências vale só para a lateral).
-        var doAviso = Aviso?.Tipo == TipoAviso.Atualizacao ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
+        var doAviso = AvisoEhDaAgenda ? AcaoNotch.AbrirCalendario
+            : Aviso?.Tipo == TipoAviso.Atualizacao ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         var acao = parte switch
         {
             ParteNotch.Esquerda => abrir,
@@ -197,6 +204,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         if (acao == AcaoNotch.AbrirClaude && PedidoPerdido && Aviso?.Tipo == TipoAviso.Atualizacao) PedidoPerdido = false;
         else if (acao is AcaoNotch.AbrirClaude or AcaoNotch.Reiniciar) { Pendente = false; PedidoPerdido = false; }
         else if (acao == AcaoNotch.AbrirPendencias && Aviso?.Tipo != TipoAviso.Atualizacao) Pendente = false; // viu a lista
+        CliqueNaAgenda(acao);
         Ir(acao is AcaoNotch.AbrirClaude or AcaoNotch.AbrirPendencias && Pendente ? ModoNotch.Lembrete : ModoNotch.Normal);
         return acao;
     }
