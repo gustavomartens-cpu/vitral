@@ -146,4 +146,14 @@ public sealed class CalendarioTests
         Assert.Equal("novembro de 2026", vm.Titulo);
         Assert.Equal(new DateOnly(2026, 11, 3), vm.DiaEscolhido);
     }
+
+    [Fact]
+    public async Task Dispose_solta_a_agenda()
+    {
+        var (vm, fonte, agenda) = await ComAgenda(_agora, C("a", 25, 14));
+        vm.Dispose();
+        fonte.Resposta = () => [C("a", 25, 14), C("b", 25, 16)];
+        await agenda.Atualizar(CancellationToken.None);
+        Assert.Single(vm.DoDia); // não acompanha mais
+    }
 }

@@ -26,6 +26,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     private readonly System.Windows.Threading.DispatcherTimer _tiquePassar = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly Dictionary<Painel, JanelaPainel> _paineis = [];
     private CalendarioViewModel? _vmCalendario;
+
+    /// A agenda (spec da agenda): o calendário mostra os compromissos e o notch avisa. Nula = só o mês.
+    public Agenda.ServicoAgendaApp? Agenda { get; set; }
     private PainelBateriaViewModel? _vmBateria;
     private PainelWifiViewModel? _vmWifi;
     private readonly List<IDisposable> _vmsPaineis = [];
@@ -267,7 +270,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     {
         if (_paineis.TryGetValue(painel, out var existente))
         {
-            if (painel == Painel.Calendario) _vmCalendario?.Reabrir();
+            if (painel == Painel.Calendario) { _vmCalendario?.Reabrir(); if (Agenda is not null) _ = Agenda.AtualizarAgora(); }
             if (painel == Painel.Bateria) _vmBateria?.Abrir();
             if (painel == Painel.Wifi) _ = _vmWifi?.AbrirAsync();
             return existente;
@@ -276,7 +279,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         switch (painel)
         {
             case Painel.Calendario when _fontes is not null:
-                _vmCalendario = new CalendarioViewModel(_fontes.Agora);
+                _vmCalendario = Guardar(new CalendarioViewModel(_fontes.Agora, Agenda?.Agenda));
+                if (Agenda is not null) _ = Agenda.AtualizarAgora(); // ao abrir o painel (spec da agenda §5.2)
                 nova = new JanelaPainel("Calendário", 248) { Conteudo = new PainelCalendario(), DataContext = _vmCalendario };
                 break;
             case Painel.Volume when _fontes is not null:

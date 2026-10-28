@@ -12,11 +12,12 @@ public sealed record ItemCompromisso(string Horario, string Titulo, string Cor, 
 
 /// Calendário do notch (spec v2 §3.3; spec da agenda §5.4): grade de 6 semanas começando no domingo, com os dias que têm
 /// compromisso marcados, e a lista do dia escolhido (hoje ao abrir).
-public sealed partial class CalendarioViewModel : ObservableObject
+public sealed partial class CalendarioViewModel : ObservableObject, IDisposable
 {
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
     private readonly IRelogioDoSistema _agora;
     private readonly ServicoAgenda? _agenda;
+    private readonly Action? _aoMudar;
     private DateTime _mes;
 
     [ObservableProperty] private string _titulo = "";
@@ -32,7 +33,11 @@ public sealed partial class CalendarioViewModel : ObservableObject
     {
         _agora = agora;
         _agenda = agenda;
-        if (agenda is not null) agenda.Mudou += () => { Montar(); MontarDia(); };
+        if (agenda is not null)
+        {
+            _aoMudar = () => { Montar(); MontarDia(); };
+            agenda.Mudou += _aoMudar;
+        }
         Reabrir();
     }
 
@@ -89,6 +94,12 @@ public sealed partial class CalendarioViewModel : ObservableObject
             : antigas.Count == 0 ? null
             : antigas.Min(v => v.AtualizadoEm) is { } quando ? $"atualizado às {Hora(quando, fuso)}"
             : "sem conexão com a agenda";
+    }
+
+    /// O painel foi fechado de vez: deixa de acompanhar a agenda.
+    public void Dispose()
+    {
+        if (_agenda is not null && _aoMudar is not null) _agenda.Mudou -= _aoMudar;
     }
 
     private static string Hora(DateTimeOffset t, TimeZoneInfo fuso) => TimeZoneInfo.ConvertTime(t, fuso).ToString("HH:mm", PtBr);

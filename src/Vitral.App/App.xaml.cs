@@ -27,6 +27,7 @@ public partial class App : Application
     private NotificadorEmSegundoPlano? _notificador;
     private Bandeja? _bandeja;
     private ControleBarra? _barra;
+    private Agenda.ServicoAgendaApp? _agenda; // spec da agenda
     private BarraDeTarefas.ObservadorIcones? _observadorIcones;
     private EstadoBarra? _estadoBarra;
     private EstadoDoca? _estadoDoca;
@@ -56,6 +57,8 @@ public partial class App : Application
         _notificador = new NotificadorEmSegundoPlano(new NotificadorWindows()); // ver comentário da classe
         _bandejaApps = new Doca.FonteBandeja(Dispatcher);
         _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m), _bandejaApps);
+        _agenda = new Agenda.ServicoAgendaApp(config);
+        _barra.Agenda = _agenda;
         _estadoBarra = new EstadoBarra(_barra, config, registro, _notificador); // também cuida do relógio de baixo
         var estadoIcones = new EstadoIcones(config);
         _barraWindows = new Doca.BarraDoWindows(registro, _notificador);
@@ -84,6 +87,7 @@ public partial class App : Application
         estadoFormas.AoIniciar();
         _estadoBarra.Mostrar(); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
         _estadoDoca.AoIniciar(); // liga a doca se estava ligada; senão garante a barra do Windows
+        _ = _agenda.AtualizarAgora(); // a primeira leitura da agenda (depois, a cada 5 min)
         // Avisos do Claude Code (spec do notch vivo §4.4)
         _canalAvisos = new Claude.CanalAvisos(Dispatcher, a => _barra?.Avisar(a),
             p => _barra?.Pedir(p) ?? Task.FromResult<Core.Claude.EscolhaPermissao?>(null),
