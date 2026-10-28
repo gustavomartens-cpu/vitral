@@ -28,7 +28,9 @@ internal static class Rest
     public static bool Verdade(this JsonElement e, string nome) =>
         e.TryGetProperty(nome, out var v) && v.ValueKind == JsonValueKind.True;
 
-    public static Uri? Endereco(string? texto) => Uri.TryCreate(texto, UriKind.Absolute, out var u) ? u : null;
+    /// Só endereços da web: o link vem do convite (de terceiros) e é aberto pelo Windows; file:, UNC ou ms-msdt: não.
+    public static Uri? Endereco(string? texto) =>
+        Uri.TryCreate(texto, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp) ? u : null;
 }
 
 /// Agenda do Google pela API REST (spec da agenda §5.1; plano: REST em vez do Calendar.v3): a agenda principal da conta,

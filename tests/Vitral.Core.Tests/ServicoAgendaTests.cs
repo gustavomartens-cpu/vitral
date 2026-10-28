@@ -114,4 +114,57 @@ public sealed class ServicoAgendaTests
         await s.Atualizar(CancellationToken.None);
         Assert.Equal(1, vezes);
     }
+
+    // Revisão final, Important 1: qualquer erro numa conta (não só HTTP) fica só nela.
+    [Fact]
+    public async Task Erro_qualquer_numa_conta_nao_derruba_as_outras()
+    {
+        var g = new FonteFalsa(Google) { Resposta = () => throw new InvalidOperationException("token sem renovação") };
+        var m = new FonteFalsa(Microsoft) { Resposta = () => [C("m1", Microsoft, 1)] };
+        var s = Criar(g, m);
+        await s.Atualizar(CancellationToken.None);
+        Assert.Equal(["m1"], s.Compromissos.Select(c => c.Id));
+        Assert.Equal(EstadoConta.SemConexao, s.Contas[Google].Estado);
+        Assert.Equal(EstadoConta.Ok, s.Contas[Microsoft].Estado);
+    }
+
+    // Duas leituras ao mesmo tempo (painel aberto durante o ciclo de 5 min) renovariam o token juntas: uma de cada vez.
+    [Fact]
+    public async Task Leituras_ao_mesmo_tempo_uma_de_cada_vez()
+    {
+        var lenta = new FonteLenta(Google);
+        var s = Criar(lenta);
+        await Task.WhenAll(s.Atualizar(CancellationToken.None), s.Atualizar(CancellationToken.None));
+        Assert.Equal(1, lenta.MaximoAoMesmoTempo);
+    }
+
+    // Revisão final, Important 3: remarcado depois do aviso — o lembrete do horário antigo sai.
+    [Fact]
+    public async Task Remarcado_depois_do_aviso_sai_dos_avisados()
+    {
+        var g = new FonteFalsa(Google) { Resposta = () => [C("g1", Google, 0.1)] };
+        var s = Criar(g);
+        await s.Atualizar(CancellationToken.None);
+        Assert.Single(s.AvisosParaMostrar(TimeSpan.FromMinutes(10)));
+        Assert.Empty(s.AvisadosQueSumiram());
+        g.Resposta = () => [C("g1", Google, 2)]; // passou para daqui a 2 h
+        await s.Atualizar(CancellationToken.None);
+        Assert.Equal(["g1"], s.AvisadosQueSumiram());
+        Assert.Empty(s.AvisadosQueSumiram()); // só uma vez
+    }
+
+    private sealed class FonteLenta(ContaAgenda conta) : IFonteAgenda
+    {
+        private int _agora;
+        public int MaximoAoMesmoTempo { get; private set; }
+        public ContaAgenda Conta { get; } = conta;
+
+        public async Task<IReadOnlyList<Compromisso>> Ler(DateTimeOffset de, DateTimeOffset ate, CancellationToken cancelar)
+        {
+            MaximoAoMesmoTempo = Math.Max(MaximoAoMesmoTempo, Interlocked.Increment(ref _agora));
+            await Task.Delay(50, cancelar);
+            Interlocked.Decrement(ref _agora);
+            return [];
+        }
+    }
 }

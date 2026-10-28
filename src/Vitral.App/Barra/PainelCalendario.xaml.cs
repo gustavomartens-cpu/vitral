@@ -25,6 +25,8 @@ public partial class PainelCalendario : UserControl
 
     internal static void Abrir(Uri link)
     {
+        // O link vem do convite, de terceiros: o Windows só abre endereço da web (nada de file:, UNC, ms-msdt:...).
+        if (link.Scheme != Uri.UriSchemeHttps && link.Scheme != Uri.UriSchemeHttp) return;
         try { Process.Start(new ProcessStartInfo(link.AbsoluteUri) { UseShellExecute = true }); }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { LogBarra.Erro("Abrir link", e); }
     }

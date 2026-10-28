@@ -30,6 +30,9 @@ internal sealed class LoginGoogle(CofreTokens cofre, HttpClient http)
         ClientSecrets = new ClientSecrets { ClientId = Credenciais.GoogleClientId, ClientSecret = Credenciais.GoogleClientSecret },
         Scopes = Escopos,
         DataStore = _deposito,
+        // Sempre a tela de consentimento: com o acesso ainda válido, o Google às vezes não manda um refresh_token novo, e
+        // "Entrar de novo" gravaria um acesso que vence em 1 h sem poder renovar.
+        Prompt = "consent",
     });
 
     /// Abre o navegador para a pessoa autorizar; devolve o e-mail da conta (o id da agenda principal), ou null se ela
@@ -69,7 +72,10 @@ internal sealed class LoginGoogle(CofreTokens cofre, HttpClient http)
         var fluxo = Fluxo();
         var token = await fluxo.LoadTokenAsync(email, cancelar) ?? throw new ContaPrecisaEntrarException();
         try { return await new UserCredential(fluxo, email, token).GetAccessTokenForRequestAsync(cancellationToken: cancelar); }
-        catch (TokenResponseException) { throw new ContaPrecisaEntrarException(); }
+        // Só a recusa do Google pede para entrar de novo; erro passageiro dele conta como sem conexão.
+        catch (TokenResponseException e) when (e.Error?.Error == "invalid_grant") { throw new ContaPrecisaEntrarException(); }
+        catch (TokenResponseException e) { throw new HttpRequestException(e.Message, e); }
+        catch (InvalidOperationException) { throw new ContaPrecisaEntrarException(); } // acesso vencido sem como renovar
     };
 
     /// Revoga no Google e apaga do cofre.

@@ -156,4 +156,18 @@ public sealed class LeitoresAgendaTests
         sm.Status = HttpStatusCode.InternalServerError;
         await Assert.ThrowsAsync<HttpRequestException>(() => microsoft.Ler(De, Ate, CancellationToken.None));
     }
+
+    // Revisão final, Important 4: links vindos do convite só se forem da web (nada de file:, UNC, ms-msdt:...).
+    [Fact]
+    public async Task Link_que_nao_e_da_web_fica_de_fora()
+    {
+        const string evento = """
+            { "items": [ { "id": "x", "status": "confirmed", "summary": "Armadilha", "htmlLink": "file:///C:/Windows/System32/calc.exe",
+              "hangoutLink": "ms-msdt:/id PCWDiagnostic", "start": { "dateTime": "2026-10-28T14:30:00-03:00" }, "end": { "dateTime": "2026-10-28T15:30:00-03:00" } } ] }
+            """;
+        var s = new Servidor(("/events", evento));
+        var c = Assert.Single(await new LeitorGoogle(Google, new HttpClient(s), Token, Brasilia).Ler(De, Ate, CancellationToken.None));
+        Assert.Null(c.LinkReuniao);
+        Assert.Null(c.LinkEvento);
+    }
 }

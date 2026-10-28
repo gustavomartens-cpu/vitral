@@ -10,6 +10,7 @@ public enum EstadoConta { Ok, PrecisaEntrar, SemConexao }
 public sealed class ServicoAgenda(Func<DateTimeOffset> agora, TimeZoneInfo fuso)
 {
     private readonly object _trava = new();
+    private readonly SemaphoreSlim _umaDeCadaVez = new(1, 1);
     private readonly HashSet<(string Id, DateTimeOffset Inicio)> _avisados = [];
     private Dictionary<ContaAgenda, (IReadOnlyList<Compromisso> Lista, EstadoConta Estado, DateTimeOffset? AtualizadoEm)> _porConta = [];
     private IReadOnlyList<IFonteAgenda> _fontes = [];
@@ -35,8 +36,16 @@ public sealed class ServicoAgenda(Func<DateTimeOffset> agora, TimeZoneInfo fuso)
         Publicar();
     }
 
-    /// Lê todas as contas (em paralelo) no intervalo de três meses em volta do atual.
+    /// Lê todas as contas (em paralelo) no intervalo de três meses em volta do atual. Uma leitura de cada vez: duas juntas
+    /// renovariam o mesmo acesso ao mesmo tempo, e uma mais velha poderia sobrescrever a mais nova.
     public async Task Atualizar(CancellationToken cancelar)
+    {
+        await _umaDeCadaVez.WaitAsync(cancelar);
+        try { await Ler(cancelar); }
+        finally { _umaDeCadaVez.Release(); }
+    }
+
+    private async Task Ler(CancellationToken cancelar)
     {
         IReadOnlyList<IFonteAgenda> fontes;
         lock (_trava) fontes = _fontes;
@@ -45,7 +54,9 @@ public sealed class ServicoAgenda(Func<DateTimeOffset> agora, TimeZoneInfo fuso)
         {
             try { return (f.Conta, Lista: await f.Ler(de, ate, cancelar), Estado: EstadoConta.Ok); }
             catch (ContaPrecisaEntrarException) { return (f.Conta, Lista: (IReadOnlyList<Compromisso>?)null, Estado: EstadoConta.PrecisaEntrar); }
-            catch (Exception e) when (e is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+            catch (OperationCanceledException) when (cancelar.IsCancellationRequested) { throw; }
+            // Qualquer outro erro (rede, resposta estranha, cofre ocupado) fica só nesta conta: as outras seguem.
+            catch (Exception e) when (e is not OutOfMemoryException)
             {
                 return (f.Conta, Lista: null, Estado: EstadoConta.SemConexao);
             }
@@ -68,6 +79,18 @@ public sealed class ServicoAgenda(Func<DateTimeOffset> agora, TimeZoneInfo fuso)
     public IReadOnlyList<Compromisso> AvisosParaMostrar(TimeSpan antecedencia)
     {
         lock (_trava) return RegrasAgenda.ProximosAvisos(Compromissos, agora(), antecedencia, _avisados);
+    }
+
+    /// Os compromissos já avisados que saíram da agenda ou mudaram de horário (o lembrete deles sai); cada um uma vez.
+    public IReadOnlyList<string> AvisadosQueSumiram()
+    {
+        lock (_trava)
+        {
+            var agora = Compromissos.Select(c => (c.Id, c.Inicio)).ToHashSet();
+            var sumiram = _avisados.Where(a => !agora.Contains(a)).ToList();
+            foreach (var a in sumiram) _avisados.Remove(a);
+            return sumiram.Select(a => a.Id).Distinct().ToList();
+        }
     }
 
     private (DateTimeOffset De, DateTimeOffset Ate) Intervalo()

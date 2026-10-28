@@ -20,7 +20,6 @@ internal sealed class ServicoAgendaApp
     private readonly LoginMicrosoft _microsoft;
     private readonly DispatcherTimer _leitura = new() { Interval = TimeSpan.FromMinutes(5) };
     private readonly DispatcherTimer _avisos = new() { Interval = TimeSpan.FromSeconds(30) };
-    private readonly HashSet<string> _avisados = [];
 
     public ServicoAgendaApp(ServicoConfig config)
     {
@@ -112,20 +111,12 @@ internal sealed class ServicoAgendaApp
         var cfg = Config;
         if (!cfg.Avisar) return;
         var antecedencia = TimeSpan.FromMinutes(cfg.AntecedenciaMin);
-        foreach (var c in Agenda.AvisosParaMostrar(antecedencia))
-        {
-            _avisados.Add(c.Id);
-            Lembrar?.Invoke(new AvisoAgenda(c, antecedencia));
-        }
+        foreach (var c in Agenda.AvisosParaMostrar(antecedencia)) Lembrar?.Invoke(new AvisoAgenda(c, antecedencia));
     }
 
+    /// Avisado que saiu da agenda ou mudou de horário: o lembrete dele sai (o horário novo avisa de novo).
     private void VerSumidos()
     {
-        var ids = Agenda.Compromissos.Select(c => c.Id).ToHashSet();
-        foreach (var id in _avisados.Where(id => !ids.Contains(id)).ToList())
-        {
-            _avisados.Remove(id);
-            Sumiu?.Invoke(id);
-        }
+        foreach (var id in Agenda.AvisadosQueSumiram()) Sumiu?.Invoke(id);
     }
 }
