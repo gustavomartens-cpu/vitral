@@ -24,8 +24,16 @@ public static class PosicaoIlhas
     /// Doca (spec da doca §3): 46 px de altura, 8 px acima da borda de baixo, centralizada; reserva de 62 px.
     public const double DocaAltura = 46, DocaFolga = 8, ReservaDoca = 62;
 
-    public static Retangulo Doca(Retangulo monitor, double largura) =>
-        new(monitor.X + (monitor.Largura - largura) / 2, monitor.Y + monitor.Altura - DocaFolga - DocaAltura, largura, DocaAltura);
+    public static Retangulo Doca(Retangulo monitor, double largura) => Doca(monitor, largura, Padrao.Doca);
+
+    /// Doca pelas formas (spec das formas §4.1): a corrida ocupa a largura do monitor, encostada embaixo.
+    public static Retangulo Doca(Retangulo monitor, double largura, Core.Formas.ValoresDoca doca) =>
+        doca.Formato == Core.Perfis.FormatoDoca.Corrida
+            ? new(monitor.X, monitor.Y + monitor.Altura - doca.Altura, monitor.Largura, doca.Altura)
+            : new(monitor.X + (monitor.Largura - largura) / 2, monitor.Y + monitor.Altura - doca.Folga - doca.Altura, largura, doca.Altura);
+
+    /// As formas de hoje (tudo nulo).
+    public static Core.Formas.ValoresFormas Padrao { get; } = Core.Formas.ResolverFormas.Resolver(null, Core.Perfis.CantosParte.Redondos);
 
     /// Miniaturas da doca: 10 px acima dela, centralizadas no botão e a pelo menos 12 px das bordas do monitor.
     public static Retangulo Miniaturas(Retangulo doca, double centroBotao, double largura, double altura, Retangulo monitor)
@@ -51,12 +59,23 @@ public static class PosicaoIlhas
     }
 
     public static (Retangulo Midia, Retangulo Relogio, Retangulo Status) Calcular(
-        Retangulo monitor, double larguraMidia, double larguraRelogio, double larguraStatus)
+        Retangulo monitor, double larguraMidia, double larguraRelogio, double larguraStatus) =>
+        Calcular(monitor, larguraMidia, larguraRelogio, larguraStatus, Padrao.Ilhas, Padrao.Notch);
+
+    /// Pelas formas (spec das formas §4.2 e §4.3): a janela do notch começa <c>Sobra</c> px acima da borda (ou
+    /// <c>Afastamento</c> abaixo dela, no formato Ilha).
+    public static (Retangulo Midia, Retangulo Relogio, Retangulo Status) Calcular(Retangulo monitor, double larguraMidia,
+        double larguraRelogio, double larguraStatus, Core.Formas.ValoresIlhas ilhas, Core.Formas.ValoresNotch notch)
     {
-        double y = monitor.Y + Topo;
+        double y = monitor.Y + ilhas.Topo;
         return (
-            new Retangulo(monitor.X + Borda, y, larguraMidia, Altura),
-            new Retangulo(monitor.X + (monitor.Largura - larguraRelogio) / 2, monitor.Y - NotchSobra, larguraRelogio, NotchAltura),
-            new Retangulo(monitor.X + monitor.Largura - Borda - larguraStatus, y, larguraStatus, Altura));
+            new Retangulo(monitor.X + ilhas.Borda, y, larguraMidia, ilhas.Altura),
+            new Retangulo(monitor.X + (monitor.Largura - larguraRelogio) / 2, monitor.Y - notch.Sobra + notch.Afastamento,
+                larguraRelogio, notch.Sobra + notch.Altura),
+            new Retangulo(monitor.X + monitor.Largura - ilhas.Borda - larguraStatus, y, larguraStatus, ilhas.Altura));
     }
+
+    /// Barra única (spec das formas §4.3): de lado a lado, dentro das bordas, no topo das ilhas.
+    public static Retangulo Barra(Retangulo monitor, Core.Formas.ValoresIlhas ilhas) =>
+        new(monitor.X + ilhas.Borda, monitor.Y + ilhas.Topo, monitor.Largura - 2 * ilhas.Borda, ilhas.Altura);
 }

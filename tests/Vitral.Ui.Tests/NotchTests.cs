@@ -34,6 +34,20 @@ public sealed class NotchTests
     }
 
     [Fact]
+    public void Caminho_sem_orelha_com_cantos_de_cima()
+    {
+        var c = FormaNotch.Caminho(200, 34, 17, orelha: 0, cantosDeCima: true);
+        Assert.StartsWith("M0,17", c);
+        Assert.EndsWith("Z", c);
+        Assert.DoesNotContain("A0,0", c); // sem arco de orelha
+        var xs = Regex.Matches(c, @"(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)")
+            .Select(m => double.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture)).ToList();
+        Assert.Equal(200d, xs.Max());
+        // Sem orelha e sem cantos de cima: começa no canto de cima, reto.
+        Assert.StartsWith("M0,0 L200,0 L200,", FormaNotch.Caminho(200, 34, 16, orelha: 0));
+    }
+
+    [Fact]
     public void Aviso_depois_de_6s_vira_lembrete()
     {
         var e = Criar();

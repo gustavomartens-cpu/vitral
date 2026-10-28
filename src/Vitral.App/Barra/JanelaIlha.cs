@@ -64,6 +64,22 @@ internal sealed partial class JanelaIlha : Window
         };
     }
 
+    /// Ilhas encostadas (spec das formas §5.3): sem cantos arredondados. Só refaz o vidro quando muda.
+    public void AplicarCantosRetos(bool retos)
+    {
+        if (VidroIlha.CantosRetos(this) == retos) return;
+        VidroIlha.DefinirCantosRetos(this, retos);
+        VidroIlha.Atualizar(this, _casca);
+    }
+
+    /// Barra única: sem vidro nem borda, sobre o fundo da barra. Só refaz quando muda.
+    public void AplicarSemVidro(bool semVidro)
+    {
+        if (VidroIlha.SemVidro(this) == semVidro) return;
+        VidroIlha.DefinirSemVidro(this, semVidro);
+        VidroIlha.Atualizar(this, _casca);
+    }
+
     public object? Conteudo
     {
         get => _casca.Child;

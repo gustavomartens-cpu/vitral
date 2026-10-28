@@ -8,4 +8,4 @@ namespace Vitral.Core.Retratos;
 /// <see cref="IconesVisiveis"/> é a lista de ícones aplicada naquele momento (nula = não mexer), restaurada junto.
 public sealed record Retrato(DateTimeOffset Quando, string? PerfilAplicado, IReadOnlyList<ValorRegistro> Valores,
     BarraTopoPerfil? BarraTopo = null, IReadOnlyList<string>? IconesVisiveis = null, BarraBaixoPerfil? BarraBaixo = null,
-    AparenciaPerfil? Aparencia = null);
+    AparenciaPerfil? Aparencia = null, FormasPerfil? Formas = null);

@@ -153,7 +153,18 @@ public static class Efeitos
         if (o is not UIElement el) return;
         el.MouseMove -= LupaMoveu;
         el.MouseLeave -= LupaSaiu;
-        if (!(bool)e.NewValue) return;
+        if (!(bool)e.NewValue)
+        {
+            // Desligada com o mouse em cima (formas da doca): o que estava ampliado volta ao tamanho normal.
+            foreach (var alvo in AlvosDaLupa(el))
+                if (alvo.GetValue(EscalaLupaProperty) is ScaleTransform s)
+                {
+                    s.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+                    s.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+                    s.ScaleX = s.ScaleY = 1;
+                }
+            return;
+        }
         el.MouseMove += LupaMoveu;
         el.MouseLeave += LupaSaiu;
     }

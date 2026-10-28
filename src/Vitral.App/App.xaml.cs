@@ -62,6 +62,7 @@ public partial class App : Application
         _doca = new Doca.ControleDoca(_barraWindows, _bandejaApps, m => _bandeja?.Avisar("Vitral", m));
         _estadoDoca = new EstadoDoca(_doca, _barraWindows, config);
         var estadoAparencia = new Core.Aparencia.EstadoAparencia(Tema.ServicoAparencia.Instancia, config); // spec da aparência §5
+        var estadoFormas = new Core.Formas.EstadoFormas(Tema.ServicoFormas.Instancia, config); // spec das formas §5.1
         // Travamento fatal com a doca ligada: a barra do Windows volta antes de o processo sumir.
         // Na thread da interface também devolve os ícones da bandeja (a janela da ManagedShell morre com o processo).
         AppDomain.CurrentDomain.UnhandledException += (_, _) =>
@@ -72,15 +73,16 @@ public partial class App : Application
         };
         // Sair da conta ou desligar o Windows: mesma limpeza do Sair (barra do Windows e ocultar automático de volta).
         SessionEnding += (_, _) => Sair();
-        var retratos = new ServicoRetratos(registro, Pastas.Retratos, _estadoBarra.Atual, estadoIcones.Atual, _estadoDoca.Atual, estadoAparencia.Atual);
+        var retratos = new ServicoRetratos(registro, Pastas.Retratos, _estadoBarra.Atual, estadoIcones.Atual, _estadoDoca.Atual, estadoAparencia.Atual, estadoFormas.Atual);
         var perfis = new RepositorioPerfis(Pastas.Perfis);
-        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, _estadoBarra, estadoIcones, _estadoDoca, estadoAparencia), retratos, perfis, config);
+        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, _estadoBarra, estadoIcones, _estadoDoca, estadoAparencia, estadoFormas), retratos, perfis, config);
         Inicializacao = new Inicializacao(registro);
 
         bool peloWindows = e.Args.Contains(Vitral.Core.Configuracao.Inicializacao.Argumento);
         var estado = Servico.AoIniciar(peloWindows);
+        estadoAparencia.AoIniciar(); // antes das janelas: elas já nascem com a aparência e as formas guardadas
+        estadoFormas.AoIniciar();
         _estadoBarra.Mostrar(); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
-        estadoAparencia.AoIniciar(); // antes das janelas: elas já nascem com a aparência guardada
         _estadoDoca.AoIniciar(); // liga a doca se estava ligada; senão garante a barra do Windows
         // Avisos do Claude Code (spec do notch vivo §4.4)
         _canalAvisos = new Claude.CanalAvisos(Dispatcher, a => _barra?.Avisar(a),
@@ -107,6 +109,9 @@ public partial class App : Application
 
         Principal = new PrincipalViewModel(Servico, perfis, new DialogosWpf(), new RelogioWpf(), () => Icones.Programas(registro));
         Principal.EditorAparencia.LerWindows = Tema.ServicoAparencia.LerWindows;
+        Principal.EditorFormas.Atuais = estadoFormas.Atual; // "Não mexer" mantém o que está: a prévia mostra isso
+        Tema.ServicoFormas.Instancia.Mudou += Principal.EditorFormas.Recalcular;
+        Principal.EditorFormas.Recalcular();
         Principal.PropertyChanged += AoMudarPrincipal;
         if (estado.TesteCancelado) Principal.Mensagem = "Um teste ficou aberto da última vez; o visual voltou ao anterior.";
         if (estado.Aviso is not null) Principal.Mensagem = estado.Aviso;

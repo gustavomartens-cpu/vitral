@@ -56,6 +56,36 @@ public static class Opcoes
         new("Violeta", "#783CB4"), new("Verde-mar", "#1F6F5C"), new("Vinho", "#7A2E2E"), new("Claro", "#F4F4F6"),
     ];
 
+    // Aba Formas (spec das formas §5.4): "Não mexer" primeiro, como marca Nulo.
+    public static IReadOnlyList<Opcao<object>> FormatosDoca { get; } =
+        [new("Não mexer", Nulo), new("Flutuante", Core.Perfis.FormatoDoca.Flutuante), new("Corrida", Core.Perfis.FormatoDoca.Corrida)];
+
+    public static IReadOnlyList<Opcao<object>> IconesDoca { get; } =
+    [
+        new("Não mexer", Nulo), new("Pequenos", Core.Perfis.TamanhoIcones.Pequeno), new("Médios", Core.Perfis.TamanhoIcones.Medio),
+        new("Grandes", Core.Perfis.TamanhoIcones.Grande),
+    ];
+
+    public static IReadOnlyList<Opcao<object>> Ampliacoes { get; } = [new("Não mexer", Nulo), new("Ligada", true), new("Desligada", false)];
+
+    public static IReadOnlyList<Opcao<object>> FormatosNotch { get; } =
+    [
+        new("Não mexer", Nulo), new("Encaixado", Core.Perfis.FormatoNotch.Encaixado), new("Sem orelhas", Core.Perfis.FormatoNotch.SemOrelhas),
+        new("Ilha", Core.Perfis.FormatoNotch.Ilha),
+    ];
+
+    public static IReadOnlyList<Opcao<object>> TamanhosNotch { get; } =
+    [
+        new("Não mexer", Nulo), new("Compacto", Core.Perfis.TamanhoNotch.Compacto), new("Normal", Core.Perfis.TamanhoNotch.Normal),
+        new("Grande", Core.Perfis.TamanhoNotch.Grande),
+    ];
+
+    public static IReadOnlyList<Opcao<object>> DisposicoesIlhas { get; } =
+        [new("Não mexer", Nulo), new("Separadas", Core.Perfis.DisposicaoIlhas.Separadas), new("Barra única", Core.Perfis.DisposicaoIlhas.BarraUnica)];
+
+    public static IReadOnlyList<Opcao<object>> DistanciasIlhas { get; } =
+        [new("Não mexer", Nulo), new("Com respiro", Core.Perfis.DistanciaIlhas.ComRespiro), new("Encostadas", Core.Perfis.DistanciaIlhas.Encostadas)];
+
     public static IReadOnlyList<Opcao<object>> DestaquesAparencia { get; } =
     [
         new("do tema", Nulo), new("Âmbar", "#F2B544"), new("Azul", "#4CC2FF"), new("Verde-água", "#3DDBB5"),

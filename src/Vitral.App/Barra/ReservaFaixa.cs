@@ -42,10 +42,11 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
     public event Action? Recriar;
 
     private readonly bool _embaixo;
-    private readonly double _alturaDips;
+    private readonly Func<double> _alturaDips;
 
     /// <param name="embaixo">Faixa de baixo (doca) em vez da de cima.</param>
-    public ReservaFaixa(bool embaixo = false, double alturaDips = Ui.Barra.PosicaoIlhas.Reserva)
+    /// <param name="alturaDips">Lida a cada registro e reposicionamento: acompanha as formas (spec das formas §4.4).</param>
+    public ReservaFaixa(bool embaixo, Func<double> alturaDips)
     {
         _embaixo = embaixo;
         _alturaDips = alturaDips;
@@ -80,7 +81,7 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
     void Ui.Barra.IAppBar.Posicionar()
     {
         var monitor = MonitorPrincipal.Ler(); // escala e tamanho atuais do principal, não os da janela oculta
-        int altura = (int)Math.Round(_alturaDips * monitor.Dpi / 96.0);
+        int altura = (int)Math.Round(_alturaDips() * monitor.Dpi / 96.0);
         int fundo = monitor.Y + monitor.Altura;
         var d = Dados();
         d.Borda = _embaixo ? AbeBottom : AbeTop;

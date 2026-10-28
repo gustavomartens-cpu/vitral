@@ -16,8 +16,9 @@ namespace Vitral.App.Barra;
 internal static partial class VidroIlha
 {
     private const int WcaAccentPolicy = 19;
-    private const int AccentDisabled = 0, AccentAcrylicBlurBehind = 4;
-    private const int DwmwaUseImmersiveDarkMode = 20, DwmwaWindowCornerPreference = 33;
+    private const int AccentDisabled = 0, AccentTransparentGradient = 2, AccentAcrylicBlurBehind = 4;
+    private const int DwmwaUseImmersiveDarkMode = 20, DwmwaWindowCornerPreference = 33, DwmwaBorderColor = 34;
+    private const int DwmCorNenhuma = unchecked((int)0xFFFFFFFE), DwmCorPadrao = unchecked((int)0xFFFFFFFF);
     private const int DwmwcpNaoArredondar = 1, DwmwcpRound = 2, DwmwcpRoundSmall = 3;
 
     [StructLayout(LayoutKind.Sequential)] private struct Accent { public int Estado, Flags; public uint Cor; public int Animacao; }
@@ -30,6 +31,27 @@ internal static partial class VidroIlha
 
     private static readonly DependencyProperty ParteProperty =
         DependencyProperty.RegisterAttached("Parte", typeof(ParteAparencia), typeof(VidroIlha), new PropertyMetadata(ParteAparencia.Ilhas));
+
+    private static readonly DependencyProperty CantosRetosProperty =
+        DependencyProperty.RegisterAttached("CantosRetos", typeof(bool), typeof(VidroIlha), new PropertyMetadata(false));
+
+    /// Doca corrida e ilhas encostadas (spec das formas §5.3): o Windows arredonda os quatro cantos ou nenhum, então
+    /// nenhum. Vale a partir do próximo <see cref="Atualizar"/>.
+    public static void DefinirCantosRetos(Window janela, bool retos) => janela.SetValue(CantosRetosProperty, retos);
+
+    public static bool CantosRetos(Window janela) => (bool)janela.GetValue(CantosRetosProperty);
+
+    private static readonly DependencyProperty SemVidroProperty =
+        DependencyProperty.RegisterAttached("SemVidro", typeof(bool), typeof(VidroIlha), new PropertyMetadata(false));
+
+    /// Barra única (spec das formas §5.2): a ilha fica transparente, sem vidro nem borda, sobre o fundo da barra.
+    public static void DefinirSemVidro(Window janela, bool semVidro) => janela.SetValue(SemVidroProperty, semVidro);
+
+    public static bool SemVidro(Window janela) => (bool)janela.GetValue(SemVidroProperty);
+
+    // A borda da casca antes do "sem vidro", para voltar igual (nulo = nunca ficou sem vidro).
+    private static readonly DependencyProperty BordaAntesProperty =
+        DependencyProperty.RegisterAttached("BordaAntes", typeof(Thickness?), typeof(VidroIlha), new PropertyMetadata(null));
 
     /// Chamado no construtor da janela, antes de ela ser mostrada: a janela passa a seguir a aparência da parte.
     public static void Preparar(Window janela, Border casca, ParteAparencia parte = ParteAparencia.Ilhas)
@@ -51,14 +73,39 @@ internal static partial class VidroIlha
     public static void Atualizar(Window janela, Border casca)
     {
         var v = ServicoAparencia.Instancia.Valores((ParteAparencia)janela.GetValue(ParteProperty));
-        casca.CornerRadius = new CornerRadius(v.RaioPx);
+        bool retos = (bool)janela.GetValue(CantosRetosProperty);
+        casca.CornerRadius = new CornerRadius(retos ? 0 : v.RaioPx);
         var h = new WindowInteropHelper(janela).Handle;
         if (h == IntPtr.Zero) return;
         int escuro = ServicoAparencia.Luminancia(v.Texto) > 0.5 ? 1 : 0; // texto claro = fundo escuro
-        int canto = v.Cantos switch { CantosParte.Retos => DwmwcpNaoArredondar, CantosParte.Suaves => DwmwcpRoundSmall, _ => DwmwcpRound };
+        int canto = retos ? DwmwcpNaoArredondar
+            : v.Cantos switch { CantosParte.Retos => DwmwcpNaoArredondar, CantosParte.Suaves => DwmwcpRoundSmall, _ => DwmwcpRound };
         DwmSetWindowAttribute(h, DwmwaUseImmersiveDarkMode, ref escuro, sizeof(int));
         DwmSetWindowAttribute(h, DwmwaWindowCornerPreference, ref canto, sizeof(int));
 
+        if (SemVidro(janela))
+        {
+            // Quadro do DWM estendido e fundo transparente, sem acrílico: a janela fica invisível, só o conteúdo aparece.
+            int semCanto = DwmwcpNaoArredondar;
+            DwmSetWindowAttribute(h, DwmwaWindowCornerPreference, ref semCanto, sizeof(int));
+            int semBorda = DwmCorNenhuma; // o Windows 11 desenha uma linha de 1 px em volta da janela
+            DwmSetWindowAttribute(h, DwmwaBorderColor, ref semBorda, sizeof(int));
+            if (HwndSource.FromHwnd(h)?.CompositionTarget is { } alvoTransparente) alvoTransparente.BackgroundColor = Colors.Transparent;
+            var tudo = new Margens { Esq = -1, Dir = -1, Topo = -1, Base = -1 };
+            DwmExtendFrameIntoClientArea(h, ref tudo);
+            DefinirAcento(h, AccentTransparentGradient, new CorArgb(0, 0, 0, 0)); // "clara": transparente de verdade
+            casca.Background = Brushes.Transparent;
+            if (janela.GetValue(BordaAntesProperty) is null) janela.SetValue(BordaAntesProperty, casca.BorderThickness);
+            casca.BorderThickness = new Thickness(0);
+            return;
+        }
+        if (janela.GetValue(BordaAntesProperty) is Thickness antes) // saiu da barra única: borda e linha do Windows de volta
+        {
+            casca.BorderThickness = antes;
+            janela.ClearValue(BordaAntesProperty);
+            int bordaPadrao = DwmCorPadrao;
+            DwmSetWindowAttribute(h, DwmwaBorderColor, ref bordaPadrao, sizeof(int));
+        }
         bool vidro = v.Desfoque;
         var opaco = ServicoAparencia.Cor(v.Fundo with { A = 255 });
         if (HwndSource.FromHwnd(h)?.CompositionTarget is { } alvo) alvo.BackgroundColor = vidro ? Colors.Transparent : opaco;

@@ -7,13 +7,10 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 - **Compromissos no calendário do notch** (Google e/ou Outlook): exige login na conta dentro do Vitral.
 - **Notificações de outros apps no notch**, e respostas por ali: precisa de identidade de pacote para ler as
   notificações do Windows.
-- **Aparência, fase 2 (formas):** doca flutuante ou corrida, tamanho dos ícones, ampliação ligada ou desligada; tamanho,
-  arredondamento e orelhas do notch; ilhas separadas ou barra única, encostadas ou com respiro. A fase 1 (cores e
-  material) saiu na 0.10.0.
-- **Pequenos acertos da aparência** (revisão final da 0.10.0): aplicar a aparência antes de mostrar as janelas na
-  abertura (hoje pode piscar o Vidro escuro); não recalcular quando o Windows avisa sem mudar nada; tirar os avisos de
-  tema antigos das ilhas, painéis e doca; prévia da aba acompanhar o Windows e a troca de papel de parede; cor fora da
-  paleta aparecer no seletor; enum novo no perfil exige subir o esquema.
+- **Pequenos acertos da aparência** (revisões finais da 0.10.0 e da 0.11.0): não recalcular quando o Windows avisa sem
+  mudar nada; tirar os avisos de tema antigos das ilhas, painéis e doca; prévia das abas acompanhar o Windows e a troca
+  de papel de parede; cor fora da paleta aparecer no seletor; enum novo no perfil exige subir o esquema; raio do notch
+  na prévia seguir os cantos da aparência; barra única com mídia e status desligadas mostra uma faixa vazia.
 
 ## Testes a fundo pendentes
 
@@ -39,4 +36,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   mouse (0.8.1), consertos (0.8.2), ler e responder ao Claude pelo notch com lista de pendências (0.9.0), Descartar na
   ficha (0.9.3), abrir a conversa certa no app do Claude (0.9.4), notch certo depois de trocar de escala
   (0.9.5), aparência da doca, do
-  notch e das ilhas com sete temas, personalizar e diferenciar (0.10.0).
+  notch e das ilhas com sete temas, personalizar e diferenciar (0.10.0), formas da doca, do notch e das ilhas e
+  ícone da bateria pelo nível (0.11.0).

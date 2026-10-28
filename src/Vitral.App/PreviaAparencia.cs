@@ -22,6 +22,34 @@ public sealed class PreviaAparencia : FrameworkElement
     public static readonly DependencyProperty RaioProperty = DependencyProperty.Register(nameof(Raio),
         typeof(double), typeof(PreviaAparencia), new FrameworkPropertyMetadata(10.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    public PreviaAparencia()
+    {
+        // Com SemValoresUsaAtual, desenha a aparência em vigor: redesenha quando ela muda (enquanto está na tela).
+        Action redesenhar = InvalidateVisual;
+        Loaded += (_, _) => ServicoAparencia.Instancia.Mudou += redesenhar;
+        Unloaded += (_, _) => ServicoAparencia.Instancia.Mudou -= redesenhar;
+    }
+
+    public static readonly DependencyProperty FormasProperty = DependencyProperty.Register(nameof(Formas),
+        typeof(Core.Formas.ValoresFormas), typeof(PreviaAparencia), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    public static readonly DependencyProperty SemValoresUsaAtualProperty = DependencyProperty.Register(nameof(SemValoresUsaAtual),
+        typeof(bool), typeof(PreviaAparencia), new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    /// As formas desenhadas; nulas = as de hoje.
+    public Core.Formas.ValoresFormas? Formas
+    {
+        get => (Core.Formas.ValoresFormas?)GetValue(FormasProperty);
+        set => SetValue(FormasProperty, value);
+    }
+
+    /// Aba Formas: com a aparência em "Não mexer", desenha com a aparência em vigor em vez do aviso.
+    public bool SemValoresUsaAtual
+    {
+        get => (bool)GetValue(SemValoresUsaAtualProperty);
+        set => SetValue(SemValoresUsaAtualProperty, value);
+    }
+
     public ValoresAparencia? Valores
     {
         get => (ValoresAparencia?)GetValue(ValoresProperty);
@@ -61,7 +89,7 @@ public sealed class PreviaAparencia : FrameworkElement
         bool detalhe = w >= 200;
         double s = detalhe ? Math.Min(w / LarguraBase, h / AlturaBase) : Math.Min(w / 260, h / 125);
         var dip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
-        if (Valores is not { } v)
+        if ((Valores ?? (SemValoresUsaAtual ? ServicoAparencia.Instancia.Atual : null)) is not { } v)
         {
             dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x8C, 0x10, 0x12, 0x18)), null, area);
             var aviso = Texto(detalhe ? "Não mexer: o Vitral fica com a aparência que estiver" : "fica como está",
@@ -73,34 +101,53 @@ public sealed class PreviaAparencia : FrameworkElement
             return;
         }
 
-        // Ilhas nas pontas do topo, o notch no meio, a doca embaixo.
-        double larguraIlha = 120 * s, alturaIlha = 24 * s, margem = 10 * s;
-        var ilhaEsquerda = new Rect(margem, 6 * s, larguraIlha, alturaIlha);
-        var ilhaDireita = new Rect(w - margem - larguraIlha, 6 * s, larguraIlha, alturaIlha);
-        var notch = new Rect(w / 2 - 66 * s, 0, 132 * s, 26 * s);
-        double icone = 22 * s, vao = 7 * s, folga = 9 * s;
-        double larguraDoca = 5 * icone + 4 * vao + 2 * folga, alturaDoca = icone + 2 * 6 * s;
-        var doca = new Rect(w / 2 - larguraDoca / 2, h - 10 * s - alturaDoca, larguraDoca, alturaDoca);
+        // Ilhas nas pontas do topo (ou a barra única), o notch no meio, a doca embaixo: medidas das formas (spec das
+        // formas §5.4) reduzidas à escala da prévia.
+        var fo = Formas ?? Ui.Barra.PosicaoIlhas.Padrao;
+        const double k = 0.8, kDoca = 0.73;
+        double larguraIlha = 120 * s, alturaIlha = fo.Ilhas.Altura * k * s, topoIlha = fo.Ilhas.Topo * k * s, margem = fo.Ilhas.Borda * k * s;
+        var ilhaEsquerda = new Rect(margem, topoIlha, larguraIlha, alturaIlha);
+        var ilhaDireita = new Rect(w - margem - larguraIlha, topoIlha, larguraIlha, alturaIlha);
+        double raioIlha = fo.Ilhas.CantosRetos ? 0 : v.Ilhas.RaioPx * s;
+        if (fo.Ilhas.Disposicao == Core.Perfis.DisposicaoIlhas.BarraUnica)
+            Peca(dc, v.Ilhas, Arredondado(new Rect(margem, topoIlha, w - 2 * margem, alturaIlha), raioIlha, raioIlha, raioIlha, raioIlha), fundo, cheio);
+        else
+        {
+            Peca(dc, v.Ilhas, Arredondado(ilhaEsquerda, raioIlha, raioIlha, raioIlha, raioIlha), fundo, cheio);
+            Peca(dc, v.Ilhas, Arredondado(ilhaDireita, raioIlha, raioIlha, raioIlha, raioIlha), fundo, cheio);
+        }
 
-        Peca(dc, v.Ilhas, Arredondado(ilhaEsquerda, v.Ilhas.RaioPx * s, v.Ilhas.RaioPx * s, v.Ilhas.RaioPx * s, v.Ilhas.RaioPx * s), fundo, cheio);
-        Peca(dc, v.Ilhas, Arredondado(ilhaDireita, v.Ilhas.RaioPx * s, v.Ilhas.RaioPx * s, v.Ilhas.RaioPx * s, v.Ilhas.RaioPx * s), fundo, cheio);
-        Peca(dc, v.Notch, Arredondado(notch, 0, 0, 12 * s, 12 * s), fundo, cheio);
-        double raioDoca = v.Doca.RaioPx * 1.5 * s;
+        // O notch com o mesmo desenho da tela (orelhas, ilha), na escala da prévia.
+        var fn = fo.Notch;
+        double larguraNotch = 132 * s, alturaNotch = fn.Altura * k * s, orelha = fn.Orelha * k * s;
+        var notch = new Rect(w / 2 - larguraNotch / 2, fn.Afastamento * k * s, larguraNotch, alturaNotch);
+        var formaNotch = Geometry.Parse(Ui.Barra.FormaNotch.Caminho(larguraNotch, alturaNotch, fn.Raio * k * s, orelha, fn.CantosDeCima)).CloneCurrentValue();
+        formaNotch.Transform = new TranslateTransform(notch.X - orelha, notch.Y);
+        Peca(dc, v.Notch, formaNotch, fundo, cheio);
+
+        var fd = fo.Doca;
+        double icone = fd.Icone * kDoca * s, vao = 7 * s, folga = 9 * s, alturaDoca = fd.Altura * kDoca * s;
+        double larguraIcones = 5 * icone + 4 * vao;
+        var doca = fd.Formato == Core.Perfis.FormatoDoca.Corrida
+            ? new Rect(0, h - alturaDoca, w, alturaDoca)
+            : new Rect(w / 2 - larguraIcones / 2 - folga, h - 10 * s - alturaDoca, larguraIcones + 2 * folga, alturaDoca);
+        double raioDoca = fd.CantosRetos ? 0 : v.Doca.RaioPx * 1.5 * s;
         Peca(dc, v.Doca, Arredondado(doca, raioDoca, raioDoca, raioDoca, raioDoca), fundo, cheio);
 
+        double xIcones = w / 2 - larguraIcones / 2;
         for (int i = 0; i < CoresIcones.Length; i++)
         {
-            var r = new Rect(doca.X + folga + i * (icone + vao), doca.Y + 6 * s, icone, icone);
-            dc.DrawRoundedRectangle(new SolidColorBrush(CoresIcones[i]), null, r, 6 * s, 6 * s);
+            var r = new Rect(xIcones + i * (icone + vao), doca.Y + (alturaDoca - icone) / 2, icone, icone);
+            dc.DrawRoundedRectangle(new SolidColorBrush(CoresIcones[i]), null, r, icone * 0.27, icone * 0.27);
         }
         // O app em foco: a marca embaixo do segundo ícone, na cor de destaque da doca.
-        var marca = new Rect(doca.X + folga + icone + vao + icone / 2 - 5 * s, doca.Bottom - 4 * s, 10 * s, Math.Max(1, 2 * s));
+        var marca = new Rect(xIcones + icone + vao + icone / 2 - 5 * s, doca.Bottom - 4 * s, 10 * s, Math.Max(1, 2 * s));
         dc.DrawRoundedRectangle(ServicoAparencia.Pincel(v.Doca.Destaque), null, marca, s, s);
 
         double ponto = Math.Max(2, 6 * s);
         if (detalhe)
         {
-            double tamanho = 11 * s;
+            double tamanho = 11 * s, tamanhoNotch = tamanho * fn.EscalaTexto;
             var musica = Texto("♪  Música tocando", tamanho, ServicoAparencia.Pincel(v.Ilhas.Texto), dip);
             dc.DrawText(musica, new Point(ilhaEsquerda.X + 9 * s, ilhaEsquerda.Y + (alturaIlha - musica.Height) / 2));
             var tocar = Texto("▶", tamanho, ServicoAparencia.Pincel(v.Ilhas.Destaque), dip);
@@ -112,7 +159,7 @@ public sealed class PreviaAparencia : FrameworkElement
             dc.DrawText(cpu, new Point(xCpu, ilhaDireita.Y + (alturaIlha - cpu.Height) / 2));
             dc.DrawText(bateria, new Point(xCpu + cpu.Width + 12 * s, ilhaDireita.Y + (alturaIlha - bateria.Height) / 2));
 
-            var hora = Texto(DateTime.Now.ToString("HH:mm · ddd, d MMM", CultureInfo.GetCultureInfo("pt-BR")), tamanho,
+            var hora = Texto(DateTime.Now.ToString("HH:mm · ddd, d MMM", CultureInfo.GetCultureInfo("pt-BR")), tamanhoNotch,
                 ServicoAparencia.Pincel(v.Notch.Texto), dip, FontWeights.SemiBold);
             double xHora = notch.X + (notch.Width - hora.Width - ponto - 6 * s) / 2;
             dc.DrawText(hora, new Point(xHora, notch.Y + (notch.Height - hora.Height) / 2));

@@ -12,7 +12,7 @@ namespace Vitral.App.Barra;
 /// alvo vem em DIPs do monitor (pela escala dele) e a largura da janela, pela escala que o WPF dá a ela.
 internal static partial class PosicaoNativa
 {
-    private const uint SwpNoSize = 0x1, SwpNoZOrder = 0x4, SwpNoActivate = 0x10;
+    private const uint SwpNoSize = 0x1, SwpNoMove = 0x2, SwpNoZOrder = 0x4, SwpNoActivate = 0x10;
 
     [StructLayout(LayoutKind.Sequential)] private struct Ret { public int Esq, Topo, Dir, Base; }
 
@@ -56,5 +56,12 @@ internal static partial class PosicaoNativa
             return new Retangulo(janela.Left, janela.Top, janela.ActualWidth, janela.ActualHeight);
         double escala = Escala(dpi);
         return new Retangulo(r.Esq / escala, r.Topo / escala, (r.Dir - r.Esq) / escala, (r.Base - r.Topo) / escala);
+    }
+
+    /// Põe a janela acima das outras "sempre no topo" (barra única: as ilhas e o notch na frente do fundo da barra).
+    public static void TrazerParaFrente(Window janela)
+    {
+        var h = new WindowInteropHelper(janela).Handle;
+        if (h != IntPtr.Zero) SetWindowPos(h, new IntPtr(-1), 0, 0, 0, 0, SwpNoSize | SwpNoMove | SwpNoActivate);
     }
 }
