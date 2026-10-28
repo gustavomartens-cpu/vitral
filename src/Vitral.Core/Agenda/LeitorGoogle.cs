@@ -31,8 +31,8 @@ internal static class Rest
     public static Uri? Endereco(string? texto) => Uri.TryCreate(texto, UriKind.Absolute, out var u) ? u : null;
 }
 
-/// Agenda do Google pela API REST (spec da agenda §5.1; plano: REST em vez do Calendar.v3): as agendas marcadas como
-/// visíveis na conta, com os eventos repetidos já abertos em ocorrências, página por página.
+/// Agenda do Google pela API REST (spec da agenda §5.1; plano: REST em vez do Calendar.v3): a agenda principal da conta,
+/// com os eventos repetidos já abertos em ocorrências, página por página.
 public sealed class LeitorGoogle(ContaAgenda conta, HttpClient http, Func<CancellationToken, Task<string>> token,
     TimeZoneInfo? fuso = null) : IFonteAgenda
 {
@@ -43,13 +43,10 @@ public sealed class LeitorGoogle(ContaAgenda conta, HttpClient http, Func<Cancel
 
     public async Task<IReadOnlyList<Compromisso>> Ler(DateTimeOffset de, DateTimeOffset ate, CancellationToken cancelar)
     {
-        var agendas = new List<string>();
-        using (var lista = await Rest.Buscar(http, $"{Base}/users/me/calendarList", token, cancelar))
-            foreach (var a in lista.RootElement.GetProperty("items").EnumerateArray())
-                if (a.Verdade("selected") && a.Texto("id") is { } id) agendas.Add(id); // "selected" ausente = não visível
-
+        // Só a agenda principal: é onde o Google põe o que a pessoa criou e os convites que recebeu; as compartilhadas
+        // (de colegas, de equipes) trariam compromissos em que ela não está (conferência com o Gustavo, 28/10).
         var compromissos = new List<Compromisso>();
-        foreach (var agenda in agendas)
+        foreach (var agenda in new[] { "primary" })
         {
             string? pagina = null;
             do

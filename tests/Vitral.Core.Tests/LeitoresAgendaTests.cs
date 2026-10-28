@@ -135,12 +135,15 @@ public sealed class LeitoresAgendaTests
     }
 
     [Fact]
-    public async Task Agenda_desmarcada_do_Google_fica_de_fora()
+    // Conferência com o Gustavo (28/10): só os compromissos em que a pessoa está — a agenda principal, onde o Google põe
+    // o que ela criou e os convites; as agendas compartilhadas (de colegas, de equipes) ficam de fora.
+    public async Task Le_so_a_agenda_principal_do_Google()
     {
         var (leitor, servidor) = LeitorDoGoogle();
         await leitor.Ler(De, Ate, CancellationToken.None);
-        var agendas = servidor.Pedidos.Select(p => p.RequestUri!.AbsolutePath).Where(a => a.EndsWith("/events")).Distinct().ToList();
-        Assert.Equal(["/calendar/v3/calendars/g%40x.com/events"], agendas);
+        Assert.DoesNotContain(servidor.Pedidos, p => p.RequestUri!.AbsolutePath.Contains("calendarList"));
+        var agendas = servidor.Pedidos.Select(p => p.RequestUri!.AbsolutePath).Distinct().ToList();
+        Assert.Equal(["/calendar/v3/calendars/primary/events"], agendas);
     }
 
     [Fact]

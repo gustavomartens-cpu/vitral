@@ -54,6 +54,12 @@ internal sealed class LoginGoogle(CofreTokens cofre, HttpClient http)
             return email;
         }
         catch (OperationCanceledException) { return null; }
+        catch (TokenResponseException e) when (e.Error?.Error == "access_denied")
+        {
+            // Cancelou no consentimento, ou o e-mail não está entre os usuários de teste do app.
+            throw new InvalidOperationException("O Google recusou o acesso. Se o app está em teste no Google Cloud, o e-mail precisa estar em \"Usuários de teste\".", e);
+        }
+        catch (TokenResponseException e) { throw new InvalidOperationException($"O Google recusou o login: {e.Error?.ErrorDescription ?? e.Message}", e); }
         finally { await _deposito.DeleteAsync<TokenResponse>(temporaria); }
     }
 

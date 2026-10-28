@@ -5,8 +5,8 @@ namespace Vitral.App.Agenda;
 /// daquele provedor fica desligado).
 internal static class Credenciais
 {
-    public const string GoogleClientId = "";
-    public const string GoogleClientSecret = "";
+    public const string GoogleClientId = "281945787259-eqkfrl8h3s596vgqfri2b2dcceijavb1.apps.googleusercontent.com";
+    public const string GoogleClientSecret = "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";
     public const string MicrosoftClientId = "";
 
     public static bool GoogleOk => GoogleClientId.Length > 0 && GoogleClientSecret.Length > 0;
