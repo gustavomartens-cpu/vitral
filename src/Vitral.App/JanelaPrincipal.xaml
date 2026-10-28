@@ -310,7 +310,8 @@
                                 <TextBlock Text="TEMA DA DOCA, DO NOTCH E DAS ILHAS" Style="{StaticResource Rotulo}" Margin="2,4,0,8" />
                                 <ListBox Style="{StaticResource GradeTemas}" ItemsSource="{x:Static ui:Opcoes.TemasAparencia}"
                                          SelectedValue="{Binding Tema, Converter={StaticResource NuloComoMarca}}" />
-                                <local:PreviaAparencia Valores="{Binding Previa}" Height="230" Margin="0,6,8,0" />
+                                <local:PreviaAparencia Valores="{Binding Previa}" Height="230" Margin="0,6,8,0"
+                                                       Formas="{Binding DataContext.EditorFormas.Previa, RelativeSource={RelativeSource AncestorType=Window}}" />
                                 <TextBlock Text="A prévia usa o seu papel de parede. Para ver de verdade, use Testar (20 s)."
                                            FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="2,6,0,0" />
                             </StackPanel>
@@ -347,6 +348,69 @@
                                                         Visibility="{Binding Ilhas.Diferenciar, Converter={StaticResource BoolParaVisivel}}" />
                                         <TextBlock Text="Marcar abre os mesmos campos só para aquela parte; o resto segue o geral."
                                                    FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </ScrollViewer>
+                </TabItem>
+                <!-- Formas da doca, do notch e das ilhas (spec das formas §5.4) -->
+                <TabItem Header="Formas" Style="{StaticResource AbaVitral}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                        <Grid DataContext="{Binding EditorFormas}"
+                              IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger></Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="350" /></Grid.ColumnDefinitions>
+
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="PRÉVIA" Style="{StaticResource Rotulo}" Margin="2,4,0,8" />
+                                <local:PreviaAparencia Formas="{Binding Previa}" SemValoresUsaAtual="True" Height="260" Margin="0,0,8,0"
+                                                       Valores="{Binding DataContext.EditorAparencia.Previa, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                <TextBlock Text="Com as cores da aba Aparência. Para ver de verdade, use Testar (20 s)."
+                                           FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="2,6,0,0" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1">
+                                <Border Style="{StaticResource CartaoVidro}">
+                                    <StackPanel>
+                                        <TextBlock Text="DOCA" Style="{StaticResource Rotulo}" Margin="0,0,0,2" />
+                                        <TextBlock Text="Formato" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,6,0,4" />
+                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.FormatosDoca}"
+                                                 SelectedValue="{Binding FormatoDoca, Converter={StaticResource NuloComoMarca}}" />
+                                        <TextBlock Text="Ícones" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
+                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.IconesDoca}"
+                                                 SelectedValue="{Binding IconesDoca, Converter={StaticResource NuloComoMarca}}" />
+                                        <TextBlock Text="Ampliação ao passar o mouse" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
+                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Ampliacoes}"
+                                                 SelectedValue="{Binding AmpliacaoDoca, Converter={StaticResource NuloComoMarca}}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource CartaoVidro}">
+                                    <StackPanel>
+                                        <TextBlock Text="NOTCH" Style="{StaticResource Rotulo}" Margin="0,0,0,2" />
+                                        <TextBlock Text="Formato" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,6,0,4" />
+                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.FormatosNotch}"
+                                                 SelectedValue="{Binding FormatoNotch, Converter={StaticResource NuloComoMarca}}" />
+                                        <TextBlock Text="Tamanho" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
+                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.TamanhosNotch}"
+                                                 SelectedValue="{Binding TamanhoNotch, Converter={StaticResource NuloComoMarca}}" />
+                                        <TextBlock Text="O arredondamento segue os cantos da aba Aparência." FontSize="11" Foreground="{StaticResource TextoSecundario}"
+                                                   TextWrapping="Wrap" Margin="0,8,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Style="{StaticResource CartaoVidro}">
+                                    <StackPanel>
+                                        <TextBlock Text="ILHAS" Style="{StaticResource Rotulo}" Margin="0,0,0,2" />
+                                        <TextBlock Text="Disposição" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,6,0,4" />
+                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.DisposicoesIlhas}"
+                                                 SelectedValue="{Binding DisposicaoIlhas, Converter={StaticResource NuloComoMarca}}" />
+                                        <TextBlock Text="Distância da borda" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
+                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.DistanciasIlhas}"
+                                                 SelectedValue="{Binding DistanciaIlhas, Converter={StaticResource NuloComoMarca}}" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
