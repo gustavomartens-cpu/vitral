@@ -47,7 +47,7 @@
         <Border Style="{StaticResource ItemIlha}" ToolTip="Bateria e energia" MouseLeftButtonUp="Bateria_Clique"
                 Visibility="{Binding BateriaVisivel, Converter={StaticResource BoolParaVisivel}}">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE83F;" FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding IconeBateria}" FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center" />
                 <TextBlock Text="{Binding Bateria}" Margin="5,0,0,0" VerticalAlignment="Center" />
             </StackPanel>
         </Border>

@@ -151,6 +151,22 @@ public sealed class IlhasTests
         Assert.Equal("81%", vm.Bateria);
     }
 
+    // O ícone acompanha o nível (um desenho por décimo, Segoe Fluent Icons) e mostra o raio ao carregar.
+    [Theory]
+    [InlineData(15, false, "")]
+    [InlineData(0, false, "")]
+    [InlineData(94, false, "")]
+    [InlineData(100, false, "")]
+    [InlineData(15, true, "")]
+    [InlineData(100, true, "")]
+    public void Icone_da_bateria_acompanha_o_nivel(int porcentagem, bool carregando, string icone)
+    {
+        using var vm = Status();
+        _bateria.Atual = new EstadoBateria(porcentagem, carregando);
+        _bateria.Disparar();
+        Assert.Equal(icone, vm.IconeBateria);
+    }
+
     [Fact]
     public void Rede_acompanha_a_fonte()
     {

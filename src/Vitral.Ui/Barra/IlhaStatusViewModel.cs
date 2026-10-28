@@ -26,6 +26,8 @@ public sealed partial class IlhaStatusViewModel : ObservableObject, IDisposable
     [ObservableProperty] private TipoRede? _rede;
     [ObservableProperty] private string _bateria = SemDado;
     [ObservableProperty] private bool _bateriaVisivel;
+    /// Desenho da bateria (Segoe Fluent Icons): um por décimo da carga, com raio quando carregando.
+    [ObservableProperty] private string _iconeBateria = "";
 
     public bool MostrarDesempenho { get; }
 
@@ -93,6 +95,14 @@ public sealed partial class IlhaStatusViewModel : ObservableObject, IDisposable
         var b = _fonteBateria.Atual;
         BateriaVisivel = b is not null;
         Bateria = b is null ? SemDado : $"{b.Porcentagem}%";
+        if (b is not null) IconeBateria = IconeDaBateria(b.Porcentagem, b.Carregando);
+    }
+
+    private static string IconeDaBateria(int porcentagem, bool carregando)
+    {
+        int decimos = Math.Clamp(porcentagem, 0, 100) / 10;
+        if (decimos == 10) return carregando ? "" : "";
+        return ((char)((carregando ? 0xE85A : 0xE850) + decimos)).ToString();
     }
 
     private static string Porcento(double fracao) => $"{Math.Round(fracao * 100)}%";
