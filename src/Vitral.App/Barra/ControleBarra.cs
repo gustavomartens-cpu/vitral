@@ -77,6 +77,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             _reserva = new ReservaFaixa(embaixo: false, () => Tema.ServicoFormas.Instancia.Atual.ReservaTopo);
             _reserva.Recriar += AoRecriar;
             _reserva.TelaCheia += AoMudarTelaCheia;
+            Tema.ServicoFormas.Instancia.Mudou += Reajustar; // outra forma: reserva e posições de novo
         }
         if (!_reserva.Registrar()) avisar("Não foi possível reservar o espaço da barra do topo.");
         _fontes ??= new Fontes();
@@ -374,7 +375,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         {
             var p = MonitorPrincipal.Ler(); // as ilhas ficam no principal: DIPs pela escala atual dele
             var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
-            var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0);
+            var formas = Tema.ServicoFormas.Instancia.Atual;
+            _midia?.AplicarCantosRetos(formas.Ilhas.CantosRetos);
+            _status?.AplicarCantosRetos(formas.Ilhas.CantosRetos);
+            var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0,
+                formas.Ilhas, formas.Notch);
             if (_midia is not null) PosicaoNativa.Colocar(_midia, m.X, m.Y, p.Dpi);
             _relogio?.Colocar(r, p.Dpi);
             if (_status is not null) PosicaoNativa.Colocar(_status, s.X + s.Largura, s.Y, p.Dpi, ancora: 1);
@@ -432,6 +437,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             {
                 _reserva.Recriar -= AoRecriar;
                 _reserva.TelaCheia -= AoMudarTelaCheia;
+                Tema.ServicoFormas.Instancia.Mudou -= Reajustar;
                 _reserva.Dispose();
                 _reserva = null;
             }

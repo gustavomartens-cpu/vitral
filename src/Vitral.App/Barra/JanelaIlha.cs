@@ -64,6 +64,14 @@ internal sealed partial class JanelaIlha : Window
         };
     }
 
+    /// Ilhas encostadas (spec das formas §5.3): sem cantos arredondados. Só refaz o vidro quando muda.
+    public void AplicarCantosRetos(bool retos)
+    {
+        if (VidroIlha.CantosRetos(this) == retos) return;
+        VidroIlha.DefinirCantosRetos(this, retos);
+        VidroIlha.Atualizar(this, _casca);
+    }
+
     public object? Conteudo
     {
         get => _casca.Child;

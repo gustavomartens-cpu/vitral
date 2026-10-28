@@ -108,8 +108,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _ponto.SetResourceReference(Shape.FillProperty, "Ambar");
         AplicarAparencia();
         Action aoMudar = AplicarAparencia;
+        Action aoMudarFormas = AplicarFormas; // spec das formas §4.2: altura, texto, orelhas e raio
+        ServicoFormas.Instancia.Mudou += aoMudarFormas;
+        Closed += (_, _) => ServicoFormas.Instancia.Mudou -= aoMudarFormas;
         ServicoAparencia.Instancia.Mudou += aoMudar;
         Closed += (_, _) => ServicoAparencia.Instancia.Mudou -= aoMudar;
+        AplicarFormasNoRelogio();
         _linhaRelogio.Children.Add(_relogio);
         _linhaRelogio.Children.Add(_ponto);
         MontarAviso();
@@ -136,7 +140,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
         // A forma ocupa a largura total (corpo + orelhas) a partir da borda da tela; o pedaço acima da borda (fora da
         // tela) também é pintado, para a costura com a borda não aparecer.
-        _forma.Margin = new Thickness(0, PosicaoIlhas.NotchSobra, 0, 0);
+        _forma.Margin = new Thickness(0, Formas.Sobra, 0, 0);
         var raiz = new Grid(); // sem fundo: a parte transparente deixa o clique passar
         _corpo.Children.Add(_topo);
         _corpo.Children.Add(_forma);
@@ -198,6 +202,23 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         {
             Color = ServicoAparencia.Cor(v.Destaque), BlurRadius = 8, ShadowDepth = 0, Opacity = 0.9,
         };
+    }
+
+    /// As formas do notch em vigor (spec das formas §4.2).
+    private static Core.Formas.ValoresNotch Formas => ServicoFormas.Instancia.Atual.Notch;
+
+    /// Outra forma: o relógio no tamanho do texto, o corpo de novo (altura, orelhas, raio, sobra).
+    private void AplicarFormasNoRelogio()
+    {
+        double escala = Formas.EscalaTexto;
+        _relogio.LayoutTransform = escala == 1 ? Transform.Identity : new ScaleTransform(escala, escala);
+    }
+
+    private void AplicarFormas()
+    {
+        AplicarFormasNoRelogio();
+        Redesenhar(this, default);
+        if (IsLoaded) Ajustar(animar: false);
     }
 
     internal static Image IconeClaude(double tamanho) => new()
@@ -277,7 +298,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     public Retangulo AreaDoRelogio(uint dpi)
     {
         var janela = PosicaoNativa.Ler(this, dpi);
-        return new(janela.X + (janela.Largura - LarguraNormal) / 2, janela.Y, LarguraNormal, PosicaoIlhas.NotchSobra + NotchMedidas.AlturaNormal);
+        return new(janela.X + (janela.Largura - LarguraNormal) / 2, janela.Y, LarguraNormal, Formas.Sobra + Formas.Altura);
     }
 
     /// A largura do corpo com o relógio (o que a ilha do relógio ocupava antes).
@@ -454,8 +475,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         {
             largura = LarguraNormal + (modo == ModoNotch.Lembrete ? NotchMedidas.ExtraLembrete : 0)
                 + (laterais ? 2 * NotchMedidas.LarguraLateral : 0);
-            altura = NotchMedidas.AlturaNormal;
-            raio = NotchMedidas.RaioNormal;
+            altura = Formas.Altura;
+            raio = Formas.Raio;
         }
         largura = Math.Min(largura, NotchMedidas.LarguraMaxCorpo);
 
@@ -521,11 +542,15 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private static void Redesenhar(DependencyObject o, DependencyPropertyChangedEventArgs _)
     {
         if (o is not JanelaNotch n) return;
-        n._forma.Data = Geometry.Parse(FormaNotch.Caminho(n.LarguraCorpo, n.AlturaCorpo, n.RaioCorpo));
+        var f = Formas;
+        n._forma.Data = Geometry.Parse(FormaNotch.Caminho(n.LarguraCorpo, n.AlturaCorpo, n.RaioCorpo, f.Orelha, f.CantosDeCima));
+        n._forma.Margin = new Thickness(0, f.Sobra, 0, 0);
         n._conteudo.Width = n.LarguraCorpo;
         n._conteudo.Height = n.AlturaCorpo;
-        n._conteudo.Margin = new Thickness(0, PosicaoIlhas.NotchSobra, 0, 0);
-        n._topo.Width = n.LarguraCorpo + 2 * FormaNotch.Orelha;
+        n._conteudo.Margin = new Thickness(0, f.Sobra, 0, 0);
+        n._topo.Width = n.LarguraCorpo + 2 * f.Orelha;
+        n._topo.Height = f.Sobra + 1;
+        n._topo.Visibility = f.Sobra > 0 ? Visibility.Visible : Visibility.Collapsed; // Ilha: nada acima da borda
     }
 
     private static T Congelado<T>(T f) where T : Freezable { f.Freeze(); return f; }

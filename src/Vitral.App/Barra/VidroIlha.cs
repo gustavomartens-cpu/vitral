@@ -38,6 +38,8 @@ internal static partial class VidroIlha
     /// nenhum. Vale a partir do próximo <see cref="Atualizar"/>.
     public static void DefinirCantosRetos(Window janela, bool retos) => janela.SetValue(CantosRetosProperty, retos);
 
+    public static bool CantosRetos(Window janela) => (bool)janela.GetValue(CantosRetosProperty);
+
     /// Chamado no construtor da janela, antes de ela ser mostrada: a janela passa a seguir a aparência da parte.
     public static void Preparar(Window janela, Border casca, ParteAparencia parte = ParteAparencia.Ilhas)
     {
