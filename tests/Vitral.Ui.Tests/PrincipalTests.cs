@@ -75,6 +75,20 @@ public sealed class PrincipalTests : IDisposable
     }
 
     [Fact]
+    public void Salvar_grava_as_formas()
+    {
+        _amb.Perfis.Salvar(Claro());
+        var vm = Criar();
+        vm.Selecionado = "Claro";
+        vm.EditorFormas.FormatoNotch = FormatoNotch.Ilha;
+        vm.SalvarPerfilCommand.Execute(null);
+        Assert.Equal(new FormasPerfil(Notch: new FormasNotch(FormatoNotch.Ilha)), _amb.Perfis.Carregar("Claro").Formas);
+        vm.Selecionado = null;
+        vm.Selecionado = "Claro";
+        Assert.Equal(FormatoNotch.Ilha, vm.EditorFormas.FormatoNotch);
+    }
+
+    [Fact]
     public void Salvar_com_cor_invalida_avisa_e_nao_salva()
     {
         _amb.Perfis.Salvar(Claro());
