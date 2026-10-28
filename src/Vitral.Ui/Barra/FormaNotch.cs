@@ -20,22 +20,40 @@ public static class FormaNotch
 {
     public const double Orelha = 16;
 
-    public static string Caminho(double largura, double altura, double raio, double orelha = Orelha)
+    /// <param name="orelha">0 = sem orelhas (lados retos até a borda de cima).</param>
+    /// <param name="cantosDeCima">Formato Ilha (spec das formas §4.2): solto da borda, os quatro cantos arredondados.</param>
+    public static string Caminho(double largura, double altura, double raio, double orelha = Orelha, bool cantosDeCima = false)
     {
         static string N(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+        if (cantosDeCima)
+        {
+            double r = Math.Min(raio, Math.Min(largura, altura) / 2);
+            return string.Join(" ",
+                $"M0,{N(r)}",
+                $"A{N(r)},{N(r)} 0 0 1 {N(r)},0",
+                $"L{N(largura - r)},0",
+                $"A{N(r)},{N(r)} 0 0 1 {N(largura)},{N(r)}",
+                $"L{N(largura)},{N(altura - r)}",
+                $"A{N(r)},{N(r)} 0 0 1 {N(largura - r)},{N(altura)}",
+                $"L{N(r)},{N(altura)}",
+                $"A{N(r)},{N(r)} 0 0 1 0,{N(altura - r)}",
+                "Z");
+        }
         double total = largura + 2 * orelha, direita = orelha + largura;
         raio = Math.Min(raio, Math.Min(largura / 2, Math.Max(0, altura - orelha)));
-        return string.Join(" ",
-            "M0,0",
-            $"L{N(total)},0",
-            // orelha direita: da borda de cima até o lado do corpo, curva para dentro
-            $"A{N(orelha)},{N(orelha)} 0 0 0 {N(direita)},{N(orelha)}",
-            $"L{N(direita)},{N(altura - raio)}",
-            $"A{N(raio)},{N(raio)} 0 0 1 {N(direita - raio)},{N(altura)}",
-            $"L{N(orelha + raio)},{N(altura)}",
-            $"A{N(raio)},{N(raio)} 0 0 1 {N(orelha)},{N(altura - raio)}",
-            $"L{N(orelha)},{N(orelha)}",
-            $"A{N(orelha)},{N(orelha)} 0 0 0 0,0",
-            "Z");
+        var partes = new List<string> { "M0,0", $"L{N(total)},0" };
+        // orelha direita: da borda de cima até o lado do corpo, curva para dentro
+        if (orelha > 0) partes.Add($"A{N(orelha)},{N(orelha)} 0 0 0 {N(direita)},{N(orelha)}");
+        partes.Add($"L{N(direita)},{N(altura - raio)}");
+        partes.Add($"A{N(raio)},{N(raio)} 0 0 1 {N(direita - raio)},{N(altura)}");
+        partes.Add($"L{N(orelha + raio)},{N(altura)}");
+        partes.Add($"A{N(raio)},{N(raio)} 0 0 1 {N(orelha)},{N(altura - raio)}");
+        if (orelha > 0)
+        {
+            partes.Add($"L{N(orelha)},{N(orelha)}");
+            partes.Add($"A{N(orelha)},{N(orelha)} 0 0 0 0,0");
+        }
+        partes.Add("Z");
+        return string.Join(" ", partes);
     }
 }

@@ -56,4 +56,58 @@ public sealed class PosicaoIlhasTests
         Assert.Equal(12, PosicaoIlhas.Miniaturas(doca, 30, 200, 100, monitor).X);
         Assert.Equal(1000 - 12 - 200, PosicaoIlhas.Miniaturas(doca, 990, 200, 100, monitor).X);
     }
+
+    private static Core.Formas.ValoresFormas F(Core.Perfis.FormasPerfil? f) =>
+        Core.Formas.ResolverFormas.Resolver(f, Core.Perfis.CantosParte.Redondos);
+
+    private static readonly Retangulo Tela = new(0, 0, 1920, 1080);
+
+    [Fact]
+    public void Medidas_padrao_iguais_as_constantes()
+    {
+        var v = F(null);
+        Assert.Equal((PosicaoIlhas.Topo, PosicaoIlhas.Borda, PosicaoIlhas.Altura), (v.Ilhas.Topo, v.Ilhas.Borda, v.Ilhas.Altura));
+        Assert.Equal(PosicaoIlhas.Reserva, v.ReservaTopo);
+        Assert.Equal((PosicaoIlhas.DocaAltura, PosicaoIlhas.DocaFolga, PosicaoIlhas.ReservaDoca), (v.Doca.Altura, v.Doca.Folga, v.Doca.Reserva));
+        Assert.Equal((PosicaoIlhas.NotchSobra, NotchMedidas.AlturaNormal, NotchMedidas.RaioNormal, FormaNotch.Orelha),
+            (v.Notch.Sobra, v.Notch.Altura, v.Notch.Raio, v.Notch.Orelha));
+        Assert.Equal(PosicaoIlhas.Calcular(Tela, 300, 140, 360), PosicaoIlhas.Calcular(Tela, 300, 140, 360, v.Ilhas, v.Notch));
+        Assert.Equal(PosicaoIlhas.Doca(Tela, 500), PosicaoIlhas.Doca(Tela, 500, v.Doca));
+    }
+
+    [Fact]
+    public void Ilhas_encostadas_nas_bordas()
+    {
+        var v = F(new(Ilhas: new(Distancia: Core.Perfis.DistanciaIlhas.Encostadas)));
+        var (midia, _, status) = PosicaoIlhas.Calcular(Tela, 300, 140, 360, v.Ilhas, v.Notch);
+        Assert.Equal(new Retangulo(0, 0, 300, 30), midia);
+        Assert.Equal(new Retangulo(1560, 0, 360, 30), status);
+    }
+
+    [Fact]
+    public void Barra_unica_de_lado_a_lado()
+    {
+        Assert.Equal(new Retangulo(12, 8, 1896, 30), PosicaoIlhas.Barra(Tela, F(null).Ilhas));
+        var encostada = F(new(Ilhas: new(Core.Perfis.DisposicaoIlhas.BarraUnica, Core.Perfis.DistanciaIlhas.Encostadas)));
+        Assert.Equal(new Retangulo(0, 0, 1920, 30), PosicaoIlhas.Barra(Tela, encostada.Ilhas));
+    }
+
+    [Fact]
+    public void Doca_corrida_ocupa_a_largura()
+    {
+        var v = F(new(new(Core.Perfis.FormatoDoca.Corrida, Core.Perfis.TamanhoIcones.Grande)));
+        Assert.Equal(new Retangulo(0, 1024, 1920, 56), PosicaoIlhas.Doca(Tela, 500, v.Doca));
+        var pequena = F(new(new(Icones: Core.Perfis.TamanhoIcones.Pequeno)));
+        Assert.Equal(new Retangulo(710, 1034, 500, 38), PosicaoIlhas.Doca(Tela, 500, pequena.Doca));
+    }
+
+    [Fact]
+    public void Notch_ilha_solto_da_borda()
+    {
+        var v = F(new(Notch: new(Core.Perfis.FormatoNotch.Ilha)));
+        var (_, relogio, _) = PosicaoIlhas.Calcular(Tela, 300, 140, 360, v.Ilhas, v.Notch);
+        Assert.Equal(new Retangulo(890, 6, 140, 34), relogio);
+        var grande = F(new(Notch: new(Tamanho: Core.Perfis.TamanhoNotch.Grande)));
+        Assert.Equal(new Retangulo(890, -10, 140, 50), PosicaoIlhas.Calcular(Tela, 300, 140, 360, grande.Ilhas, grande.Notch).Relogio);
+    }
 }
