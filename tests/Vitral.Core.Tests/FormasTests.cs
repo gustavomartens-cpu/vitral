@@ -27,9 +27,9 @@ public sealed class FormasTests
         var d = R(new FormasPerfil(new FormasDoca(Icones: tamanho))).Doca;
         Assert.Equal(icone, d.Icone);
         Assert.Equal(altura, d.Altura);
-        Assert.Equal(icone * 0.8, d.Imagem, 3);
+        Assert.Equal(Math.Round(icone * 0.8), d.Imagem); // inteiro: ícone fracionário borra (revisão final, minor 4)
         Assert.Equal(icone + 10, d.BotaoLargura);
-        Assert.Equal(icone + 14, d.BotaoAltura);
+        Assert.Equal(Math.Min(icone + 14, altura - 2), d.BotaoAltura); // cabe dentro da borda (revisão final, minor 3)
         Assert.Equal(altura + 16, d.Reserva);
     }
 

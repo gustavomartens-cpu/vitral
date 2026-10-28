@@ -38,6 +38,17 @@ public sealed class EditorFormasTests
         Assert.Equal(0, e.Previa.Ilhas.Topo);
     }
 
+    // "Não mexer" mantém o que está em uso (decisão do Gustavo): a prévia mostra o em uso nos campos não escolhidos.
+    [Fact]
+    public void Previa_usa_as_formas_em_uso_nos_campos_em_nao_mexer()
+    {
+        var e = new EditorFormasViewModel { Atuais = () => new FormasPerfil(new FormasDoca(FormatoDoca.Corrida)) };
+        e.FormatoNotch = FormatoNotch.Ilha;
+        Assert.True(e.Previa.Doca.CantosRetos);
+        Assert.True(e.Previa.Notch.CantosDeCima);
+        Assert.Equal(new FormasPerfil(Notch: new FormasNotch(FormatoNotch.Ilha)), e.ParaPerfil()); // o perfil guarda só o escolhido
+    }
+
     [Fact]
     public void Opcoes_das_formas_com_nao_mexer_primeiro()
     {

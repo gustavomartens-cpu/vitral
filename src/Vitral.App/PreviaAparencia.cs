@@ -22,6 +22,14 @@ public sealed class PreviaAparencia : FrameworkElement
     public static readonly DependencyProperty RaioProperty = DependencyProperty.Register(nameof(Raio),
         typeof(double), typeof(PreviaAparencia), new FrameworkPropertyMetadata(10.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    public PreviaAparencia()
+    {
+        // Com SemValoresUsaAtual, desenha a aparência em vigor: redesenha quando ela muda (enquanto está na tela).
+        Action redesenhar = InvalidateVisual;
+        Loaded += (_, _) => ServicoAparencia.Instancia.Mudou += redesenhar;
+        Unloaded += (_, _) => ServicoAparencia.Instancia.Mudou -= redesenhar;
+    }
+
     public static readonly DependencyProperty FormasProperty = DependencyProperty.Register(nameof(Formas),
         typeof(Core.Formas.ValoresFormas), typeof(PreviaAparencia), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 

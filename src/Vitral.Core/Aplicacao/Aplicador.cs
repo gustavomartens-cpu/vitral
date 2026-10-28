@@ -53,10 +53,11 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
             throw;
         }
 
-        barra?.Aplicar(p.BarraTopo);
-        doca?.Aplicar(p.BarraBaixo);
+        // Aparência e formas antes da barra e da doca: as janelas que ligam agora já nascem com elas.
         aparencia?.Aplicar(p.Aparencia);
         formas?.Aplicar(p.Formas);
+        barra?.Aplicar(p.BarraTopo);
+        doca?.Aplicar(p.BarraBaixo);
         icones?.Definir(p.BarraTarefas?.IconesVisiveis); // sem lista no perfil = não mexer: o observador para
         Avisar(aplicados);
         return new Resultado(naoAplicados.Count == 0, aplicados, naoAplicados, anterior, arquivoAnterior);
@@ -70,10 +71,10 @@ public sealed class Aplicador(IRegistro registro, ServicoRetratos retratos, INot
         // tratá-los como ícones novos com a lista que está saindo.
         icones?.Definir(r.IconesVisiveis);
         var naoVoltou = ReverterRegistro(r);
+        aparencia?.Aplicar(r.Aparencia);
+        formas?.Restaurar(r.Formas); // substitui tudo: campo que estava em "não mexer" volta também
         barra?.Aplicar(r.BarraTopo);
         doca?.Aplicar(r.BarraBaixo);
-        aparencia?.Aplicar(r.Aparencia);
-        formas?.Aplicar(r.Formas);
         return naoVoltou;
     }
 

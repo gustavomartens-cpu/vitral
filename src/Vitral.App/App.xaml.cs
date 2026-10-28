@@ -109,6 +109,9 @@ public partial class App : Application
 
         Principal = new PrincipalViewModel(Servico, perfis, new DialogosWpf(), new RelogioWpf(), () => Icones.Programas(registro));
         Principal.EditorAparencia.LerWindows = Tema.ServicoAparencia.LerWindows;
+        Principal.EditorFormas.Atuais = estadoFormas.Atual; // "Não mexer" mantém o que está: a prévia mostra isso
+        Tema.ServicoFormas.Instancia.Mudou += Principal.EditorFormas.Recalcular;
+        Principal.EditorFormas.Recalcular();
         Principal.PropertyChanged += AoMudarPrincipal;
         if (estado.TesteCancelado) Principal.Mensagem = "Um teste ficou aberto da última vez; o visual voltou ao anterior.";
         if (estado.Aviso is not null) Principal.Mensagem = estado.Aviso;

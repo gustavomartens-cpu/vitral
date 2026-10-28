@@ -29,6 +29,14 @@ public static class ResolverFormas
         return new ValoresFormas(doca, notch, ilhas, reserva);
     }
 
+    /// "Não mexer" campo a campo (decisão do Gustavo, 27/10): o que vem por cima vale onde não for nulo; o resto fica
+    /// como está embaixo.
+    public static FormasPerfil Mesclar(FormasPerfil? embaixo, FormasPerfil? cima) => new(
+        cima?.Doca is { } d ? new FormasDoca(d.Formato ?? embaixo?.Doca?.Formato, d.Icones ?? embaixo?.Doca?.Icones, d.Ampliacao ?? embaixo?.Doca?.Ampliacao)
+            : embaixo?.Doca,
+        cima?.Notch is { } n ? new FormasNotch(n.Formato ?? embaixo?.Notch?.Formato, n.Tamanho ?? embaixo?.Notch?.Tamanho) : embaixo?.Notch,
+        cima?.Ilhas is { } i ? new FormasIlhas(i.Disposicao ?? embaixo?.Ilhas?.Disposicao, i.Distancia ?? embaixo?.Ilhas?.Distancia) : embaixo?.Ilhas);
+
     private static ValoresDoca Doca(FormasDoca? f)
     {
         var formato = f?.Formato ?? FormatoDoca.Flutuante;
@@ -40,7 +48,8 @@ public static class ResolverFormas
         };
         bool corrida = formato == FormatoDoca.Corrida;
         double folga = corrida ? 0 : 8;
-        return new ValoresDoca(formato, icone, icone * 0.8, icone + 10, icone + 14, altura, folga,
+        // Imagem inteira (fracionária borra) e botão dentro da borda de 1 px de cada lado.
+        return new ValoresDoca(formato, icone, Math.Round(icone * 0.8), icone + 10, Math.Min(icone + 14, altura - 2), altura, folga,
             corrida ? altura : altura + 2 * folga, f?.Ampliacao ?? true, corrida);
     }
 

@@ -69,6 +69,8 @@ internal sealed partial class JanelaDoca : Window
             SizeToContent = SizeToContent.Width;
         }
         Height = doca.Altura;
+        // O vidro só se refaz quando os cantos mudam: Posicionar roda a cada app que abre ou fecha.
+        if (VidroIlha.CantosRetos(this) == doca.CantosRetos) return;
         VidroIlha.DefinirCantosRetos(this, doca.CantosRetos);
         VidroIlha.Atualizar(this, _casca);
     }

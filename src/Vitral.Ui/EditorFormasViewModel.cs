@@ -18,6 +18,10 @@ public sealed partial class EditorFormasViewModel : ObservableObject
     [ObservableProperty] private DistanciaIlhas? _distanciaIlhas;
     [ObservableProperty] private ValoresFormas _previa = ResolverFormas.Resolver(null, CantosParte.Redondos);
 
+    /// As formas em uso agora (o App liga o estado real): "Não mexer" mantém o que está, então a prévia mostra isso
+    /// nos campos não escolhidos.
+    public Func<FormasPerfil> Atuais { get; set; } = () => new FormasPerfil();
+
     public void Carregar(FormasPerfil? f)
     {
         FormatoDoca = f?.Doca?.Formato;
@@ -41,6 +45,8 @@ public sealed partial class EditorFormasViewModel : ObservableObject
     protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-        if (e.PropertyName != nameof(Previa)) Previa = ResolverFormas.Resolver(ParaPerfil(), CantosParte.Redondos);
+        if (e.PropertyName != nameof(Previa)) Recalcular();
     }
+
+    public void Recalcular() => Previa = ResolverFormas.Resolver(ResolverFormas.Mesclar(Atuais(), ParaPerfil()), CantosParte.Redondos);
 }

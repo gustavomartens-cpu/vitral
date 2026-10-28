@@ -44,8 +44,8 @@ internal sealed class ServicoFormas : IControleFormas
         var d = novo.Doca;
         _doca["DocaIcone"] = d.Icone;
         _doca["DocaImagem"] = d.Imagem;
-        _doca["DocaLogo"] = d.Imagem * 22 / 24;
-        _doca["DocaFonteBusca"] = d.Icone * 16 / 30;
+        _doca["DocaLogo"] = Math.Round(d.Imagem * 22 / 24); // inteiros: tamanho fracionário borra o desenho
+        _doca["DocaFonteBusca"] = Math.Round(d.Icone * 16 / 30);
         _doca["DocaFundoBotao"] = d.Icone + 6;
         _doca["DocaBotaoLargura"] = d.BotaoLargura;
         _doca["DocaBotaoAltura"] = d.BotaoAltura;

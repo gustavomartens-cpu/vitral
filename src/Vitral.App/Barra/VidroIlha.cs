@@ -49,6 +49,10 @@ internal static partial class VidroIlha
 
     public static bool SemVidro(Window janela) => (bool)janela.GetValue(SemVidroProperty);
 
+    // A borda da casca antes do "sem vidro", para voltar igual (nulo = nunca ficou sem vidro).
+    private static readonly DependencyProperty BordaAntesProperty =
+        DependencyProperty.RegisterAttached("BordaAntes", typeof(Thickness?), typeof(VidroIlha), new PropertyMetadata(null));
+
     /// Chamado no construtor da janela, antes de ela ser mostrada: a janela passa a seguir a aparência da parte.
     public static void Preparar(Window janela, Border casca, ParteAparencia parte = ParteAparencia.Ilhas)
     {
@@ -91,12 +95,14 @@ internal static partial class VidroIlha
             DwmExtendFrameIntoClientArea(h, ref tudo);
             DefinirAcento(h, AccentTransparentGradient, new CorArgb(0, 0, 0, 0)); // "clara": transparente de verdade
             casca.Background = Brushes.Transparent;
+            if (janela.GetValue(BordaAntesProperty) is null) janela.SetValue(BordaAntesProperty, casca.BorderThickness);
             casca.BorderThickness = new Thickness(0);
             return;
         }
-        if (casca.BorderThickness == new Thickness(0)) // saiu da barra única
+        if (janela.GetValue(BordaAntesProperty) is Thickness antes) // saiu da barra única: borda e linha do Windows de volta
         {
-            casca.BorderThickness = new Thickness(1);
+            casca.BorderThickness = antes;
+            janela.ClearValue(BordaAntesProperty);
             int bordaPadrao = DwmCorPadrao;
             DwmSetWindowAttribute(h, DwmwaBorderColor, ref bordaPadrao, sizeof(int));
         }

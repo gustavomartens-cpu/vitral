@@ -93,7 +93,7 @@ public sealed class FormasEstadoTests : IDisposable
         _perfis.Salvar(new Perfil(4, "I", null, null, Formas: Ilha));
         _servico.Aplicar("C");
         _servico.IniciarTeste("I");
-        Assert.Equal(Ilha, _estado.Atual());
+        Assert.Equal(new FormasPerfil(Corrida.Doca, Ilha.Notch, Ilha.Ilhas), _estado.Atual()); // o que I não escolheu fica
         _servico.CancelarTeste();
         Assert.Equal(Corrida, _estado.Atual());
         _servico.Aplicar("I");
@@ -108,6 +108,55 @@ public sealed class FormasEstadoTests : IDisposable
         _servico.Aplicar("C");
         _servico.Original();
         Assert.Equal(EstadoFormas.Padrao, _estado.Atual());
+    }
+
+    // Revisão final, Important 1 (decisão do Gustavo, opção a): "Não mexer" num campo mantém o que está em uso.
+    [Fact]
+    public void Nao_mexer_por_campo_mantem_o_que_esta()
+    {
+        _perfis.Salvar(new Perfil(4, "C", null, null, Formas: Corrida));
+        _perfis.Salvar(new Perfil(4, "N", null, null, Formas: new FormasPerfil(Notch: new FormasNotch(FormatoNotch.Ilha))));
+        _servico.Aplicar("C");
+        _servico.Aplicar("N");
+        Assert.Equal(new FormasPerfil(Corrida.Doca, new FormasNotch(FormatoNotch.Ilha), null), _estado.Atual());
+        // Campo a campo, inclusive dentro da parte: só os ícones mudam, o formato corrida fica.
+        _estado.Aplicar(new FormasPerfil(new FormasDoca(Icones: TamanhoIcones.Pequeno)));
+        Assert.Equal(new FormasDoca(FormatoDoca.Corrida, TamanhoIcones.Pequeno, false), _estado.Atual().Doca);
+    }
+
+    [Fact]
+    public void Desfazer_volta_campo_que_estava_em_nao_mexer()
+    {
+        _perfis.Salvar(new Perfil(4, "C", null, null, Formas: Corrida));
+        _perfis.Salvar(new Perfil(4, "N", null, null, Formas: new FormasPerfil(Notch: new FormasNotch(FormatoNotch.Ilha))));
+        _servico.Aplicar("N");
+        _servico.IniciarTeste("C");
+        _servico.CancelarTeste();
+        Assert.Equal(new FormasPerfil(Notch: new FormasNotch(FormatoNotch.Ilha)), _estado.Atual());
+    }
+
+    // Revisão final, minor 2: formas (e aparência) antes da barra e da doca, para elas nascerem com a forma certa.
+    [Fact]
+    public void Formas_aplicadas_antes_da_barra()
+    {
+        var ordem = new List<string>();
+        var registro = new RegistroEmMemoria();
+        var estadoFormas = new EstadoFormas(new ControleQueAnota(ordem, "formas"), _config);
+        var estadoBarra = new Vitral.Core.Barra.EstadoBarra(new ControleQueAnota(ordem, "barra"), _config);
+        var retratos = new ServicoRetratos(registro, Path.Combine(_raiz, "retratos2"), formasAtuais: estadoFormas.Atual);
+        var aplicador = new Aplicador(registro, retratos, new NotificadorNulo(), estadoBarra, formas: estadoFormas);
+        var p = new Perfil(4, "B", null, null, BarraTopo: new BarraTopoPerfil(true), Formas: Corrida);
+        aplicador.Aplicar(p);
+        Assert.Equal(["formas", "barra"], ordem);
+        ordem.Clear();
+        aplicador.Reverter(retratos.Tirar(null) with { BarraTopo = new BarraTopoPerfil(true), Formas = Corrida });
+        Assert.Equal(["formas", "barra"], ordem);
+    }
+
+    private sealed class ControleQueAnota(List<string> ordem, string nome) : IControleFormas, Vitral.Core.Barra.IControleBarra
+    {
+        public void Aplicar(FormasPerfil formas) => ordem.Add(nome);
+        public void Aplicar(BarraTopoPerfil estado) => ordem.Add(nome);
     }
 
     private sealed class ControleFormasFalso : IControleFormas

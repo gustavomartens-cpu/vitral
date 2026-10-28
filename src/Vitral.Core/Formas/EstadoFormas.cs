@@ -17,10 +17,23 @@ public sealed class EstadoFormas(IControleFormas controle, ServicoConfig config)
 
     public FormasPerfil Atual() => config.Ler().Formas ?? Padrao;
 
-    /// Nulo é "não mexer".
+    /// Nulo é "não mexer", e cada campo nulo também: o perfil muda só o que escolheu.
     public void Aplicar(FormasPerfil? formas)
     {
         if (formas is null) return;
+        Gravar(ResolverFormas.Mesclar(Atual(), formas));
+    }
+
+    /// Volta a um retrato (testar, desfazer, original): substitui tudo, para um campo que estava em "não mexer" voltar
+    /// também. Retrato sem formas (de antes desta versão): não mexe.
+    public void Restaurar(FormasPerfil? formas)
+    {
+        if (formas is null) return;
+        Gravar(formas);
+    }
+
+    private void Gravar(FormasPerfil formas)
+    {
         config.Gravar(config.Ler() with { Formas = formas });
         controle.Aplicar(formas);
     }
