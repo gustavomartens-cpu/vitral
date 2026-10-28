@@ -74,7 +74,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     {
         if (_reserva is null)
         {
-            _reserva = new ReservaFaixa();
+            _reserva = new ReservaFaixa(embaixo: false, () => Tema.ServicoFormas.Instancia.Atual.ReservaTopo);
             _reserva.Recriar += AoRecriar;
             _reserva.TelaCheia += AoMudarTelaCheia;
         }

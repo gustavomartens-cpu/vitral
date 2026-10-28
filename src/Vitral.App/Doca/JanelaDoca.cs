@@ -27,7 +27,8 @@ internal sealed partial class JanelaDoca : Window
         Topmost = true;
         ShowActivated = false;
         SizeToContent = SizeToContent.Width;
-        Height = Ui.Barra.PosicaoIlhas.DocaAltura;
+        Height = Tema.ServicoFormas.Instancia.Atual.Doca.Altura;
+        Tema.ServicoFormas.Instancia.RegistrarDoca(this); // tamanhos dos ícones e ampliação (spec das formas §5.2)
         Foreground = (Brush)Application.Current.Resources["Texto"];
         FontFamily = (FontFamily)Application.Current.Resources["FonteCorpo"];
 
@@ -51,6 +52,25 @@ internal sealed partial class JanelaDoca : Window
             var h = new WindowInteropHelper(this).Handle;
             SetLong(h, GwlExStyle, (IntPtr)((long)GetLong(h, GwlExStyle) | WsExToolWindow | WsExNoActivate));
         };
+    }
+
+    /// Formas da doca (spec das formas §4.1): altura e cantos; na corrida, a largura do monitor (em DIPs), e o
+    /// conteúdo centralizado.
+    public void AplicarFormas(Core.Formas.ValoresDoca doca, double larguraMonitor)
+    {
+        if (doca.Formato == Core.Perfis.FormatoDoca.Corrida)
+        {
+            SizeToContent = SizeToContent.Manual;
+            Width = larguraMonitor;
+        }
+        else if (SizeToContent != SizeToContent.Width)
+        {
+            ClearValue(WidthProperty);
+            SizeToContent = SizeToContent.Width;
+        }
+        Height = doca.Altura;
+        VidroIlha.DefinirCantosRetos(this, doca.CantosRetos);
+        VidroIlha.Atualizar(this, _casca);
     }
 
     public object? Conteudo

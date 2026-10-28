@@ -38,9 +38,10 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja ban
     {
         if (_reserva is null)
         {
-            _reserva = new ReservaFaixa(embaixo: true, PosicaoIlhas.ReservaDoca);
+            _reserva = new ReservaFaixa(embaixo: true, () => Tema.ServicoFormas.Instancia.Atual.Doca.Reserva);
             _reserva.Recriar += AoRecriar;
             _reserva.TelaCheia += AoMudarTelaCheia;
+            Tema.ServicoFormas.Instancia.Mudou += Reajustar; // outra forma: reserva, tamanho e posição de novo
         }
         if (!_reserva.Registrar()) avisar("Não foi possível reservar o espaço da doca.");
         if (_janela is null)
@@ -68,7 +69,10 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja ban
         {
             var p = MonitorPrincipal.Ler();
             var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
-            var r = PosicaoIlhas.Doca(monitor, _janela.ActualWidth);
+            var formas = Tema.ServicoFormas.Instancia.Atual.Doca;
+            _janela.AplicarFormas(formas, monitor.Largura);
+            _janela.UpdateLayout(); // a largura nova (corrida ou de volta ao conteúdo) antes de calcular a posição
+            var r = PosicaoIlhas.Doca(monitor, _janela.ActualWidth, formas);
             PosicaoNativa.Colocar(_janela, r.X + r.Largura / 2, r.Y, p.Dpi, ancora: 0.5);
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("ControleDoca.Posicionar", e); }
@@ -111,6 +115,7 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja ban
         if (_reserva is null) return;
         _reserva.Recriar -= AoRecriar;
         _reserva.TelaCheia -= AoMudarTelaCheia;
+        Tema.ServicoFormas.Instancia.Mudou -= Reajustar;
         _reserva.Dispose();
         _reserva = null;
     }

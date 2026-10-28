@@ -31,6 +31,13 @@ internal static partial class VidroIlha
     private static readonly DependencyProperty ParteProperty =
         DependencyProperty.RegisterAttached("Parte", typeof(ParteAparencia), typeof(VidroIlha), new PropertyMetadata(ParteAparencia.Ilhas));
 
+    private static readonly DependencyProperty CantosRetosProperty =
+        DependencyProperty.RegisterAttached("CantosRetos", typeof(bool), typeof(VidroIlha), new PropertyMetadata(false));
+
+    /// Doca corrida e ilhas encostadas (spec das formas §5.3): o Windows arredonda os quatro cantos ou nenhum, então
+    /// nenhum. Vale a partir do próximo <see cref="Atualizar"/>.
+    public static void DefinirCantosRetos(Window janela, bool retos) => janela.SetValue(CantosRetosProperty, retos);
+
     /// Chamado no construtor da janela, antes de ela ser mostrada: a janela passa a seguir a aparência da parte.
     public static void Preparar(Window janela, Border casca, ParteAparencia parte = ParteAparencia.Ilhas)
     {
@@ -51,11 +58,13 @@ internal static partial class VidroIlha
     public static void Atualizar(Window janela, Border casca)
     {
         var v = ServicoAparencia.Instancia.Valores((ParteAparencia)janela.GetValue(ParteProperty));
-        casca.CornerRadius = new CornerRadius(v.RaioPx);
+        bool retos = (bool)janela.GetValue(CantosRetosProperty);
+        casca.CornerRadius = new CornerRadius(retos ? 0 : v.RaioPx);
         var h = new WindowInteropHelper(janela).Handle;
         if (h == IntPtr.Zero) return;
         int escuro = ServicoAparencia.Luminancia(v.Texto) > 0.5 ? 1 : 0; // texto claro = fundo escuro
-        int canto = v.Cantos switch { CantosParte.Retos => DwmwcpNaoArredondar, CantosParte.Suaves => DwmwcpRoundSmall, _ => DwmwcpRound };
+        int canto = retos ? DwmwcpNaoArredondar
+            : v.Cantos switch { CantosParte.Retos => DwmwcpNaoArredondar, CantosParte.Suaves => DwmwcpRoundSmall, _ => DwmwcpRound };
         DwmSetWindowAttribute(h, DwmwaUseImmersiveDarkMode, ref escuro, sizeof(int));
         DwmSetWindowAttribute(h, DwmwaWindowCornerPreference, ref canto, sizeof(int));
 

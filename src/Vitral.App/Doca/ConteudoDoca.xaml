@@ -12,7 +12,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Fundo" Background="Transparent" CornerRadius="8" Width="36" Height="36">
+                        <Border x:Name="Fundo" Background="Transparent" CornerRadius="8" Width="{DynamicResource DocaFundoBotao}" Height="{DynamicResource DocaFundoBotao}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
@@ -25,12 +25,12 @@
     </UserControl.Resources>
 
     <!-- Lupa (spec do ajuste visual §3.3): cresce o que tem AlvoDaLupa conforme a distância do mouse -->
-    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Background="Transparent" tema:Efeitos.Lupa="True">
+    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Background="Transparent" tema:Efeitos.Lupa="{DynamicResource DocaAmpliacao}">
         <Button Style="{StaticResource BotaoDoca}" Command="{Binding IniciarCommand}" ToolTip="Iniciar">
-            <Image Source="{StaticResource Logo}" Width="22" Height="22" tema:Efeitos.AlvoDaLupa="True" />
+            <Image Source="{StaticResource Logo}" Width="{DynamicResource DocaLogo}" Height="{DynamicResource DocaLogo}" tema:Efeitos.AlvoDaLupa="True" />
         </Button>
         <Button Style="{StaticResource BotaoDoca}" Command="{Binding PesquisarCommand}" ToolTip="Pesquisar" Margin="2,0,0,0">
-            <TextBlock Text="&#xE721;" FontFamily="{StaticResource FonteIcones}" FontSize="16" tema:Efeitos.AlvoDaLupa="True" />
+            <TextBlock Text="&#xE721;" FontFamily="{StaticResource FonteIcones}" FontSize="{DynamicResource DocaFonteBusca}" tema:Efeitos.AlvoDaLupa="True" />
         </Button>
         <Border Width="1" Height="24" Background="{DynamicResource Linha}" Margin="8,0" VerticalAlignment="Center" />
 
@@ -40,19 +40,19 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Grid x:Name="Raiz" Width="40" Height="44" ToolTip="{Binding Nome}" Background="Transparent" AllowDrop="True"
+                    <Grid x:Name="Raiz" Width="{DynamicResource DocaBotaoLargura}" Height="{DynamicResource DocaBotaoAltura}" ToolTip="{Binding Nome}" Background="Transparent" AllowDrop="True"
                           PreviewMouseLeftButtonDown="Botao_Apertou" PreviewMouseMove="Botao_Moveu" Drop="Botao_Soltou"
                           MouseRightButtonUp="Botao_Direito" MouseUp="Botao_Meio"
                           MouseEnter="Botao_Entrou" MouseLeave="Botao_Saiu">
                         <Button Style="{StaticResource BotaoDoca}" VerticalAlignment="Top" Margin="0,2,0,0"
                                 Command="{Binding DataContext.ClicarCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                 CommandParameter="{Binding}">
-                            <Grid Width="30" Height="30" tema:Efeitos.AlvoDaLupa="True">
+                            <Grid Width="{DynamicResource DocaIcone}" Height="{DynamicResource DocaIcone}" tema:Efeitos.AlvoDaLupa="True">
                                 <!-- Pulso âmbar: o app pede atenção -->
                                 <Border x:Name="Pulso" CornerRadius="8" Background="{DynamicResource Ambar}" Opacity="0" />
                                 <TextBlock x:Name="SemIcone" Text="&#xE737;" FontFamily="{StaticResource FonteIcones}" FontSize="18"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
-                                <Image Source="{Binding Icone}" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                <Image Source="{Binding Icone}" Width="{DynamicResource DocaImagem}" Height="{DynamicResource DocaImagem}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                        RenderOptions.BitmapScalingMode="HighQuality" />
                             </Grid>
                         </Button>
