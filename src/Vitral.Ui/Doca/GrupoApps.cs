@@ -14,10 +14,10 @@ public static class GrupoApps
     private static string ChaveDe(JanelaApp j) => j.AppId ?? j.Executavel.ToLowerInvariant();
 
     /// Pelo AppId; pelo executável do alvo só quando um dos dois não tem AppId (uma janela com AppId próprio, como um
-    /// app web do navegador, é outro app mesmo saindo do mesmo executável).
+    /// app web do navegador, é outro app mesmo saindo do mesmo executável). App da loja casa sem olhar a versão.
     private static bool Casa(Fixado f, JanelaApp j) =>
         (f.AppId is not null && string.Equals(f.AppId, j.AppId, StringComparison.OrdinalIgnoreCase))
-        || (f.Alvo is not null && (j.AppId is null || f.AppId is null) && string.Equals(f.Alvo, j.Executavel, StringComparison.OrdinalIgnoreCase));
+        || (f.Alvo is not null && (j.AppId is null || f.AppId is null) && PacoteDaLoja.SemVersao(f.Alvo) == PacoteDaLoja.SemVersao(j.Executavel));
 
     /// Fixados primeiro, na ordem da lista; depois os abertos não fixados, na ordem em que aparecem.
     public static IReadOnlyList<GrupoApp> Montar(IReadOnlyList<Fixado> fixados, IReadOnlyList<JanelaApp> janelas)

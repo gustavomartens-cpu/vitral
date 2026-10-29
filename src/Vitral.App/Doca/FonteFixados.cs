@@ -18,7 +18,7 @@ internal sealed class FonteFixados(RepositorioFixados repositorio) : IFonteFixad
 
     private IReadOnlyList<Fixado> Carregar()
     {
-        if (repositorio.Ler() is { } lista) return lista;
+        if (repositorio.Ler() is { } lista) return ArrumarVersoes(lista);
         var importados = ImportadorFixados.Importar(ImportadorFixados.PastaDoWindows);
         Gravar(importados);
         return importados;
@@ -31,7 +31,27 @@ internal sealed class FonteFixados(RepositorioFixados repositorio) : IFonteFixad
         if (_existe.TryGetValue(f.Caminho, out var c) && agora - c.Quando < TimeSpan.FromSeconds(30)) return c.Existe;
         bool existe = f.Existe(File.Exists);
         _existe[f.Caminho] = (existe, agora);
+        // App da loja atualizado: a pasta da versão antiga sumiu. A próxima leitura da lista passa para a atual.
+        if (!existe && PacoteDaLoja.Ler(f.Caminho) is not null) _lista = null;
         return existe;
+    }
+
+    private IReadOnlyList<Fixado> ArrumarVersoes(IReadOnlyList<Fixado> lista)
+    {
+        var arrumada = PacoteDaLoja.Atualizar(lista, File.Exists, PastaDoPacote);
+        if (!arrumada.SequenceEqual(lista)) Gravar(arrumada);
+        return arrumada;
+    }
+
+    /// A pasta da versão instalada agora, pela família do pacote; nula se o app saiu.
+    private static string? PastaDoPacote(string familia)
+    {
+        try
+        {
+            return new Windows.Management.Deployment.PackageManager().FindPackagesForUser(string.Empty, familia)
+                .Select(p => p.InstalledLocation?.Path).FirstOrDefault(c => c is not null);
+        }
+        catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("FonteFixados.PastaDoPacote", e); return null; }
     }
 
     public object? Icone(Fixado f)
