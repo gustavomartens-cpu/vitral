@@ -27,22 +27,31 @@ internal static partial class PosicaoNativa
     /// 0,5 = centro, 1 = borda direita). Com <paramref name="tamanho"/> (DIPs), a janela também volta a esse tamanho: ao
     /// trocar de escala (desligar a tela do HDMI e ficar só o notebook a 125%), o WPF desenha na escala nova mas deixa a
     /// HWND no tamanho em pixels da antiga e grava esse tamanho errado no Width/Height; o notch saía cortado dos lados e
-    /// embaixo (27/10).
+    /// embaixo (27/10). Diferença de até 1 px é arredondamento e fica como está: em escalas como 175% (310 × 1,75 =
+    /// 542,5) o WPF arredonda para um lado e a conta daqui para o outro, e corrigir o 1 px virava um vaivém de
+    /// SizeChanged → Colocar → SetWindowPos que enchia a fila de mensagens ("Não há cota suficiente", 29/10).
     public static void Colocar(Window janela, double x, double y, uint dpi, double ancora = 0, Size? tamanho = null)
     {
         var h = new WindowInteropHelper(janela).EnsureHandle();
         var wpf = VisualTreeHelper.GetDpi(janela);
         GetWindowRect(h, out var atual);
-        int larguraPx = atual.Dir - atual.Esq, alturaPx = atual.Base - atual.Topo;
+        int larguraAtual = atual.Dir - atual.Esq, alturaAtual = atual.Base - atual.Topo;
+        int larguraPx = larguraAtual, alturaPx = alturaAtual;
+        bool redimensionar = false;
         if (tamanho is { } t)
         {
-            janela.Width = t.Width;
-            janela.Height = t.Height;
-            larguraPx = (int)Math.Round(t.Width * wpf.DpiScaleX);
-            alturaPx = (int)Math.Round(t.Height * wpf.DpiScaleY);
+            int larguraAlvo = (int)Math.Round(t.Width * wpf.DpiScaleX, MidpointRounding.AwayFromZero);
+            int alturaAlvo = (int)Math.Round(t.Height * wpf.DpiScaleY, MidpointRounding.AwayFromZero);
+            redimensionar = Math.Abs(larguraAlvo - larguraAtual) > 1 || Math.Abs(alturaAlvo - alturaAtual) > 1;
+            if (redimensionar)
+            {
+                janela.Width = t.Width;
+                janela.Height = t.Height;
+                (larguraPx, alturaPx) = (larguraAlvo, alturaAlvo);
+            }
         }
         else if (janela.ActualWidth > 0) larguraPx = (int)Math.Round(janela.ActualWidth * wpf.DpiScaleX);
-        bool mesmoTamanho = larguraPx == atual.Dir - atual.Esq && alturaPx == atual.Base - atual.Topo;
+        bool mesmoTamanho = !redimensionar;
         double escala = Escala(dpi);
         SetWindowPos(h, IntPtr.Zero, (int)Math.Round(x * escala - ancora * larguraPx), (int)Math.Round(y * escala), larguraPx, alturaPx,
             (tamanho is null || mesmoTamanho ? SwpNoSize : 0) | SwpNoZOrder | SwpNoActivate);
