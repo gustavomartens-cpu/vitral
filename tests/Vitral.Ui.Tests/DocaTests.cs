@@ -81,6 +81,16 @@ public sealed class DocaTests
     }
 
     [Fact]
+    public void Fixado_de_app_da_loja_casa_com_a_janela_da_versao_nova()
+    {
+        var fixados = new List<Fixado> { new(@"C:\Program Files\WindowsApps\Claude_4.29.0.0_x64__pzs8sxrjxfjjc\app\claude.exe", null, "Claude",
+            @"C:\Program Files\WindowsApps\Claude_4.29.0.0_x64__pzs8sxrjxfjjc\app\claude.exe") };
+        var grupos = GrupoApps.Montar(fixados, [J(5, "Claude", null, @"C:\Program Files\WindowsApps\Claude_4.4212.0.0_x64__pzs8sxrjxfjjc\app\claude.exe")]);
+        Assert.Single(grupos);
+        Assert.Single(grupos[0].Janelas);
+    }
+
+    [Fact]
     public void Decidir_a_acao_do_clique()
     {
         var vazio = new GrupoApp("x", "X", null, []);
