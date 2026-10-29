@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Documents;
-using System.Windows.Media;
+using System.Windows.Controls;
 using Vitral.Core.Atualizacao;
 using Vitral.Core.Configuracao;
 using Vitral.Ui;
@@ -11,9 +10,8 @@ namespace Vitral.App;
 public partial class JanelaPrincipal : Window
 {
     private readonly Inicializacao _inicializacao;
-    private readonly Claude.ServicoGanchosClaude _ganchos = new();
     private readonly ServicoAtualizacao _atualizacao;
-    private bool _carregando = true;
+    private readonly string _versao;
 
     public JanelaPrincipal(PrincipalViewModel vm, Inicializacao inicializacao, ServicoAtualizacao atualizacao, string versao)
     {
@@ -22,126 +20,34 @@ public partial class JanelaPrincipal : Window
         DataContext = vm;
         _inicializacao = inicializacao;
         _atualizacao = atualizacao;
-        IniciarComWindows.IsChecked = inicializacao.Ativa();
-        AvisosClaude.IsChecked = _ganchos.EstaLigado();
-        TextoBuild.Text = $"Windows {Environment.OSVersion.Version}";
-        TextoVersao.Text = $"Vitral {versao}";
-        _atualizacao.Mudou += MostrarAtualizacao;
-        MostrarAtualizacao();
-        _carregando = false;
+        _versao = versao;
 #if DEBUG
         // F9 simula o aviso de versão pronta no notch (sem a fonte real, reiniciar não faz nada).
         KeyDown += (_, e) => { if (e.Key == System.Windows.Input.Key.F9) ((App)Application.Current).AvisarAtualizacao("9.9.9"); };
 #endif
     }
 
-    /// A linha de estado da atualização, com "reiniciar" (versão pronta) ou "Procurar agora" clicáveis.
-    private void MostrarAtualizacao()
-    {
-        var linha = LinhaAtualizacao.Inlines;
-        linha.Clear();
-        switch (_atualizacao.Estado)
-        {
-            case EstadoAtualizacao.Pronta:
-                linha.Add(new Run($"Versão {_atualizacao.Versao} pronta — "));
-                linha.Add(Link("reiniciar", _atualizacao.Reiniciar));
-                break;
-            case EstadoAtualizacao.Desligada or EstadoAtualizacao.Procurando or EstadoAtualizacao.Baixando:
-                linha.Add(new Run(TextoAtualizacao.Para(_atualizacao.Estado, _atualizacao.Versao)));
-                break;
-            default:
-                linha.Add(new Run(TextoAtualizacao.Para(_atualizacao.Estado, _atualizacao.Versao) + " · "));
-                linha.Add(Link("Procurar agora", () => _ = _atualizacao.ProcurarAgoraAsync()));
-                break;
-        }
-    }
+    /// A agenda, para a janela de Configurações (avisos e contas).
+    internal Agenda.ServicoAgendaApp? Agenda { get; set; }
 
-    private static Hyperlink Link(string texto, Action acao)
+    /// A engrenagem da barra lateral (spec da interface §3.5).
+    private void Configuracoes_Click(object sender, RoutedEventArgs e) =>
+        new JanelaConfiguracoes(_inicializacao, _atualizacao, _versao, Agenda) { Owner = this }.ShowDialog();
+
+    /// O "⋯" ao lado de "PERFIS": abre o menu com Importar, Exportar, Desfazer e Voltar ao original.
+    private void MaisPerfis_Click(object sender, RoutedEventArgs e)
     {
-        var link = new Hyperlink(new Run(texto)) { Foreground = (Brush)Application.Current.Resources["Ambar"], TextDecorations = null, Cursor = System.Windows.Input.Cursors.Hand };
-        link.Click += (_, _) => acao();
-        return link;
+        if (sender is not Button { ContextMenu: { } menu } botao) return;
+        menu.PlacementTarget = botao;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        menu.DataContext = DataContext;
+        menu.IsOpen = true;
     }
 
     /// Aba Aparência: a transparência volta a "do tema" (o deslizante não tem como mostrar nulo).
     private void TransparenciaDoTema_Click(object sender, RoutedEventArgs e)
     {
         if (((FrameworkElement)sender).DataContext is EditorAjustesAparencia campos) campos.Transparencia = null;
-    }
-
-    private void IniciarComWindows_Mudou(object sender, RoutedEventArgs e)
-    {
-        if (_carregando) return;
-        try
-        {
-            if (IniciarComWindows.IsChecked == true) _inicializacao.Ativar(Environment.ProcessPath!);
-            else _inicializacao.Desativar();
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            MessageBox.Show($"Não foi possível mudar o início com o Windows: {ex.Message}", "Vitral");
-            _carregando = true;
-            IniciarComWindows.IsChecked = _inicializacao.Ativa();
-            _carregando = false;
-        }
-    }
-
-    /// Liga ou desliga os ganchos do Claude Code; em falha, a caixa volta ao que está no arquivo.
-    private Agenda.ServicoAgendaApp? _agenda;
-
-    /// A agenda (spec da agenda §5.3): a caixa "Agenda no notch" e o link "Contas…" da barra lateral.
-    internal Agenda.ServicoAgendaApp? Agenda
-    {
-        get => _agenda;
-        set
-        {
-            _agenda = value;
-            _carregandoAgenda = true;
-            AgendaNoNotch.IsChecked = value?.Config.Avisar ?? false;
-            AgendaNoNotch.IsEnabled = value is not null;
-            _carregandoAgenda = false;
-        }
-    }
-
-    private bool _carregandoAgenda;
-
-    private void AgendaNoNotch_Mudou(object sender, RoutedEventArgs e)
-    {
-        if (_carregandoAgenda || _agenda is null) return;
-        _agenda.DefinirAvisar(AgendaNoNotch.IsChecked == true);
-    }
-
-    private void ContasAgenda_Click(object sender, RoutedEventArgs e)
-    {
-        if (_agenda is null) return;
-        new Agenda.JanelaContas(_agenda) { Owner = this }.ShowDialog();
-    }
-
-    private void AvisosClaude_Mudou(object sender, RoutedEventArgs e)
-    {
-        if (_carregando) return;
-        try
-        {
-            if (AvisosClaude.IsChecked == true) _ganchos.Ligar(Environment.ProcessPath!);
-            else _ganchos.Desligar();
-        }
-        catch (FormatException)
-        {
-            MessageBox.Show("O settings.json do Claude está com defeito; corrija-o antes.", "Vitral");
-            VoltarAvisosClaude();
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            MessageBox.Show($"Não foi possível alterar os avisos do Claude: {ex.Message}", "Vitral");
-            VoltarAvisosClaude();
-        }
-    }
-
-    private void VoltarAvisosClaude()
-    {
-        _carregando = true;
-        AvisosClaude.IsChecked = _ganchos.EstaLigado();
-        _carregando = false;
     }
 
     /// Fechar a janela só esconde: o Vitral continua na bandeja. "Sair" fica no menu da bandeja.

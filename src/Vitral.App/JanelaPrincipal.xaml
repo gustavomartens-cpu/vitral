@@ -50,7 +50,7 @@
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="248" />
+            <ColumnDefinition Width="220" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -62,39 +62,31 @@
                     <TextBlock Text="Vitral" FontFamily="{StaticResource FonteTitulo}" FontSize="17" FontWeight="SemiBold" Margin="10,0,0,0" VerticalAlignment="Center" />
                 </StackPanel>
 
-                <StackPanel DockPanel.Dock="Bottom" Margin="4,10,4,0">
-                    <CheckBox x:Name="IniciarComWindows" Content="Iniciar com o Windows" Foreground="{StaticResource Texto}"
-                              FocusVisualStyle="{StaticResource FocoVitral}"
-                              Checked="IniciarComWindows_Mudou" Unchecked="IniciarComWindows_Mudou" />
-                    <!-- Avisos do Claude Code no notch (spec do notch vivo §4.6): liga os ganchos no settings.json do Claude -->
-                    <CheckBox x:Name="AvisosClaude" Content="Avisos do Claude no notch" Foreground="{StaticResource Texto}" Margin="0,6,0,0"
-                              FocusVisualStyle="{StaticResource FocoVitral}"
-                              Checked="AvisosClaude_Mudou" Unchecked="AvisosClaude_Mudou" />
-                    <!-- Agenda no notch (spec da agenda §5.3): avisos ligados e as contas, da máquina -->
-                    <DockPanel Margin="0,6,0,0">
-                        <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" FontSize="12">
-                            <Hyperlink Click="ContasAgenda_Click" Foreground="{StaticResource Ambar}" TextDecorations="None">Contas…</Hyperlink>
-                        </TextBlock>
-                        <CheckBox x:Name="AgendaNoNotch" Content="Agenda no notch" Foreground="{StaticResource Texto}"
-                                  FocusVisualStyle="{StaticResource FocoVitral}"
-                                  Checked="AgendaNoNotch_Mudou" Unchecked="AgendaNoNotch_Mudou" />
-                    </DockPanel>
-                    <TextBlock x:Name="TextoBuild" Margin="0,8,0,0" FontSize="11" Foreground="{StaticResource TextoSecundario}" />
-                    <!-- Versão e atualização automática (spec da atualização §5.4) -->
-                    <TextBlock x:Name="TextoVersao" Margin="0,2,0,0" FontSize="11" Foreground="{StaticResource TextoSecundario}" />
-                    <TextBlock x:Name="LinhaAtualizacao" Margin="0,2,0,0" FontSize="11" TextWrapping="Wrap" Foreground="{StaticResource TextoSecundario}" />
-                </StackPanel>
-                <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-                    <Button Content="Desfazer última mudança" Command="{Binding DesfazerCommand}" Style="{StaticResource BotaoVidro}" HorizontalContentAlignment="Left" Margin="0,3" />
-                    <Button Content="Voltar ao Windows original" Command="{Binding OriginalCommand}" Style="{StaticResource BotaoVidro}" HorizontalContentAlignment="Left" Margin="0,3" />
-                </StackPanel>
-                <UniformGrid DockPanel.Dock="Bottom" Columns="2" Margin="0,10,0,0">
-                    <Button Content="Importar" Command="{Binding ImportarCommand}" Style="{StaticResource BotaoVidro}" Margin="0,0,3,0" />
-                    <Button Content="Exportar" Command="{Binding ExportarCommand}" Style="{StaticResource BotaoVidro}" Margin="3,0,0,0" />
-                </UniformGrid>
-                <Button DockPanel.Dock="Bottom" Content="+ Novo perfil" Command="{Binding NovoCommand}" Style="{StaticResource BotaoVidro}" Margin="0,8,0,0" />
+                <!-- Barra lateral só com os perfis (spec da interface §3.1); o resto foi para o "⋯" e para Configurações -->
+                <Button DockPanel.Dock="Bottom" Style="{StaticResource BotaoVidro}" HorizontalContentAlignment="Left" Padding="10,7" Margin="0,10,0,0"
+                        Click="Configuracoes_Click" ToolTip="Iniciar com o Windows, avisos no notch, versão">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE713;" FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center" Foreground="{StaticResource TextoSecundario}" />
+                        <TextBlock Text="Configurações" Margin="10,0,0,0" FontSize="12.5" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
 
-                <TextBlock DockPanel.Dock="Top" Text="PERFIS" Style="{StaticResource Rotulo}" />
+                <DockPanel DockPanel.Dock="Top" Margin="6,8,0,4">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource BotaoIcone}" Content="&#xE712;" ToolTip="Importar, exportar, desfazer…"
+                            Click="MaisPerfis_Click">
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Importar perfil…" Command="{Binding ImportarCommand}" />
+                                <MenuItem Header="Exportar perfil…" Command="{Binding ExportarCommand}" />
+                                <Separator />
+                                <MenuItem Header="Desfazer última mudança" Command="{Binding DesfazerCommand}" />
+                                <MenuItem Header="Voltar ao Windows original" Command="{Binding OriginalCommand}" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource BotaoIcone}" Content="&#xE710;" ToolTip="Novo perfil" Command="{Binding NovoCommand}" />
+                    <TextBlock Text="PERFIS" Style="{StaticResource Rotulo}" Margin="0" VerticalAlignment="Center" />
+                </DockPanel>
                 <ListBox ItemsSource="{Binding ItensPerfis}" SelectedValuePath="Nome" SelectedValue="{Binding Selecionado}"
                          Style="{StaticResource ListaPerfis}" ItemContainerStyle="{StaticResource ItemListaPerfil}" />
             </DockPanel>
@@ -108,11 +100,59 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" FontFamily="{StaticResource FonteTitulo}" FontSize="26" FontWeight="SemiBold" Margin="0,0,0,10"
-                       Text="{Binding Selecionado, TargetNullValue='Escolha ou crie um perfil'}" />
+            <!-- Cabeçalho (spec da interface §3.3): nome, "ativo", Testar e Aplicar; embaixo, as alterações ou a mensagem -->
+            <Grid Grid.Row="0" Margin="0,0,0,6">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="20" /></Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock FontFamily="{StaticResource FonteTitulo}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" Text="{Binding Selecionado, TargetNullValue='Crie seu primeiro perfil'}" />
+                    <Border CornerRadius="9" Padding="8,1,8,2" Margin="10,2,0,0" VerticalAlignment="Center" Background="#1FF2B544">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Value="True">
+                                        <DataTrigger.Binding>
+                                            <MultiBinding Converter="{StaticResource Iguais}">
+                                                <Binding Path="Selecionado" />
+                                                <Binding Path="PerfilAtivo" />
+                                            </MultiBinding>
+                                        </DataTrigger.Binding>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="ativo" FontSize="10.5" Foreground="{StaticResource Ambar}" />
+                    </Border>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Testar (20 s)" Command="{Binding TestarCommand}" Style="{StaticResource BotaoVidro}" Padding="14,6" Margin="0,0,8,0" />
+                    <Button Content="Aplicar" Command="{Binding AplicarCommand}" Style="{StaticResource BotaoPrimario}" Padding="18,6" />
+                </StackPanel>
+                <!-- Alterações não salvas (com Salvar e Descartar) ou, sem elas, a mensagem do último resultado -->
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" FontSize="11.5" Foreground="{StaticResource TextoSecundario}" VerticalAlignment="Bottom"
+                           Visibility="{Binding TemAlteracoes, Converter={StaticResource BoolParaVisivel}}">
+                    <Run Text="Alterações não salvas · " />
+                    <Hyperlink Command="{Binding SalvarPerfilCommand}" Foreground="{StaticResource Ambar}" TextDecorations="None">Salvar</Hyperlink>
+                    <Run Text=" · " />
+                    <Hyperlink Command="{Binding DescartarCommand}" Foreground="{StaticResource Ambar}" TextDecorations="None">Descartar</Hyperlink>
+                </TextBlock>
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" FontSize="11.5" Foreground="{StaticResource TextoSecundario}" VerticalAlignment="Bottom"
+                           Text="{Binding Mensagem}" TextTrimming="CharacterEllipsis">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding TemAlteracoes}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
 
             <TabControl Grid.Row="1" Style="{StaticResource AbasVitral}">
-                <TabItem Header="Cores e tema" Style="{StaticResource AbaVitral}">
+                <TabItem Header="Windows" Style="{StaticResource AbaVitral}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
                         <StackPanel DataContext="{Binding Editor}"
                                     IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
@@ -167,19 +207,17 @@
                             <Border Style="{StaticResource CartaoVidro}">
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
                                     <TextBlock Text="Destaque no Iniciar e na barra (só no modo escuro)" VerticalAlignment="Center" />
                                     <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Ligada}" SelectedValue="{Binding DestaqueNaBarraEIniciar}" />
                                     <TextBlock Grid.Row="1" Text="Destaque nas barras de título e bordas" VerticalAlignment="Center" Margin="0,12,0,0" />
                                     <ListBox Grid.Row="1" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Ligada}" SelectedValue="{Binding DestaqueNosTitulos}" />
-                                    <TextBlock Grid.Row="2" Text="Alinhamento da barra de tarefas" VerticalAlignment="Center" Margin="0,12,0,0" />
-                                    <ListBox Grid.Row="2" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Alinhamentos}" SelectedValue="{Binding Alinhamento}" />
                                 </Grid>
                             </Border>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
-                <TabItem Header="Barra de tarefas" Style="{StaticResource AbaVitral}">
+                <TabItem Header="Barra de tarefas e doca" Style="{StaticResource AbaVitral}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
                         <StackPanel DataContext="{Binding EditorBarraTarefas}"
                                     IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
@@ -200,6 +238,32 @@
                                     <TextBlock Text="Esconde a barra do Windows e mostra a doca do Vitral. Os ícones dos apps passam para a setinha da barra do topo."
                                                FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,6,0,0" />
                                 </StackPanel>
+                            </Border>
+
+                            <!-- Formas da doca (spec das formas; spec da interface §3.4) -->
+                            <Border Style="{StaticResource CartaoVidro}" DataContext="{Binding DataContext.EditorFormas, RelativeSource={RelativeSource AncestorType=Window}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                    <TextBlock Text="Formato da doca" VerticalAlignment="Center" />
+                                    <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.FormatosDoca}"
+                                             SelectedValue="{Binding FormatoDoca, Converter={StaticResource NuloComoMarca}}" />
+                                    <TextBlock Grid.Row="1" Text="Ícones da doca" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="1" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.IconesDoca}"
+                                             SelectedValue="{Binding IconesDoca, Converter={StaticResource NuloComoMarca}}" />
+                                    <TextBlock Grid.Row="2" Text="Ampliação ao passar o mouse" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="2" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Ampliacoes}"
+                                             SelectedValue="{Binding AmpliacaoDoca, Converter={StaticResource NuloComoMarca}}" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Alinhamento da barra (seção nativa do perfil; veio da aba Windows) -->
+                            <Border Style="{StaticResource CartaoVidro}" DataContext="{Binding DataContext.Editor, RelativeSource={RelativeSource AncestorType=Window}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="Alinhamento da barra de tarefas" VerticalAlignment="Center" />
+                                    <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Alinhamentos}" SelectedValue="{Binding Alinhamento}" />
+                                </Grid>
                             </Border>
 
                             <Border Style="{StaticResource CartaoVidro}">
@@ -267,8 +331,8 @@
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
-                <TabItem Header="Iniciar" Style="{StaticResource AbaVitral}" IsEnabled="False" />
                 <TabItem Header="Barra do topo" Style="{StaticResource AbaVitral}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
                     <StackPanel DataContext="{Binding EditorBarra}"
                                 IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
                         <StackPanel.Style>
@@ -301,7 +365,29 @@
                                 <CheckBox Content="CPU e memória" IsChecked="{Binding Desempenho}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
                             </StackPanel>
                         </Border>
+                        <!-- Formas do notch e das ilhas (spec das formas; spec da interface §3.4) -->
+                        <Border Style="{StaticResource CartaoVidro}" DataContext="{Binding DataContext.EditorFormas, RelativeSource={RelativeSource AncestorType=Window}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                <TextBlock Text="Formato do notch" VerticalAlignment="Center" />
+                                <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.FormatosNotch}"
+                                         SelectedValue="{Binding FormatoNotch, Converter={StaticResource NuloComoMarca}}" />
+                                <TextBlock Grid.Row="1" Text="Tamanho do notch" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                <ListBox Grid.Row="1" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.TamanhosNotch}"
+                                         SelectedValue="{Binding TamanhoNotch, Converter={StaticResource NuloComoMarca}}" />
+                                <TextBlock Grid.Row="2" Text="Disposição das ilhas" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                <ListBox Grid.Row="2" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.DisposicoesIlhas}"
+                                         SelectedValue="{Binding DisposicaoIlhas, Converter={StaticResource NuloComoMarca}}" />
+                                <TextBlock Grid.Row="3" Text="Distância da borda" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                <ListBox Grid.Row="3" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.DistanciasIlhas}"
+                                         SelectedValue="{Binding DistanciaIlhas, Converter={StaticResource NuloComoMarca}}" />
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="O arredondamento do notch segue os cantos da aba Aparência."
+                                   FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="4,0,0,8" />
                     </StackPanel>
+                    </ScrollViewer>
                 </TabItem>
                 <!-- Aparência da doca, do notch e das ilhas (spec da aparência §5.4) -->
                 <TabItem Header="Aparência" Style="{StaticResource AbaVitral}">
@@ -363,81 +449,8 @@
                         </Grid>
                     </ScrollViewer>
                 </TabItem>
-                <!-- Formas da doca, do notch e das ilhas (spec das formas §5.4) -->
-                <TabItem Header="Formas" Style="{StaticResource AbaVitral}">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
-                        <Grid DataContext="{Binding EditorFormas}"
-                              IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
-                            <Grid.Style>
-                                <Style TargetType="Grid">
-                                    <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger></Style.Triggers>
-                                </Style>
-                            </Grid.Style>
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="350" /></Grid.ColumnDefinitions>
-
-                            <StackPanel Margin="0,0,16,0">
-                                <TextBlock Text="PRÉVIA" Style="{StaticResource Rotulo}" Margin="2,4,0,8" />
-                                <local:PreviaAparencia Formas="{Binding Previa}" SemValoresUsaAtual="True" Height="260" Margin="0,0,8,0"
-                                                       Valores="{Binding DataContext.EditorAparencia.Previa, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                <TextBlock Text="Com as cores da aba Aparência. Para ver de verdade, use Testar (20 s)."
-                                           FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="2,6,0,0" />
-                            </StackPanel>
-
-                            <StackPanel Grid.Column="1">
-                                <Border Style="{StaticResource CartaoVidro}">
-                                    <StackPanel>
-                                        <TextBlock Text="DOCA" Style="{StaticResource Rotulo}" Margin="0,0,0,2" />
-                                        <TextBlock Text="Formato" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,6,0,4" />
-                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.FormatosDoca}"
-                                                 SelectedValue="{Binding FormatoDoca, Converter={StaticResource NuloComoMarca}}" />
-                                        <TextBlock Text="Ícones" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
-                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.IconesDoca}"
-                                                 SelectedValue="{Binding IconesDoca, Converter={StaticResource NuloComoMarca}}" />
-                                        <TextBlock Text="Ampliação ao passar o mouse" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
-                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Ampliacoes}"
-                                                 SelectedValue="{Binding AmpliacaoDoca, Converter={StaticResource NuloComoMarca}}" />
-                                    </StackPanel>
-                                </Border>
-                                <Border Style="{StaticResource CartaoVidro}">
-                                    <StackPanel>
-                                        <TextBlock Text="NOTCH" Style="{StaticResource Rotulo}" Margin="0,0,0,2" />
-                                        <TextBlock Text="Formato" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,6,0,4" />
-                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.FormatosNotch}"
-                                                 SelectedValue="{Binding FormatoNotch, Converter={StaticResource NuloComoMarca}}" />
-                                        <TextBlock Text="Tamanho" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
-                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.TamanhosNotch}"
-                                                 SelectedValue="{Binding TamanhoNotch, Converter={StaticResource NuloComoMarca}}" />
-                                        <TextBlock Text="O arredondamento segue os cantos da aba Aparência." FontSize="11" Foreground="{StaticResource TextoSecundario}"
-                                                   TextWrapping="Wrap" Margin="0,8,0,0" />
-                                    </StackPanel>
-                                </Border>
-                                <Border Style="{StaticResource CartaoVidro}">
-                                    <StackPanel>
-                                        <TextBlock Text="ILHAS" Style="{StaticResource Rotulo}" Margin="0,0,0,2" />
-                                        <TextBlock Text="Disposição" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,6,0,4" />
-                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.DisposicoesIlhas}"
-                                                 SelectedValue="{Binding DisposicaoIlhas, Converter={StaticResource NuloComoMarca}}" />
-                                        <TextBlock Text="Distância da borda" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
-                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.DistanciasIlhas}"
-                                                 SelectedValue="{Binding DistanciaIlhas, Converter={StaticResource NuloComoMarca}}" />
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
-                    </ScrollViewer>
-                </TabItem>
-                <TabItem Header="Janelas" Style="{StaticResource AbaVitral}" IsEnabled="False" />
             </TabControl>
 
-            <DockPanel Grid.Row="2" Margin="0,14,0,0" LastChildFill="True">
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                    <Button Content="Descartar" Command="{Binding DescartarCommand}" Style="{StaticResource BotaoVidro}" Margin="0,0,8,0" />
-                    <Button Content="Salvar" Command="{Binding SalvarPerfilCommand}" Style="{StaticResource BotaoVidro}" Margin="0,0,8,0" />
-                    <Button Content="Testar (20 s)" Command="{Binding TestarCommand}" Style="{StaticResource BotaoVidro}" Margin="0,0,8,0" />
-                    <Button Content="Aplicar" Command="{Binding AplicarCommand}" Style="{StaticResource BotaoPrimario}" />
-                </StackPanel>
-                <TextBlock Text="{Binding Mensagem}" VerticalAlignment="Center" TextWrapping="Wrap" Foreground="{StaticResource TextoSecundario}" Margin="0,0,16,0" />
-            </DockPanel>
         </Grid>
     </Grid>
 </Window>
