@@ -53,4 +53,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   notch e das ilhas com sete temas, personalizar e diferenciar (0.10.0), formas da doca, do notch e das ilhas e
   ícone da bateria pelo nível (0.11.0), compromissos do Google Agenda no notch: lista do dia,
   pontinhos na grade, aviso antes com Entrar (0.12.0), janela repaginada em vidro fumê, abrindo no perfil ativo,
-  com abas por parte da tela e Configurações na engrenagem (0.13.0).
+  com abas por parte da tela e Configurações na engrenagem (0.13.0), fixado de app da loja que sobrevive à
+  atualização do app (0.13.1).
