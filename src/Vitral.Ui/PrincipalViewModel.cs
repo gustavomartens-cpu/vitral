@@ -43,6 +43,13 @@ public sealed partial class PrincipalViewModel : ObservableObject
     [ObservableProperty] private string? _mensagem;
     [ObservableProperty] private ContagemViewModel? _contagem;
 
+    /// O que está nos editores difere do que foi carregado ou salvo (spec da interface §3.3).
+    [ObservableProperty] private bool _temAlteracoes;
+
+    private string _carregado = "";
+    private bool _carregando, _revertendo;
+    private IDisposable? _relogioDaMensagem;
+
     /// <param name="programasBandeja">Programas que já apareceram perto do relógio (o App lê do registro); nulo = nenhum.</param>
     public PrincipalViewModel(ServicoVitral servico, RepositorioPerfis perfis, IDialogos dialogos, IRelogio relogio,
         Func<IReadOnlyList<Vitral.Core.Nativo.ProgramaBandeja>>? programasBandeja = null)
@@ -52,8 +59,42 @@ public sealed partial class PrincipalViewModel : ObservableObject
         _dialogos = dialogos;
         _relogio = relogio;
         EditorBarraTarefas = new EditorBarraTarefasViewModel(programasBandeja ?? (() => []));
+        foreach (var editor in new System.ComponentModel.INotifyPropertyChanged[] { Editor, EditorBarra, EditorBarraTarefas, EditorDoca, EditorAparencia, EditorFormas })
+            editor.PropertyChanged += (_, _) => AtualizarAlteracoes();
         AtualizarLista();
         PerfilAtivo = servico.PerfilAtivo;
+        // Abre no perfil ativo; sem ele (ou se sumiu), no primeiro; sem perfis, em nenhum (spec da interface §3.2).
+        Selecionado = Perfis.FirstOrDefault(p => string.Equals(p, PerfilAtivo, StringComparison.OrdinalIgnoreCase)) ?? Perfis.FirstOrDefault();
+    }
+
+    /// O perfil montado pelos editores, como texto: comparar com o carregado diz se há alteração.
+    private string Assinatura() => System.Text.Json.JsonSerializer.Serialize(new object?[]
+    {
+        Editor.ParaPerfil(), EditorBarra.ParaPerfil(), EditorBarraTarefas.ParaPerfil(), EditorDoca.ParaPerfil(),
+        EditorAparencia.ParaPerfil(), EditorFormas.ParaPerfil(),
+    });
+
+    private void AtualizarAlteracoes()
+    {
+        if (_carregando) return;
+        TemAlteracoes = Selecionado is not null && Assinatura() != _carregado;
+    }
+
+    /// O que está nos editores passa a ser o ponto de comparação (depois de carregar ou salvar).
+    private void MarcarSemAlteracoes()
+    {
+        _carregado = Assinatura();
+        TemAlteracoes = false;
+    }
+
+    /// A mensagem de resultado some sozinha depois de 6 s (spec da interface §3.3).
+    partial void OnMensagemChanged(string? value)
+    {
+        _relogioDaMensagem?.Dispose();
+        _relogioDaMensagem = null;
+        if (value is null) return;
+        int segundos = 0;
+        _relogioDaMensagem = _relogio.ACadaSegundo(() => { if (++segundos >= 6) Mensagem = null; });
     }
 
     /// Sincroniza a lista com o disco sem "Reset": um Reset faz a ListBox soltar a seleção
@@ -119,21 +160,40 @@ public sealed partial class PrincipalViewModel : ObservableObject
 
     private void CarregarEditores(Perfil? p)
     {
-        Editor.Carregar(p?.Nativo);
-        EditorBarra.Carregar(p?.BarraTopo);
-        EditorBarraTarefas.Carregar(p?.BarraTarefas);
-        EditorDoca.Carregar(p?.BarraBaixo);
-        EditorAparencia.Carregar(p?.Aparencia);
-        EditorFormas.Carregar(p?.Formas);
+        _carregando = true;
+        try
+        {
+            Editor.Carregar(p?.Nativo);
+            EditorBarra.Carregar(p?.BarraTopo);
+            EditorBarraTarefas.Carregar(p?.BarraTarefas);
+            EditorDoca.Carregar(p?.BarraBaixo);
+            EditorAparencia.Carregar(p?.Aparencia);
+            EditorFormas.Carregar(p?.Formas);
+        }
+        finally { _carregando = false; }
+        MarcarSemAlteracoes();
     }
 
     /// Perfis para o menu da bandeja, sem tocar na lista nem no editor da janela.
     public IReadOnlyList<string> NomesParaMenu() => _perfis.Nomes();
 
-    partial void OnSelecionadoChanged(string? value)
+    partial void OnSelecionadoChanged(string? oldValue, string? newValue)
     {
-        if (value is null) { CarregarEditores(null); return; }
-        try { CarregarEditores(_perfis.Carregar(value)); }
+        if (_revertendo) return;
+        // Trocar com alteração pendente pergunta antes (spec da interface §3.6); Cancelar (ou salvar com erro) fica onde estava.
+        if (oldValue is not null && TemAlteracoes)
+        {
+            var resposta = _dialogos.PerguntarSalvar(oldValue);
+            if (resposta == RespostaPendente.Cancelar || (resposta == RespostaPendente.Salvar && !SalvarEditor(oldValue)))
+            {
+                _revertendo = true;
+                Selecionado = oldValue;
+                _revertendo = false;
+                return;
+            }
+        }
+        if (newValue is null) { CarregarEditores(null); return; }
+        try { CarregarEditores(_perfis.Carregar(newValue)); }
         catch (Exception e) when (e is not OutOfMemoryException) { Mensagem = e.Message; }
     }
 
@@ -150,10 +210,12 @@ public sealed partial class PrincipalViewModel : ObservableObject
     [RelayCommand]
     private void SalvarPerfil() => SalvarEditor();
 
-    /// Salva o editor no perfil selecionado. Devolve false (e avisa) se algo estiver inválido ou falhar.
-    private bool SalvarEditor()
+    /// Salva o editor no perfil selecionado (ou no <paramref name="perfil"/> dado: o que está sendo deixado numa troca).
+    /// Devolve false (e avisa) se algo estiver inválido ou falhar.
+    private bool SalvarEditor(string? perfil = null)
     {
-        if (Selecionado is null) { _dialogos.Avisar("Escolha ou crie um perfil primeiro."); return false; }
+        perfil ??= Selecionado;
+        if (perfil is null) { _dialogos.Avisar("Escolha ou crie um perfil primeiro."); return false; }
         var ajustes = Editor.ParaPerfil();
         var barra = EditorBarra.ParaPerfil();
         var barraTarefas = EditorBarraTarefas.ParaPerfil();
@@ -165,7 +227,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
             try { Cor.DeHex(cor); }
             catch (FormatException e) { _dialogos.Avisar(e.Message); return false; }
         }
-        string nome = Selecionado;
+        string nome = perfil;
         bool ok = Executar(() =>
         {
             // Parte do perfil existente: seções que este editor não edita (ou de versões futuras) são preservadas.
@@ -186,7 +248,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
             _perfis.Salvar(p);
             return true;
         });
-        if (ok) SincronizarItens(); // a gema acompanha a cor salva
+        if (ok) { SincronizarItens(); MarcarSemAlteracoes(); } // a gema acompanha a cor salva
         return ok;
     }
 

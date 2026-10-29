@@ -8,26 +8,34 @@ using Vitral.Core.Servicos;
 
 namespace Vitral.Ui.Tests;
 
+/// Vários assinantes ao mesmo tempo, como o relógio de verdade (a contagem do teste e a mensagem que some).
 internal sealed class RelogioFalso : IRelogio
 {
-    private Action? _tique;
+    private readonly List<Action> _tiques = [];
+
+    /// O último assinante soltou o relógio.
     public bool Liberado { get; private set; }
 
     public IDisposable ACadaSegundo(Action tique)
     {
-        _tique = tique;
+        _tiques.Add(tique);
         Liberado = false;
-        return new Liberador(this);
+        return new Liberador(this, tique);
     }
 
     public void Tique(int vezes = 1)
     {
-        for (int i = 0; i < vezes; i++) _tique?.Invoke();
+        for (int i = 0; i < vezes; i++)
+            foreach (var t in _tiques.ToList()) t();
     }
 
-    private sealed class Liberador(RelogioFalso r) : IDisposable
+    private sealed class Liberador(RelogioFalso r, Action tique) : IDisposable
     {
-        public void Dispose() { r.Liberado = true; r._tique = null; }
+        public void Dispose()
+        {
+            r._tiques.Remove(tique);
+            r.Liberado = r._tiques.Count == 0;
+        }
     }
 }
 
@@ -45,6 +53,15 @@ internal sealed class DialogosFalsos : IDialogos
     public bool Confirmar(string pergunta) { Perguntas.Add(pergunta); return RespostaConfirmar; }
     public void Avisar(string mensagem) => Avisos.Add(mensagem);
     public string? PedirTexto(string pergunta, string sugestao) => RespostaTexto;
+
+    public RespostaPendente RespostaPendente { get; set; } = RespostaPendente.Cancelar;
+    public List<string> PerguntasDeSalvar { get; } = [];
+
+    public RespostaPendente PerguntarSalvar(string perfil)
+    {
+        PerguntasDeSalvar.Add(perfil);
+        return RespostaPendente;
+    }
 }
 
 /// Monta o núcleo inteiro sobre um registro em memória e pastas temporárias.

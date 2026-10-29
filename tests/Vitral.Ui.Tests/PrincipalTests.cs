@@ -176,4 +176,145 @@ public sealed class PrincipalTests : IDisposable
         Pacote.Exportar(outro, ["Claro"], zip, "0.1.0", "x");
         return zip;
     }
+
+    // ---- Repaginação (spec da interface §3.2, §3.3, §3.6) ----
+
+    private void Ativo(string nome) => _amb.Config.Gravar(_amb.Config.Ler() with { PerfilAtivo = nome });
+
+    [Fact]
+    public void Abre_no_perfil_ativo()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        _amb.Perfis.Salvar(Claro("B"));
+        Ativo("B");
+        Assert.Equal("B", Criar().Selecionado);
+    }
+
+    [Fact]
+    public void Abre_no_primeiro_sem_ativo_valido()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        _amb.Perfis.Salvar(Claro("B"));
+        Ativo("Apagado");
+        var vm = Criar();
+        Assert.Equal(vm.Perfis[0], vm.Selecionado);
+    }
+
+    [Fact]
+    public void Sem_perfis_nada_selecionado() => Assert.Null(Criar().Selecionado);
+
+    [Fact]
+    public void Editar_liga_as_alteracoes_e_salvar_desliga()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        Assert.False(vm.TemAlteracoes);
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        Assert.True(vm.TemAlteracoes);
+        vm.SalvarPerfilCommand.Execute(null);
+        Assert.False(vm.TemAlteracoes);
+    }
+
+    [Fact]
+    public void Descartar_desliga_as_alteracoes()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        vm.DescartarCommand.Execute(null);
+        Assert.False(vm.TemAlteracoes);
+        Assert.Equal(ModoOpcional.Claro, vm.Editor.ModoApps);
+    }
+
+    [Fact]
+    public void Aplicar_salva_e_limpa_as_alteracoes()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        vm.AplicarCommand.Execute(null);
+        Assert.False(vm.TemAlteracoes);
+        Assert.Equal(Modo.Escuro, _amb.Perfis.Carregar("A").Nativo!.ModoApps);
+    }
+
+    [Fact]
+    public void Troca_com_pendencia_e_Salvar_grava_o_anterior()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        _amb.Perfis.Salvar(Claro("B"));
+        Ativo("A");
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        _dialogos.RespostaPendente = RespostaPendente.Salvar;
+        vm.Selecionado = "B";
+        Assert.Equal(["A"], _dialogos.PerguntasDeSalvar);
+        Assert.Equal(Modo.Escuro, _amb.Perfis.Carregar("A").Nativo!.ModoApps);
+        Assert.Equal("B", vm.Selecionado);
+        Assert.False(vm.TemAlteracoes);
+    }
+
+    [Fact]
+    public void Troca_com_pendencia_e_Descartar_perde_a_mudanca()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        _amb.Perfis.Salvar(Claro("B"));
+        Ativo("A");
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        _dialogos.RespostaPendente = RespostaPendente.Descartar;
+        vm.Selecionado = "B";
+        Assert.Equal(Modo.Claro, _amb.Perfis.Carregar("A").Nativo!.ModoApps);
+        Assert.Equal("B", vm.Selecionado);
+        Assert.False(vm.TemAlteracoes);
+    }
+
+    [Fact]
+    public void Troca_com_pendencia_e_Cancelar_fica_onde_estava()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        _amb.Perfis.Salvar(Claro("B"));
+        Ativo("A");
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        _dialogos.RespostaPendente = RespostaPendente.Cancelar;
+        vm.Selecionado = "B";
+        Assert.Equal("A", vm.Selecionado);
+        Assert.Equal(ModoOpcional.Escuro, vm.Editor.ModoApps);
+        Assert.True(vm.TemAlteracoes);
+    }
+
+    [Fact]
+    public void Troca_sem_pendencia_nao_pergunta()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        _amb.Perfis.Salvar(Claro("B"));
+        Ativo("A");
+        var vm = Criar();
+        vm.Selecionado = "B";
+        Assert.Empty(_dialogos.PerguntasDeSalvar);
+        Assert.Equal("B", vm.Selecionado);
+    }
+
+    [Fact]
+    public void Opcao_escondida_mantem_o_valor_ao_salvar()
+    {
+        _amb.Perfis.Salvar(Claro("A") with { BarraTarefas = new BarraTarefasPerfil(OcultarAutomaticamente: true) });
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        vm.SalvarPerfilCommand.Execute(null);
+        Assert.True(_amb.Perfis.Carregar("A").BarraTarefas!.OcultarAutomaticamente);
+    }
+
+    [Fact]
+    public void Mensagem_some_depois_de_6s()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        vm.DescartarCommand.Execute(null);
+        Assert.NotNull(vm.Mensagem);
+        _relogio.Tique(5);
+        Assert.NotNull(vm.Mensagem);
+        _relogio.Tique(1);
+        Assert.Null(vm.Mensagem);
+    }
 }

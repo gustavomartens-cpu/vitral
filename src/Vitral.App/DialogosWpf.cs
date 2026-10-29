@@ -23,6 +23,14 @@ internal sealed class DialogosWpf : IDialogos
     public bool Confirmar(string pergunta) =>
         MessageBox.Show(pergunta, "Vitral", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
+    public Ui.RespostaPendente PerguntarSalvar(string perfil) =>
+        MessageBox.Show($"Salvar as mudanças em \"{perfil}\"?", "Vitral", MessageBoxButton.YesNoCancel, MessageBoxImage.Question) switch
+        {
+            MessageBoxResult.Yes => Ui.RespostaPendente.Salvar,
+            MessageBoxResult.No => Ui.RespostaPendente.Descartar,
+            _ => Ui.RespostaPendente.Cancelar,
+        };
+
     public void Avisar(string mensagem) =>
         MessageBox.Show(mensagem, "Vitral", MessageBoxButton.OK, MessageBoxImage.Information);
 
