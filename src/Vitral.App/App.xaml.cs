@@ -174,9 +174,12 @@ public partial class App : Application
             System.IO.File.AppendAllText(System.IO.Path.Combine(Pastas.Logs, "app-erros.log"), $"{DateTimeOffset.Now:O} {e.Exception}{Environment.NewLine}");
         }
         catch { /* sem log, o aviso abaixo ainda aparece */ }
+        e.Handled = true;
+        // Fila de mensagens cheia (ERROR_NOT_ENOUGH_QUOTA): o WPF falha ao se avisar de uma janela oculta e se recupera
+        // sozinho quando a fila esvazia. A caixa de aviso só travaria mais a fila; fica o log.
+        if (e.Exception is System.ComponentModel.Win32Exception { NativeErrorCode: 1816 }) return;
         MessageBox.Show($"Algo deu errado: {e.Exception.Message}\n\nDetalhes em {Pastas.Logs}.", "Vitral",
             MessageBoxButton.OK, MessageBoxImage.Warning);
-        e.Handled = true;
     }
 
     /// A contagem do "Testar" aparece numa janelinha sempre visível, no canto da tela.

@@ -69,6 +69,7 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
     {
         var d = Dados();
         d.MensagemRetorno = _mensagemAppBar;
+        _ultimoSetPos = default; // registro novo: a primeira faixa sempre vai
         return SHAppBarMessage(AbmNew, ref d) != UIntPtr.Zero;
     }
 
@@ -92,8 +93,15 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
         // O Windows pode ter empurrado a borda; a altura é nossa.
         if (_embaixo) d.Retangulo.Topo = d.Retangulo.Base - altura;
         else d.Retangulo.Base = d.Retangulo.Topo + altura;
+        // A mesma faixa de novo logo em seguida não muda nada e só realimenta os avisos de posição (ver AgendarReposicionar).
+        var agora = DateTime.UtcNow;
+        if (d.Retangulo.Equals(_ultimaFaixa) && agora - _ultimoSetPos < TimeSpan.FromSeconds(1)) return;
+        (_ultimaFaixa, _ultimoSetPos) = (d.Retangulo, agora);
         SHAppBarMessage(AbmSetPos, ref d);
     }
+
+    private Ret _ultimaFaixa;
+    private DateTime _ultimoSetPos;
 
     /// O aviso também chega com a área de trabalho em primeiro plano ou tela cheia em outro monitor: confere.
     private static bool TelaCheiaDeVerdade()
@@ -119,6 +127,32 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool GetWindowRect(IntPtr janela, out Ret ret);
     [LibraryImport("user32.dll", EntryPoint = "GetClassNameW")] private static unsafe partial int GetClassName(IntPtr janela, char* classe, int tamanho);
 
+    private bool _reposicionarPendente;
+    private int _avisosNoSegundo;
+    private DateTime _inicioDoSegundo;
+
+    /// Junta os avisos de posição num só reposicionamento, quando a fila esvazia. Responder a cada um com ABM_SETPOS
+    /// pode virar vaivém com o Explorer (o SETPOS gera novos avisos) e encher a fila de mensagens da thread da
+    /// interface: depois da suspensão o app travou e caiu com "Não há cota suficiente" (29/10). Rajadas vão para o log.
+    private void AgendarReposicionar()
+    {
+        var agora = DateTime.UtcNow;
+        if (agora - _inicioDoSegundo > TimeSpan.FromSeconds(1))
+        {
+            if (_avisosNoSegundo > 20) LogBarra.Info($"Rajada de avisos de posição da AppBar: {_avisosNoSegundo} em 1 s");
+            (_inicioDoSegundo, _avisosNoSegundo) = (agora, 0);
+        }
+        _avisosNoSegundo++;
+        if (_reposicionarPendente) return;
+        _reposicionarPendente = true;
+        _janela.Dispatcher.BeginInvoke(() =>
+        {
+            _reposicionarPendente = false;
+            try { Reposicionar(); }
+            catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("ReservaFaixa", e); }
+        }, System.Windows.Threading.DispatcherPriority.Background);
+    }
+
     private AppBarData Dados() => new() { Tamanho = (uint)Marshal.SizeOf<AppBarData>(), Janela = _janela.Handle };
 
     private IntPtr Processar(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool tratado)
@@ -128,7 +162,7 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
             if (msg == _mensagemAppBar)
             {
                 if ((int)wParam == AbnFullScreenApp) TelaCheia?.Invoke(lParam != IntPtr.Zero && TelaCheiaDeVerdade());
-                else if ((int)wParam == AbnPosChanged) Reposicionar();
+                else if ((int)wParam == AbnPosChanged) AgendarReposicionar();
             }
             else if (msg == _mensagemTaskbarCriada)
             {
