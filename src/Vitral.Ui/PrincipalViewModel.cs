@@ -80,6 +80,28 @@ public sealed partial class PrincipalViewModel : ObservableObject
         TemAlteracoes = Selecionado is not null && Assinatura() != _carregado;
     }
 
+    /// A janela está à vista. Escondida (ou ainda nem criada, ao iniciar com o Windows), a mensagem não começa a
+    /// contar os 6 s: ninguém leu ainda.
+    [ObservableProperty] private bool _janelaVisivel;
+
+    /// "Sair" da bandeja com alteração pendente pergunta antes; false = o usuário desistiu de sair.
+    public bool PodeSair() => ResolverPendencia();
+
+    /// Antes de uma ação que troca o que o editor mostra (criar, importar, sair): com alteração pendente, pergunta
+    /// Salvar, Descartar ou Cancelar. Devolve false para desistir da ação.
+    private bool ResolverPendencia()
+    {
+        if (!TemAlteracoes || Selecionado is not { } perfil) return true;
+        switch (_dialogos.PerguntarSalvar(perfil))
+        {
+            case RespostaPendente.Cancelar: return false;
+            case RespostaPendente.Salvar: return SalvarEditor(perfil);
+        }
+        try { CarregarEditores(_perfis.Carregar(perfil)); }
+        catch (Exception e) when (e is not OutOfMemoryException) { MarcarSemAlteracoes(); }
+        return true;
+    }
+
     /// O que está nos editores passa a ser o ponto de comparação (depois de carregar ou salvar).
     private void MarcarSemAlteracoes()
     {
@@ -94,7 +116,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
         _relogioDaMensagem = null;
         if (value is null) return;
         int segundos = 0;
-        _relogioDaMensagem = _relogio.ACadaSegundo(() => { if (++segundos >= 6) Mensagem = null; });
+        _relogioDaMensagem = _relogio.ACadaSegundo(() => { if (JanelaVisivel && ++segundos >= 6) Mensagem = null; });
     }
 
     /// Sincroniza a lista com o disco sem "Reset": um Reset faz a ListBox soltar a seleção
@@ -186,15 +208,27 @@ public sealed partial class PrincipalViewModel : ObservableObject
             var resposta = _dialogos.PerguntarSalvar(oldValue);
             if (resposta == RespostaPendente.Cancelar || (resposta == RespostaPendente.Salvar && !SalvarEditor(oldValue)))
             {
-                _revertendo = true;
-                Selecionado = oldValue;
-                _revertendo = false;
+                Reverter(oldValue);
                 return;
             }
         }
         if (newValue is null) { CarregarEditores(null); return; }
         try { CarregarEditores(_perfis.Carregar(newValue)); }
-        catch (Exception e) when (e is not OutOfMemoryException) { Mensagem = e.Message; }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            // O editor ainda mostra o anterior: ficar no novo deixaria "Salvar" gravar o anterior por cima dele.
+            Reverter(oldValue);
+            if (oldValue is null) CarregarEditores(null);
+            Mensagem = $"Não foi possível abrir \"{newValue}\": {e.Message}";
+        }
+    }
+
+    /// Volta a seleção sem repetir a troca (nem a pergunta).
+    private void Reverter(string? perfil)
+    {
+        _revertendo = true;
+        try { Selecionado = perfil; }
+        finally { _revertendo = false; }
     }
 
     [RelayCommand]
@@ -203,6 +237,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
         string? nome = _dialogos.PedirTexto("Nome do novo perfil:", "Novo perfil")?.Trim();
         if (string.IsNullOrEmpty(nome)) return;
         if (Perfis.Contains(nome, StringComparer.OrdinalIgnoreCase)) { _dialogos.Avisar($"Já existe um perfil \"{nome}\"."); return; }
+        if (!ResolverPendencia()) return;
         bool ok = Executar(() => { _perfis.Salvar(new Perfil(PerfilJson.EsquemaSuportado, nome, null, new AjustesNativosPerfil(null, null, null, null, null, null, null, null))); return true; });
         if (ok) AtualizarLista(nome);
     }
@@ -340,7 +375,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
     private void Importar()
     {
         string? arquivo = _dialogos.EscolherArquivoParaAbrir(FiltroVitral);
-        if (arquivo is null) return;
+        if (arquivo is null || !ResolverPendencia()) return;
         IReadOnlyList<Perfil>? importados;
         try
         {
@@ -358,7 +393,13 @@ public sealed partial class PrincipalViewModel : ObservableObject
             return;
         }
         if (importados is null) return;
+        string? aberto = Selecionado;
         AtualizarLista(importados.FirstOrDefault()?.Nome);
+        // Substituiu o perfil que continua aberto: o editor mostra o importado, não o que estava no disco antes.
+        // Usa o perfil já lido e validado na importação: reler o disco poderia falhar e deixar o antigo como "salvo".
+        if (aberto is not null && Selecionado == aberto
+            && importados.FirstOrDefault(p => string.Equals(p.Nome, aberto, StringComparison.OrdinalIgnoreCase)) is { } novo)
+            CarregarEditores(novo);
         Mensagem = $"Importado: {string.Join(", ", importados.Select(p => p.Nome))}";
     }
 

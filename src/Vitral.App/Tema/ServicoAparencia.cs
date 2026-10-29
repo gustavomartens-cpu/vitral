@@ -80,6 +80,9 @@ internal sealed class ServicoAparencia : IControleAparencia
         d["BordaVidro"] = Pincel(v.Borda);
         d["Superficie"] = Pincel(v.Texto.ComAlfa(15));
         d["SuperficieHover"] = Pincel(v.Texto.ComAlfa(26));
+        d["Foco"] = Pincel(v.Texto.ComAlfa(0xB3)); // o contorno de foco segue o texto: some no tema claro se for branco
+        d["SuperficieBotao"] = Pincel(v.Texto.ComAlfa(0x17));
+        d["SuperficieBotaoHover"] = Pincel(v.Texto.ComAlfa(0x29));
         d["Selecao"] = Pincel(v.Destaque.ComAlfa(64));
         d["NoiteVidro"] = Pincel(v.Fundo);
         d["Noite"] = Pincel(v.Fundo.ComAlfa(255));

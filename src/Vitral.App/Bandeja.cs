@@ -67,7 +67,7 @@ internal sealed class Bandeja : IDisposable
             case "desfazer": vm.DesfazerCommand.Execute(null); Mostrar(vm.Mensagem); break;
             case "original": _app.MostrarJanela(); vm.OriginalCommand.Execute(null); break;
             case "abrir": _app.MostrarJanela(); break;
-            case "sair": _app.Sair(); break;
+            case "sair": if (_app.Principal.PodeSair()) _app.Sair(); break; // alteração pendente pergunta antes
             default:
                 if (acao.StartsWith("perfil:", StringComparison.Ordinal))
                     Mostrar(vm.TrocarPelaBandeja(acao["perfil:".Length..])); // parcial ou teste já em curso

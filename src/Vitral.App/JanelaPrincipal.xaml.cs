@@ -18,6 +18,9 @@ public partial class JanelaPrincipal : Window
         InitializeComponent();
         Vidro.Aplicar(this);
         DataContext = vm;
+        // A mensagem só conta os 6 s com a janela à vista.
+        vm.JanelaVisivel = IsVisible;
+        IsVisibleChanged += (_, _) => vm.JanelaVisivel = IsVisible;
         _inicializacao = inicializacao;
         _atualizacao = atualizacao;
         _versao = versao;
@@ -50,8 +53,9 @@ public partial class JanelaPrincipal : Window
         Dispatcher.BeginInvoke(() =>
         {
             // Compara pelo item destacado: o SelectedValue já volta, mas o destaque fica no perfil clicado.
-            if (DataContext is not PrincipalViewModel vm || (ListaPerfis.SelectedItem as ItemPerfil)?.Nome == vm.Selecionado) return;
-            ListaPerfis.SelectedItem = vm.ItensPerfis.FirstOrDefault(i => i.Nome == vm.Selecionado);
+            if (DataContext is not PrincipalViewModel vm
+                || string.Equals((ListaPerfis.SelectedItem as ItemPerfil)?.Nome, vm.Selecionado, StringComparison.OrdinalIgnoreCase)) return;
+            ListaPerfis.SelectedItem = vm.ItensPerfis.FirstOrDefault(i => string.Equals(i.Nome, vm.Selecionado, StringComparison.OrdinalIgnoreCase));
         }, System.Windows.Threading.DispatcherPriority.ContextIdle);
 
     /// Aba Aparência: a transparência volta a "do tema" (o deslizante não tem como mostrar nulo).
