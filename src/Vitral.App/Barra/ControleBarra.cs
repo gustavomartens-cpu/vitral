@@ -35,6 +35,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     private bool _coordenadorLigado;
     private IlhaStatus? _conteudoStatus;
 
+    // SizeChanged e DpiChanged das ilhas e do notch reposicionam fora do evento e juntados (ver ExecucaoAgrupada).
+    private ExecucaoAgrupada? _posicionarAgrupado, _reajustarAgrupado;
+    private ExecucaoAgrupada PosicionarAgrupado => _posicionarAgrupado ??= new("ControleBarra.Posicionar", Posicionar, Application.Current.Dispatcher);
+    private ExecucaoAgrupada ReajustarAgrupado => _reajustarAgrupado ??= new("ControleBarra.Reajustar", Reajustar, Application.Current.Dispatcher);
+
     /// As fontes vivem enquanto a barra está ligada (COM e WinRT são soltos ao desligar).
     private sealed class Fontes : IDisposable
     {
@@ -127,8 +132,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             if (conteudo is IlhaStatus status) { _conteudoStatus = status; status.MostrarSetinha(bandeja.Disponivel); }
             if (conteudo is IlhaMidia midia) midia.MouseNoTitulo += dentro => MouseNaMidia(painel: false, dentro);
             janela = new JanelaIlha(nome, presaNaBorda: nome == "Relógio") { Conteudo = conteudo };
-            janela.SizeChanged += (_, _) => Posicionar();
-            janela.DpiChanged += (_, _) => Reajustar(); // troca de escala nem sempre manda WM_DISPLAYCHANGE
+            janela.SizeChanged += (_, _) => PosicionarAgrupado.Pedir();
+            janela.DpiChanged += (_, _) => ReajustarAgrupado.Pedir(); // troca de escala nem sempre manda WM_DISPLAYCHANGE
         }
         janela.DataContext = vm;
         return janela;
@@ -149,9 +154,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             notch.PediuReiniciar += () => Reiniciar?.Invoke();
             notch.CalendarioNoDia += dia => _vmCalendario?.AbrirDia(dia); // o aviso da agenda abre o calendário no dia
             notch.LarguraNormalMudou += Posicionar;
-            notch.SizeChanged += (_, _) => Posicionar(); // a HWND pode mudar de tamanho ao trocar de escala
+            notch.SizeChanged += (_, _) => PosicionarAgrupado.Pedir(); // a HWND pode mudar de tamanho ao trocar de escala
             // Depois de o WPF terminar a troca de escala dele, que deixa a HWND no tamanho antigo (PosicaoNativa.Colocar)
-            notch.DpiChanged += (_, _) => notch.Dispatcher.BeginInvoke(Reajustar, System.Windows.Threading.DispatcherPriority.Background);
+            notch.DpiChanged += (_, _) => ReajustarAgrupado.Pedir();
             var esse = notch;
             esse.IsVisibleChanged += (_, e) =>
             {

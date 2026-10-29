@@ -61,19 +61,23 @@ internal sealed partial class JanelaDoca : Window
         if (doca.Formato == Core.Perfis.FormatoDoca.Corrida)
         {
             SizeToContent = SizeToContent.Manual;
-            Width = larguraMonitor;
+            if (MudouDeVerdade(Width, larguraMonitor)) Width = larguraMonitor;
         }
         else if (SizeToContent != SizeToContent.Width)
         {
             ClearValue(WidthProperty);
             SizeToContent = SizeToContent.Width;
         }
-        Height = doca.Altura;
+        if (MudouDeVerdade(Height, doca.Altura)) Height = doca.Altura;
         // O vidro só se refaz quando os cantos mudam: Posicionar roda a cada app que abre ou fecha.
         if (VidroIlha.CantosRetos(this) == doca.CantosRetos) return;
         VidroIlha.DefinirCantosRetos(this, doca.CantosRetos);
         VidroIlha.Atualizar(this, _casca);
     }
+
+    /// A 125% a altura de 47 DIPs vira 58,75 px; o WPF arredonda a janela e devolve 47,2 ao Height. Regravar 47 a
+    /// cada Posicionar disparava outro SizeChanged, sem fim (29/10). As formas mudam de 1 DIP para cima.
+    private static bool MudouDeVerdade(double atual, double novo) => double.IsNaN(atual) || Math.Abs(atual - novo) >= 1;
 
     public object? Conteudo
     {

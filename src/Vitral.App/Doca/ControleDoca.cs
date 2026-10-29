@@ -47,8 +47,17 @@ internal sealed class ControleDoca(BarraDoWindows barraWindows, FonteBandeja ban
         if (_janela is null)
         {
             _janela = new JanelaDoca { Conteudo = new ConteudoDoca() };
-            _janela.SizeChanged += (_, _) => Posicionar();
-            _janela.DpiChanged += (_, _) => Reajustar();
+            // Fora do evento e juntados: reposicionar dentro dele gerava outro, sem fim (ver ExecucaoAgrupada).
+            var posicionar = new ExecucaoAgrupada("ControleDoca.Posicionar", Posicionar, _janela.Dispatcher);
+            var reajustar = new ExecucaoAgrupada("ControleDoca.Reajustar", Reajustar, _janela.Dispatcher);
+            // A 125% o WPF alterna a altura de 47 DIPs entre 46,4 e 47,2 (58 e 59 px); reposicionar a cada troca
+            // provocava a seguinte. Só a largura muda a posição, e as formas mudam a altura de 1 DIP para cima.
+            _janela.SizeChanged += (_, e) =>
+            {
+                if (Math.Abs(e.NewSize.Width - e.PreviousSize.Width) >= 0.5 || Math.Abs(e.NewSize.Height - e.PreviousSize.Height) >= 1)
+                    posicionar.Pedir();
+            };
+            _janela.DpiChanged += (_, _) => reajustar.Pedir();
         }
         bandeja.Ligar(); // o Vitral assume a bandeja enquanto a barra do Windows está escondida
         if (_vm is null)
