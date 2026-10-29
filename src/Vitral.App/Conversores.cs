@@ -63,3 +63,12 @@ public sealed class TransparenciaNoDeslizante : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         value is double d ? (int)Math.Round(d) : null;
 }
+
+/// Dois textos iguais, sem diferenciar maiúsculas (a cor do quadradinho é a cor escolhida no perfil).
+public sealed class Iguais : IMultiValueConverter
+{
+    public object Convert(object?[] values, Type targetType, object? parameter, CultureInfo culture) =>
+        values.Length == 2 && values[0] is string a && values[1] is string b && string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    public object[] ConvertBack(object? value, Type[] targetTypes, object? parameter, CultureInfo culture) => throw new NotSupportedException();
+}

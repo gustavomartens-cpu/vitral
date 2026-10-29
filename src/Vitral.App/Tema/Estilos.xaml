@@ -6,18 +6,19 @@
 
     <local:CorParaPincel x:Key="CorParaPincel" />
     <local:TemValor x:Key="TemValor" />
+    <local:Iguais x:Key="Iguais" />
     <tema:MeiaAltura x:Key="MeiaAltura" />
     <BooleanToVisibilityConverter x:Key="BoolParaVisivel" />
     <local:NuloComoMarca x:Key="NuloComoMarca" />
     <local:TemaParaValores x:Key="TemaParaValores" />
     <local:TransparenciaNoDeslizante x:Key="TransparenciaNoDeslizante" />
 
-    <!-- Foco de teclado sempre visível: contorno azul de 2 px -->
+    <!-- Foco de teclado sempre visível: contorno branco de 2 px (spec da interface §4.2) -->
     <Style x:Key="FocoVitral">
         <Setter Property="Control.Template">
             <Setter.Value>
                 <ControlTemplate>
-                    <Rectangle Margin="-3" RadiusX="10" RadiusY="10" Stroke="{StaticResource Azul}" StrokeThickness="2" SnapsToDevicePixels="True" />
+                    <Rectangle Margin="-3" RadiusX="9" RadiusY="9" Stroke="{StaticResource Foco}" StrokeThickness="2" SnapsToDevicePixels="True" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -56,10 +57,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid>
-                        <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{DynamicResource AmbarGradiente}" Padding="{TemplateBinding Padding}">
-                            <Border.Effect>
-                                <DropShadowEffect Color="{DynamicResource CorAmbar}" BlurRadius="18" ShadowDepth="0" Opacity="0.45" />
-                            </Border.Effect>
+                        <!-- Âmbar cheio (spec da interface §4.3): a cor de ação da janela -->
+                        <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{DynamicResource Ambar}" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
                         </Border>
                         <!-- Brilho (spec do ajuste visual §3.3): faixa diagonal que atravessa o botão; os cantos recortam o pincel -->
@@ -89,13 +88,70 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{DynamicResource Superficie}"
-                            BorderBrush="{DynamicResource BordaVidro}" BorderThickness="1" Padding="{TemplateBinding Padding}">
+                    <!-- Secundário (spec da interface §4.3): fundo translúcido discreto, sem borda -->
+                    <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{DynamicResource Superficie}" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{DynamicResource SuperficieHover}" /></Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Fundo" Property="Opacity" Value="0.4" /></Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Botão só com ícone (+, ⋯, ⚙) da barra lateral (spec da interface §4.3): 26×26, sem fundo até o mouse passar -->
+    <Style x:Key="BotaoIcone" TargetType="Button">
+        <Setter Property="tema:Efeitos.Afundar" Value="True" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextoSecundario}" />
+        <Setter Property="FontFamily" Value="{StaticResource FonteIcones}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Fundo" CornerRadius="7" Background="Transparent">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Fundo" Property="Background" Value="{DynamicResource SuperficieHover}" />
+                            <Setter Property="Foreground" Value="{DynamicResource Texto}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Chave liga/desliga (spec da interface §4.3): um CheckBox em forma de interruptor, trilho 34×18, ligado em âmbar -->
+    <Style x:Key="Chave" TargetType="CheckBox">
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
+        <Setter Property="Foreground" Value="{DynamicResource Texto}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <DockPanel Background="Transparent" LastChildFill="True">
+                        <Border x:Name="Trilho" DockPanel.Dock="Right" Width="34" Height="18" CornerRadius="9" Background="{DynamicResource SuperficieHover}"
+                                BorderBrush="{DynamicResource Borda}" BorderThickness="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                            <Ellipse x:Name="Bola" Width="12" Height="12" Fill="{DynamicResource TextoSecundario}" HorizontalAlignment="Left" Margin="2,0,0,0" />
+                        </Border>
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Trilho" Property="Background" Value="{DynamicResource Ambar}" />
+                            <Setter TargetName="Trilho" Property="BorderBrush" Value="{DynamicResource Ambar}" />
+                            <Setter TargetName="Bola" Property="Fill" Value="{DynamicResource TextoSobreAmbar}" />
+                            <Setter TargetName="Bola" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="Bola" Property="Margin" Value="0,0,2,0" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -117,9 +173,7 @@
                             <Grid>
                                 <TabPanel x:Name="PainelItens" IsItemsHost="True" />
                                 <Canvas IsHitTestVisible="False">
-                                    <Border x:Name="Indicador" Height="2" Canvas.Bottom="0" CornerRadius="1" Background="{DynamicResource Ambar}" Visibility="Hidden">
-                                        <Border.Effect><DropShadowEffect Color="{DynamicResource CorAmbar}" BlurRadius="8" ShadowDepth="0" Opacity="0.6" /></Border.Effect>
-                                    </Border>
+                                    <Border x:Name="Indicador" Height="2" Canvas.Bottom="0" CornerRadius="1" Background="{DynamicResource Ambar}" Visibility="Hidden" />
                                 </Canvas>
                             </Grid>
                         </Border>
@@ -133,7 +187,7 @@
     <Style x:Key="AbaVitral" TargetType="TabItem">
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
         <Setter Property="Foreground" Value="{DynamicResource Texto}" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="12.5" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabItem">
@@ -144,7 +198,7 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Cabecalho" Property="TextElement.Foreground" Value="{DynamicResource Ambar}" />
+                            <Setter TargetName="Cabecalho" Property="TextElement.Foreground" Value="{DynamicResource Texto}" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.6" /></Trigger>
                     </ControlTemplate.Triggers>
@@ -167,8 +221,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
-                    <Grid>
-                        <Border x:Name="Fundo" CornerRadius="8" Background="Transparent" Padding="10,7">
+                    <Grid MinHeight="32">
+                        <Border x:Name="Fundo" CornerRadius="8" Background="Transparent" Padding="10,6">
                             <DockPanel>
                                 <Rectangle DockPanel.Dock="Left" Width="9" Height="9" RadiusX="2" RadiusY="2" Margin="0,0,10,0"
                                            Fill="{Binding CorGema, Converter={StaticResource CorParaPincel}}" RenderTransformOrigin="0.5,0.5">
@@ -179,16 +233,10 @@
                                 <TextBlock Text="{Binding Nome}" FontSize="13" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                             </DockPanel>
                         </Border>
-                        <Border x:Name="Barra" Width="3" HorizontalAlignment="Left" Margin="-2,8" CornerRadius="2" Background="{DynamicResource Ambar}" Visibility="Hidden">
-                            <Border.Effect><DropShadowEffect Color="{DynamicResource CorAmbar}" BlurRadius="10" ShadowDepth="0" Opacity="0.7" /></Border.Effect>
-                        </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{DynamicResource Superficie}" /></Trigger>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="Fundo" Property="Background" Value="{DynamicResource Selecao}" />
-                            <Setter TargetName="Barra" Property="Visibility" Value="Visible" />
-                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{DynamicResource Selecao}" /></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -196,49 +244,47 @@
     </Style>
 
     <!-- Cartão de vidro -->
+    <!-- Cartão (spec da interface §4.3): fundo translúcido, borda fina, cantos 12; quieto ao passar o mouse -->
     <Style x:Key="CartaoVidro" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource Superficie}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BordaVidro}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Linha}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{StaticResource RaioCartao}" />
         <Setter Property="Padding" Value="16,14" />
-        <Setter Property="Margin" Value="0,0,0,12" />
-        <!-- Hover (spec do ajuste visual §3.3, item 6): sobe 2 px e a borda esquenta para âmbar -->
-        <Setter Property="RenderTransform"><Setter.Value><TranslateTransform /></Setter.Value></Setter>
-        <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="BorderBrush" Value="#59F2B544" />
-                <Trigger.EnterActions>
-                    <BeginStoryboard>
-                        <Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" To="-2" Duration="0:0:0.12" /></Storyboard>
-                    </BeginStoryboard>
-                </Trigger.EnterActions>
-                <Trigger.ExitActions>
-                    <BeginStoryboard>
-                        <Storyboard><DoubleAnimation Storyboard.TargetProperty="RenderTransform.(TranslateTransform.Y)" To="0" Duration="0:0:0.12" /></Storyboard>
-                    </BeginStoryboard>
-                </Trigger.ExitActions>
-            </Trigger>
-        </Style.Triggers>
+        <Setter Property="Margin" Value="0,0,0,10" />
     </Style>
 
     <!-- Seletor em pílula alta (ListBox horizontal, setas trocam a opção): a escolhida é um indicador âmbar que
          desliza até ela (spec do ajuste visual §4.4; forma C, escolhida pelo Gustavo em 25/10) -->
+    <!-- Escolha segmentada neutra (spec da interface §4.3): a marcada num cinza claro que desliza até ela; "Não mexer"
+         aparece como "—" (com a dica "Não mexer") -->
     <Style x:Key="SeletorPilula" TargetType="ListBox">
         <Setter Property="SelectedValuePath" Value="Valor" />
-        <Setter Property="DisplayMemberPath" Value="Rotulo" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
         <Setter Property="tema:Efeitos.Deslize" Value="True" />
+        <Setter Property="ItemTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <TextBlock x:Name="Rotulo" Text="{Binding Rotulo}" />
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Rotulo}" Value="Não mexer">
+                            <Setter TargetName="Rotulo" Property="Text" Value="—" />
+                            <Setter TargetName="Rotulo" Property="ToolTip" Value="Não mexer" />
+                            <Setter TargetName="Rotulo" Property="MinWidth" Value="14" />
+                            <Setter TargetName="Rotulo" Property="TextAlignment" Value="Center" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBox">
-                    <Border CornerRadius="{Binding ActualHeight, RelativeSource={RelativeSource Self}, Converter={StaticResource MeiaAltura}}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" Background="{DynamicResource Superficie}" Padding="3">
+                    <Border CornerRadius="8" Background="{DynamicResource Superficie}" Padding="2">
                         <Grid>
                             <Canvas IsHitTestVisible="False">
-                                <Border x:Name="Indicador" CornerRadius="{Binding ActualHeight, RelativeSource={RelativeSource Self}, Converter={StaticResource MeiaAltura}}" Background="{DynamicResource AmbarGradiente}" Visibility="Hidden">
-                                    <Border.Effect><DropShadowEffect Color="{DynamicResource CorAmbar}" BlurRadius="12" ShadowDepth="0" Opacity="0.35" /></Border.Effect>
-                                </Border>
+                                <Border x:Name="Indicador" CornerRadius="6" Background="{DynamicResource Selecao}" Visibility="Hidden" />
                             </Canvas>
                             <ItemsPresenter x:Name="PainelItens" />
                         </Grid>
@@ -259,16 +305,15 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ListBoxItem">
-                                <Border x:Name="Pilula" CornerRadius="{Binding ActualHeight, RelativeSource={RelativeSource Self}, Converter={StaticResource MeiaAltura}}" Padding="12,7" Background="Transparent">
+                                <Border x:Name="Pilula" CornerRadius="6" Padding="11,5" Background="Transparent">
                                     <ContentPresenter />
                                 </Border>
                                 <ControlTemplate.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Pilula" Property="Background" Value="{DynamicResource SuperficieHover}" /></Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True"><Setter Property="Foreground" Value="{DynamicResource Texto}" /></Trigger>
                                     <!-- O fundo da escolhida é o Indicador do seletor; aqui só o texto muda -->
                                     <Trigger Property="IsSelected" Value="True">
                                         <Setter TargetName="Pilula" Property="Background" Value="Transparent" />
-                                        <Setter Property="Foreground" Value="{DynamicResource TextoSobreAmbar}" />
-                                        <Setter Property="FontWeight" Value="SemiBold" />
+                                        <Setter Property="Foreground" Value="{DynamicResource Texto}" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -291,7 +336,7 @@
                         <ScrollViewer x:Name="PART_ContentHost" />
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Fundo" Property="BorderBrush" Value="{StaticResource Azul}" /></Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Fundo" Property="BorderBrush" Value="{StaticResource Foco}" /></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -302,15 +347,28 @@
     <Style x:Key="BotaoCor" TargetType="Button">
         <Setter Property="FocusVisualStyle" Value="{StaticResource FocoVitral}" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Width" Value="26" />
-        <Setter Property="Height" Value="26" />
-        <Setter Property="Margin" Value="0,0,6,6" />
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="Margin" Value="0,0,4,4" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Q" CornerRadius="6" Background="{Binding Converter={StaticResource CorParaPincel}}" BorderBrush="{DynamicResource Linha}" BorderThickness="1" />
+                    <!-- Quadrado 20×20, cantos 5; a cor escolhida ganha um anel de 2 px (spec da interface §4.3) -->
+                    <Border x:Name="Anel" CornerRadius="7" BorderThickness="2" BorderBrush="Transparent" Padding="0">
+                        <Border x:Name="Q" Width="18" Height="18" CornerRadius="5" Background="{Binding Converter={StaticResource CorParaPincel}}"
+                                BorderBrush="{DynamicResource Linha}" BorderThickness="1" />
+                    </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Q" Property="BorderBrush" Value="{DynamicResource Texto}" /></Trigger>
+                        <DataTrigger Value="True">
+                            <DataTrigger.Binding>
+                                <MultiBinding Converter="{StaticResource Iguais}">
+                                    <Binding />
+                                    <Binding Path="DataContext.CorDestaque" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
+                                </MultiBinding>
+                            </DataTrigger.Binding>
+                            <Setter TargetName="Anel" Property="BorderBrush" Value="{DynamicResource Texto}" />
+                        </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

@@ -6,8 +6,8 @@ using Microsoft.Win32;
 
 namespace Vitral.App;
 
-/// Fundo "Vitral noturno": acrílico do Windows com tinta azul-noite; se a transparência do Windows
-/// estiver desligada, azul-noite sólido (spec 2026-10-24 §2.2).
+/// Fundo "vidro fumê" (spec da interface §4.1): acrílico do Windows com tinta preta (NoiteVidro); se a transparência do
+/// Windows estiver desligada, preto opaco (Noite).
 internal static partial class Vidro
 {
     private const int DwmwaUseImmersiveDarkMode = 20;
@@ -15,8 +15,8 @@ internal static partial class Vidro
     private const int DwmwaCaptionColor = 35;
     private const int DwmwaTextColor = 36;
     private const int DwmwaSystemBackdropType = 38;
-    private const int CorTitulo = 0x00200F0A;      // COLORREF 0x00BBGGRR de #0A0F20 (Noite)
-    private const int CorTextoTitulo = 0x00F7EFED; // #EDEFF7 (Texto)
+    private const int CorTitulo = 0x000E0C0C;      // COLORREF 0x00BBGGRR de #0C0C0E (a tinta do vidro)
+    private const int CorTextoTitulo = 0x00F0EDED; // #EDEDF0 (Texto)
     private const int DwmsbtNone = 1;
     private const int DwmsbtTransientWindow = 3; // acrílico
     private const int DwmwcpRound = 2;
@@ -50,7 +50,7 @@ internal static partial class Vidro
         int sim = 1, canto = DwmwcpRound, titulo = CorTitulo, textoTitulo = CorTextoTitulo;
         DwmSetWindowAttribute(hwnd, DwmwaUseImmersiveDarkMode, ref sim, sizeof(int));
         DwmSetWindowAttribute(hwnd, DwmwaWindowCornerPreference, ref canto, sizeof(int));
-        // Barra de título sempre azul-noite, mesmo com "destaque nas barras de título" ligado no Windows
+        // Barra de título sempre no preto do vidro, mesmo com "destaque nas barras de título" ligado no Windows
         DwmSetWindowAttribute(hwnd, DwmwaCaptionColor, ref titulo, sizeof(int));
         DwmSetWindowAttribute(hwnd, DwmwaTextColor, ref textoTitulo, sizeof(int));
 
