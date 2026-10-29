@@ -15,6 +15,11 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
   mudar nada; tirar os avisos de tema antigos das ilhas, painéis e doca; prévia das abas acompanhar o Windows e a troca
   de papel de parede; cor fora da paleta aparecer no seletor; enum novo no perfil exige subir o esquema; raio do notch
   na prévia seguir os cantos da aparência; barra única com mídia e status desligadas mostra uma faixa vazia.
+- **Pequenos acertos da janela** (revisão final da 0.13.0): contorno de foco invisível nas janelas das partes com tema
+  claro; mensagem longa cortada e que some em 6 s mesmo com a janela escondida; perfil que some com alteração pendente
+  (Novo, Importar); botão de vidro com pouco contraste sobre cartão; nome do perfil comparado com maiúsculas na lista.
+  Anteriores à repaginação: falha ao carregar mantém o editor antigo; Importar sobre o perfil aberto não recarrega;
+  Sair pela bandeja perde a edição não salva sem perguntar.
 
 ## Testes a fundo pendentes
 
@@ -47,4 +52,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   (0.9.5), aparência da doca, do
   notch e das ilhas com sete temas, personalizar e diferenciar (0.10.0), formas da doca, do notch e das ilhas e
   ícone da bateria pelo nível (0.11.0), compromissos do Google Agenda no notch: lista do dia,
-  pontinhos na grade, aviso antes com Entrar (0.12.0).
+  pontinhos na grade, aviso antes com Entrar (0.12.0), janela repaginada em vidro fumê, abrindo no perfil ativo,
+  com abas por parte da tela e Configurações na engrenagem (0.13.0).
