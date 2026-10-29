@@ -80,9 +80,9 @@ public sealed partial class PrincipalViewModel : ObservableObject
         TemAlteracoes = Selecionado is not null && Assinatura() != _carregado;
     }
 
-    /// O que está nos editores passa a ser o ponto de comparação (depois de carregar ou salvar).
-    /// A janela está à vista. Escondida, a mensagem não começa a contar os 6 s: ninguém leu ainda.
-    [ObservableProperty] private bool _janelaVisivel = true;
+    /// A janela está à vista. Escondida (ou ainda nem criada, ao iniciar com o Windows), a mensagem não começa a
+    /// contar os 6 s: ninguém leu ainda.
+    [ObservableProperty] private bool _janelaVisivel;
 
     /// "Sair" da bandeja com alteração pendente pergunta antes; false = o usuário desistiu de sair.
     public bool PodeSair() => ResolverPendencia();
@@ -102,6 +102,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
         return true;
     }
 
+    /// O que está nos editores passa a ser o ponto de comparação (depois de carregar ou salvar).
     private void MarcarSemAlteracoes()
     {
         _carregado = Assinatura();
@@ -395,8 +396,10 @@ public sealed partial class PrincipalViewModel : ObservableObject
         string? aberto = Selecionado;
         AtualizarLista(importados.FirstOrDefault()?.Nome);
         // Substituiu o perfil que continua aberto: o editor mostra o importado, não o que estava no disco antes.
-        if (aberto is not null && Selecionado == aberto && importados.Any(p => string.Equals(p.Nome, aberto, StringComparison.OrdinalIgnoreCase)))
-            CarregarEditores(_perfis.Carregar(aberto));
+        // Usa o perfil já lido e validado na importação: reler o disco poderia falhar e deixar o antigo como "salvo".
+        if (aberto is not null && Selecionado == aberto
+            && importados.FirstOrDefault(p => string.Equals(p.Nome, aberto, StringComparison.OrdinalIgnoreCase)) is { } novo)
+            CarregarEditores(novo);
         Mensagem = $"Importado: {string.Join(", ", importados.Select(p => p.Nome))}";
     }
 

@@ -19,6 +19,7 @@ public partial class JanelaPrincipal : Window
         Vidro.Aplicar(this);
         DataContext = vm;
         // A mensagem só conta os 6 s com a janela à vista.
+        vm.JanelaVisivel = IsVisible;
         IsVisibleChanged += (_, _) => vm.JanelaVisivel = IsVisible;
         _inicializacao = inicializacao;
         _atualizacao = atualizacao;

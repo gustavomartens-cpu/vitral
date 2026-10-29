@@ -333,8 +333,7 @@ public sealed class PrincipalTests : IDisposable
     public void Mensagem_espera_a_janela_aparecer_para_contar_os_6s()
     {
         _amb.Perfis.Salvar(Claro("A"));
-        var vm = Criar();
-        vm.JanelaVisivel = false;
+        var vm = Criar(); // como ao iniciar com o Windows: a janela ainda nem existe
         vm.DescartarCommand.Execute(null);
         _relogio.Tique(10);
         Assert.NotNull(vm.Mensagem);
@@ -444,6 +443,7 @@ public sealed class PrincipalTests : IDisposable
     {
         _amb.Perfis.Salvar(Claro("A"));
         var vm = Criar();
+        vm.JanelaVisivel = true;
         vm.DescartarCommand.Execute(null);
         Assert.NotNull(vm.Mensagem);
         _relogio.Tique(5);
