@@ -87,7 +87,8 @@
                     <Button DockPanel.Dock="Right" Style="{StaticResource BotaoIcone}" Content="&#xE710;" ToolTip="Novo perfil" Command="{Binding NovoCommand}" />
                     <TextBlock Text="PERFIS" Style="{StaticResource Rotulo}" Margin="0" VerticalAlignment="Center" />
                 </DockPanel>
-                <ListBox ItemsSource="{Binding ItensPerfis}" SelectedValuePath="Nome" SelectedValue="{Binding Selecionado}"
+                <ListBox x:Name="ListaPerfis" ItemsSource="{Binding ItensPerfis}" SelectedValuePath="Nome" SelectedValue="{Binding Selecionado}"
+                         SelectionChanged="ListaPerfis_SelectionChanged"
                          Style="{StaticResource ListaPerfis}" ItemContainerStyle="{StaticResource ItemListaPerfil}" />
             </DockPanel>
         </Border>
@@ -257,6 +258,22 @@
                                 </Grid>
                             </Border>
 
+                            <!-- Com a doca ligada, a barra do Windows fica escondida: as opções dela se recolhem e fica a nota -->
+                            <Border Style="{StaticResource CartaoVidro}" Visibility="{Binding DataContext.EditorDoca.SubstituiBarraDoWindows, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolParaVisivel}}">
+                                <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TextoSecundario}"
+                                           Text="A doca do Vitral substitui a barra do Windows. As opções da barra (pesquisa, agrupar, ocultar automaticamente, selos…) valem com a doca desligada." />
+                            </Border>
+
+                            <StackPanel>
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding DataContext.EditorDoca.SubstituiBarraDoWindows, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
                             <!-- Alinhamento da barra (seção nativa do perfil; veio da aba Windows) -->
                             <Border Style="{StaticResource CartaoVidro}" DataContext="{Binding DataContext.Editor, RelativeSource={RelativeSource AncestorType=Window}}">
                                 <Grid>
@@ -295,6 +312,7 @@
                                     <ListBox Grid.Row="4" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Escolhas}" SelectedValue="{Binding Piscar}" />
                                 </Grid>
                             </Border>
+                            </StackPanel>
 
                             <Border Style="{StaticResource CartaoVidro}">
                                 <StackPanel>

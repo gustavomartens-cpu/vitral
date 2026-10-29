@@ -44,6 +44,16 @@ public partial class JanelaPrincipal : Window
         menu.IsOpen = true;
     }
 
+    /// Trocar de perfil com alteração pendente e escolher Cancelar volta o perfil no editor, mas a lista, no meio da
+    /// própria troca, não acompanha a volta: depois que tudo assenta, ela é posta de novo no perfil do editor.
+    private void ListaPerfis_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        Dispatcher.BeginInvoke(() =>
+        {
+            // Compara pelo item destacado: o SelectedValue já volta, mas o destaque fica no perfil clicado.
+            if (DataContext is not PrincipalViewModel vm || (ListaPerfis.SelectedItem as ItemPerfil)?.Nome == vm.Selecionado) return;
+            ListaPerfis.SelectedItem = vm.ItensPerfis.FirstOrDefault(i => i.Nome == vm.Selecionado);
+        }, System.Windows.Threading.DispatcherPriority.ContextIdle);
+
     /// Aba Aparência: a transparência volta a "do tema" (o deslizante não tem como mostrar nulo).
     private void TransparenciaDoTema_Click(object sender, RoutedEventArgs e)
     {

@@ -53,4 +53,25 @@ public sealed class EditorDocaTests : IDisposable
 
         Assert.Equal(Escolha.Nao, vm.EditorDoca.Doca);
     }
+
+    // Repaginação: com a doca ligada no perfil, as opções da barra do Windows não têm onde aparecer e ficam recolhidas.
+    [Theory]
+    [InlineData(Escolha.Sim, true)]
+    [InlineData(Escolha.Nao, false)]
+    [InlineData(Escolha.NaoMexer, false)]
+    public void Doca_ligada_substitui_a_barra_do_Windows(Escolha doca, bool substitui)
+    {
+        var e = new EditorDocaViewModel { Doca = doca };
+        Assert.Equal(substitui, e.SubstituiBarraDoWindows);
+    }
+
+    [Fact]
+    public void Substitui_avisa_quando_a_doca_muda()
+    {
+        var e = new EditorDocaViewModel();
+        var mudou = new List<string?>();
+        e.PropertyChanged += (_, a) => mudou.Add(a.PropertyName);
+        e.Doca = Escolha.Sim;
+        Assert.Contains(nameof(EditorDocaViewModel.SubstituiBarraDoWindows), mudou);
+    }
 }

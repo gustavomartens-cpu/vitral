@@ -20,7 +20,12 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 
 As opções do perfil têm testes da regra, mas nunca foram conferidas de ponta a ponta no Windows: cores e tema, barra
 de tarefas (ocultar automaticamente, selos, alinhamento, pesquisa, visão de tarefas, agrupar, todos os monitores,
-piscar, ícones perto do relógio), Iniciar, Janelas, e "Testar (20 s)", "Desfazer" e "Voltar ao Windows original".
+piscar, ícones perto do relógio), e "Testar (20 s)", "Desfazer" e "Voltar ao Windows original".
+
+**Opções da barra do Windows (29/10/2026):** com a doca ligada, a barra do Windows fica escondida e as opções dela não
+têm onde aparecer — por isso o "ocultar automaticamente" parecia não funcionar. Desde a 0.13.0 a aba as recolhe com a
+doca ligada. Falta conferir cada uma **com a doca desligada**, num perfil de teste, com o Gustavo olhando a barra; as
+que não fizerem efeito saem da tela (`Visibility="Collapsed"`) e entram aqui com o observado.
 
 ## Descartado
 
