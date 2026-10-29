@@ -68,6 +68,8 @@ public sealed partial class EditorBarraTarefasViewModel(Func<IReadOnlyList<Progr
             Icones.Add(new ItemIcone(p.Executavel, p.Nome, encontrado: true) { Visivel = visiveis.Contains(p.Executavel, StringComparer.OrdinalIgnoreCase) });
         foreach (var exe in visiveis.Where(v => !daqui.Any(p => string.Equals(p.Executavel, v, StringComparison.OrdinalIgnoreCase))))
             Icones.Add(new ItemIcone(exe, Path.GetFileNameWithoutExtension(exe), encontrado: false) { Visivel = true });
+        // Marcar um ícone avisa quem acompanha o editor (o "Alterações não salvas").
+        foreach (var i in Icones) i.PropertyChanged += (_, _) => OnPropertyChanged(nameof(Icones));
     }
 
     public BarraTarefasPerfil? ParaPerfil()

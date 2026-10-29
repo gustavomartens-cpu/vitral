@@ -72,7 +72,12 @@ public sealed partial class EditorAparenciaViewModel : ObservableObject
 
     partial void OnTemaChanged(TemaAparencia? value) => Recalcular();
 
-    private void AoMudarCampo(object? s, PropertyChangedEventArgs e) => Recalcular();
+    /// Repassa a mudança para quem acompanha o editor (o "Alterações não salvas"), mesmo quando a prévia não muda.
+    private void AoMudarCampo(object? s, PropertyChangedEventArgs e)
+    {
+        Recalcular();
+        OnPropertyChanged(e.PropertyName);
+    }
 
     /// A prévia usa a mesma regra que a tela; sem tema ("Não mexer"), não há prévia.
     public void Recalcular() => Previa = ParaPerfil() is { } a ? ResolverAparencia.Resolver(a, LerWindows()) : null;

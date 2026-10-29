@@ -1,3 +1,4 @@
+using Vitral.Core.Aparencia;
 using Vitral.Core.Perfis;
 using Vitral.Core.Registro;
 
@@ -213,6 +214,29 @@ public sealed class PrincipalTests : IDisposable
         Assert.True(vm.TemAlteracoes);
         vm.SalvarPerfilCommand.Execute(null);
         Assert.False(vm.TemAlteracoes);
+    }
+
+    [Fact]
+    public void Marcar_icone_da_barra_liga_as_alteracoes()
+    {
+        _amb.Perfis.Salvar(Claro("A") with { BarraTarefas = new BarraTarefasPerfil(IconesVisiveis: ["x.exe"]) });
+        var vm = Criar();
+        Assert.False(vm.TemAlteracoes);
+        vm.EditorBarraTarefas.Icones[0].Visivel = false;
+        Assert.True(vm.TemAlteracoes);
+    }
+
+    [Fact]
+    public void Ajuste_da_aparencia_que_nao_muda_a_previa_liga_as_alteracoes()
+    {
+        _amb.Perfis.Salvar(Claro("A") with { Aparencia = new AparenciaPerfil(TemaAparencia.VidroEscuro) });
+        var vm = Criar();
+        // Com a transparência do Windows desligada, a transparência do perfil não muda a prévia.
+        vm.EditorAparencia.LerWindows = () => new VisualWindows(true, "#0078D4", false);
+        vm.EditorAparencia.Recalcular();
+        Assert.False(vm.TemAlteracoes);
+        vm.EditorAparencia.Geral.Transparencia = 40;
+        Assert.True(vm.TemAlteracoes);
     }
 
     [Fact]
