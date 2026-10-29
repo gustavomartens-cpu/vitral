@@ -330,6 +330,116 @@ public sealed class PrincipalTests : IDisposable
     }
 
     [Fact]
+    public void Mensagem_espera_a_janela_aparecer_para_contar_os_6s()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        vm.JanelaVisivel = false;
+        vm.DescartarCommand.Execute(null);
+        _relogio.Tique(10);
+        Assert.NotNull(vm.Mensagem);
+        vm.JanelaVisivel = true;
+        _relogio.Tique(5);
+        Assert.NotNull(vm.Mensagem);
+        _relogio.Tique(1);
+        Assert.Null(vm.Mensagem);
+    }
+
+    [Fact]
+    public void Novo_com_pendencia_e_Cancelar_nao_cria_o_perfil()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        _dialogos.RespostaTexto = "Novo";
+        _dialogos.RespostaPendente = RespostaPendente.Cancelar;
+        vm.NovoCommand.Execute(null);
+        Assert.DoesNotContain("Novo", vm.Perfis);
+        Assert.Equal("A", vm.Selecionado);
+        Assert.True(vm.TemAlteracoes);
+    }
+
+    [Fact]
+    public void Novo_com_pendencia_e_Descartar_cria_e_abre_perguntando_uma_vez()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        _dialogos.RespostaTexto = "Novo";
+        _dialogos.RespostaPendente = RespostaPendente.Descartar;
+        vm.NovoCommand.Execute(null);
+        Assert.Equal("Novo", vm.Selecionado);
+        Assert.Single(_dialogos.PerguntasDeSalvar);
+        Assert.Equal(Modo.Claro, _amb.Perfis.Carregar("A").Nativo?.ModoApps);
+    }
+
+    [Fact]
+    public void Importar_com_pendencia_e_Cancelar_nao_importa()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        _dialogos.ArquivoParaAbrir = Path.Combine(_amb.Raiz, "nao-existe.vitral");
+        _dialogos.RespostaPendente = RespostaPendente.Cancelar;
+        vm.ImportarCommand.Execute(null);
+        Assert.Empty(_dialogos.Avisos); // nem tentou abrir o arquivo
+        Assert.True(vm.TemAlteracoes);
+    }
+
+    [Fact]
+    public void Importar_por_cima_do_perfil_aberto_recarrega_o_editor()
+    {
+        string pacote = Path.Combine(_amb.Raiz, "a.vitral");
+        _amb.Perfis.Salvar(Claro("A") with { Nativo = new AjustesNativosPerfil(null, Modo.Escuro, null, null, null, null, null, null) });
+        Pacote.Exportar(_amb.Perfis, ["A"], pacote, "0", "0");
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        Assert.Equal(ModoOpcional.Claro, vm.Editor.ModoApps);
+        _dialogos.ArquivoParaAbrir = pacote;
+        _dialogos.RespostaConfirmar = true;
+        vm.ImportarCommand.Execute(null);
+        Assert.Equal(ModoOpcional.Escuro, vm.Editor.ModoApps);
+        Assert.False(vm.TemAlteracoes);
+    }
+
+    [Fact]
+    public void Falha_ao_abrir_um_perfil_volta_ao_anterior()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        _amb.Perfis.Salvar(Claro("B"));
+        foreach (var f in Directory.EnumerateFiles(Path.Combine(_amb.Raiz, "perfis"), "perfil.json", SearchOption.AllDirectories))
+            if (File.ReadAllText(f).Contains("\"B\"")) File.WriteAllText(f, "{ quebrado");
+        var vm = Criar();
+        vm.Selecionado = "A";
+        vm.Selecionado = "B";
+        Assert.Equal("A", vm.Selecionado);
+        Assert.NotNull(vm.Mensagem);
+    }
+
+    [Theory]
+    [InlineData(RespostaPendente.Cancelar, false)]
+    [InlineData(RespostaPendente.Descartar, true)]
+    [InlineData(RespostaPendente.Salvar, true)]
+    public void Sair_com_pendencia_pergunta(RespostaPendente resposta, bool sai)
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        _dialogos.RespostaPendente = resposta;
+        Assert.Equal(sai, vm.PodeSair());
+        Assert.Equal(resposta == RespostaPendente.Salvar ? Modo.Escuro : Modo.Claro, _amb.Perfis.Carregar("A").Nativo?.ModoApps);
+    }
+
+    [Fact]
+    public void Sair_sem_pendencia_nao_pergunta()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        var vm = Criar();
+        Assert.True(vm.PodeSair());
+        Assert.Empty(_dialogos.PerguntasDeSalvar);
+    }
+
+    [Fact]
     public void Mensagem_some_depois_de_6s()
     {
         _amb.Perfis.Salvar(Claro("A"));
