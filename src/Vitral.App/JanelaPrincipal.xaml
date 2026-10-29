@@ -141,7 +141,7 @@
                     <Hyperlink Command="{Binding DescartarCommand}" Foreground="{StaticResource Ambar}" TextDecorations="None">Descartar</Hyperlink>
                 </TextBlock>
                 <TextBlock Grid.Row="1" Grid.ColumnSpan="2" FontSize="11.5" Foreground="{StaticResource TextoSecundario}" VerticalAlignment="Bottom"
-                           Text="{Binding Mensagem}" TextTrimming="CharacterEllipsis">
+                           Text="{Binding Mensagem}" ToolTip="{Binding Mensagem}" TextTrimming="CharacterEllipsis">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
                             <Style.Triggers>

@@ -30,6 +30,9 @@
     <SolidColorBrush x:Key="Superficie" Color="{StaticResource CorSuperficie}" />
     <SolidColorBrush x:Key="SuperficieHover" Color="{StaticResource CorSuperficieHover}" />
     <SolidColorBrush x:Key="Selecao" Color="{StaticResource CorSelecao}" />
+    <!-- Botão secundário: um degrau acima da superfície, para não sumir em cima de um cartão -->
+    <SolidColorBrush x:Key="SuperficieBotao" Color="#17FFFFFF" />
+    <SolidColorBrush x:Key="SuperficieBotaoHover" Color="#29FFFFFF" />
     <SolidColorBrush x:Key="Foco" Color="{StaticResource CorFoco}" />
     <!-- Menus de contexto (a doca redefine pela aparência; o da bandeja fica com estes) -->
     <SolidColorBrush x:Key="FundoMenu" Color="#E6141416" />

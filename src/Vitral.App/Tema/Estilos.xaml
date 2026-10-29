@@ -18,7 +18,7 @@
         <Setter Property="Control.Template">
             <Setter.Value>
                 <ControlTemplate>
-                    <Rectangle Margin="-3" RadiusX="9" RadiusY="9" Stroke="{StaticResource Foco}" StrokeThickness="2" SnapsToDevicePixels="True" />
+                    <Rectangle Margin="-3" RadiusX="9" RadiusY="9" Stroke="{DynamicResource Foco}" StrokeThickness="2" SnapsToDevicePixels="True" />
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -89,11 +89,11 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <!-- Secundário (spec da interface §4.3): fundo translúcido discreto, sem borda -->
-                    <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{DynamicResource Superficie}" Padding="{TemplateBinding Padding}">
+                    <Border x:Name="Fundo" CornerRadius="{StaticResource RaioBotao}" Background="{DynamicResource SuperficieBotao}" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{DynamicResource SuperficieHover}" /></Trigger>
+                        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Fundo" Property="Background" Value="{DynamicResource SuperficieBotaoHover}" /></Trigger>
                         <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Fundo" Property="Opacity" Value="0.4" /></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
