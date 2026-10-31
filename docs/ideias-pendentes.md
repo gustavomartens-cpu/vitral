@@ -55,4 +55,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   com abas por parte da tela e Configurações na engrenagem (0.13.0), fixado de app da loja que sobrevive à
   atualização do app (0.13.2), pequenos acertos da janela: foco no tema claro, mensagem inteira e que espera, pergunta
   antes de criar, importar e sair com alteração pendente, falha ao abrir volta ao anterior (0.13.4), outras agendas do Google, login da agenda com
-  mensagens claras e Cancelar, e o notch sem pedir resposta da sessão aberta no Claude em qualquer monitor (0.13.5).
+  mensagens claras e Cancelar, e o notch sem pedir resposta da sessão aberta no Claude em qualquer monitor (0.13.5),
+  barras, notch e doca somem com jogo em tela cheia mesmo sem o aviso do Windows (0.13.6).
