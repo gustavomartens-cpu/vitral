@@ -1,0 +1,28 @@
+<Window x:Class="Vitral.App.Agenda.JanelaAgendas"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Agendas da conta" Icon="/Recursos/vitral.ico" Width="400" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Foreground="{StaticResource Texto}" FontFamily="{StaticResource FonteCorpo}" Background="{StaticResource Noite}">
+    <!-- Agendas além da principal: das marcadas entram todos os compromissos -->
+    <StackPanel Margin="22,18,22,20">
+        <TextBlock x:Name="Titulo" FontFamily="{StaticResource FonteTitulo}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="A principal fica sempre ligada. Das outras que você marcar, entram todos os compromissos."
+                   FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,4,0,12" />
+        <TextBlock x:Name="Estado" Text="Lendo as agendas…" FontSize="12" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" />
+        <ScrollViewer MaxHeight="320" VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="Lista" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox Content="{Binding Nome}" IsChecked="{Binding Marcada}" IsEnabled="{Binding PodeMudar}"
+                                  Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Cancelar" Style="{StaticResource BotaoVidro}" Padding="14,6" Margin="0,0,8,0" IsCancel="True" />
+            <Button x:Name="Salvar" Content="Salvar" Style="{StaticResource BotaoPrimario}" Padding="14,6" IsDefault="True" IsEnabled="False" Click="Salvar_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

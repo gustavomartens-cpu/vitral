@@ -20,6 +20,9 @@
                                      Fill="{Binding Cor, Converter={StaticResource CorParaPincel}}" />
                             <Button DockPanel.Dock="Right" Content="Remover" Style="{StaticResource BotaoVidro}" Padding="10,4" FontSize="11.5"
                                     Click="Remover_Click" Margin="6,0,0,0" />
+                            <Button DockPanel.Dock="Right" Content="Agendas…" Style="{StaticResource BotaoVidro}" Padding="10,4" FontSize="11.5"
+                                    Click="Agendas_Click" Margin="6,0,0,0" Visibility="{Binding PodeEscolher, Converter={StaticResource BoolParaVisivel}}"
+                                    ToolTip="Escolher outras agendas desta conta além da principal" />
                             <Button x:Name="EntrarDeNovo" DockPanel.Dock="Right" Content="Entrar de novo" Style="{StaticResource BotaoVidro}" Padding="10,4"
                                     FontSize="11.5" Click="EntrarDeNovo_Click" Visibility="{Binding PrecisaEntrar, Converter={StaticResource BoolParaVisivel}}" />
                             <StackPanel VerticalAlignment="Center">

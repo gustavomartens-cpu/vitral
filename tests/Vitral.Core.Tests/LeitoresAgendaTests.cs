@@ -17,11 +17,15 @@ public sealed class LeitoresAgendaTests
         public List<HttpRequestMessage> Pedidos { get; } = [];
         public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
 
+        /// Endereços com este trecho respondem 404 (a agenda saiu da conta).
+        public string? Falhar { get; set; }
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage pedido, CancellationToken c)
         {
             Pedidos.Add(pedido);
             if (Status != HttpStatusCode.OK) return Task.FromResult(new HttpResponseMessage(Status));
             string url = pedido.RequestUri!.ToString();
+            if (Falhar is not null && url.Contains(Falhar, StringComparison.Ordinal)) return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
             var json = respostas.Where(r => url.Contains(r.Trecho, StringComparison.Ordinal)).Select(r => r.Json).FirstOrDefault()
                 ?? throw new InvalidOperationException("sem resposta para " + url);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) });
@@ -144,6 +148,52 @@ public sealed class LeitoresAgendaTests
         Assert.DoesNotContain(servidor.Pedidos, p => p.RequestUri!.AbsolutePath.Contains("calendarList"));
         var agendas = servidor.Pedidos.Select(p => p.RequestUri!.AbsolutePath).Distinct().ToList();
         Assert.Equal(["/calendar/v3/calendars/primary/events"], agendas);
+    }
+
+    private const string Unico = """
+        { "items": [ { "id": "x1", "iCalUID": "u1@google.com", "status": "confirmed", "summary": "Convite",
+            "start": { "dateTime": "2026-10-28T14:30:00-03:00" }, "end": { "dateTime": "2026-10-28T15:30:00-03:00" } } ] }
+        """;
+
+    private const string OutroDaFamilia = """
+        { "items": [
+          { "id": "x2", "iCalUID": "u1@google.com", "status": "confirmed", "summary": "Convite",
+            "start": { "dateTime": "2026-10-28T14:30:00-03:00" }, "end": { "dateTime": "2026-10-28T15:30:00-03:00" } },
+          { "id": "x3", "iCalUID": "u2@google.com", "status": "confirmed", "summary": "Aniversário da Ana",
+            "start": { "date": "2026-11-05" }, "end": { "date": "2026-11-06" } } ] }
+        """;
+
+    [Fact]
+    public async Task Le_as_agendas_escolhidas_alem_da_principal_sem_repetir()
+    {
+        var s = new Servidor(("/calendars/primary/events", Unico), ("/calendars/familia%40group.calendar.google.com/events", OutroDaFamilia));
+        var leitor = new LeitorGoogle(Google, new HttpClient(s), Token, Brasilia, ["familia@group.calendar.google.com"]);
+        var lista = await leitor.Ler(De, Ate, CancellationToken.None);
+        Assert.Equal(["Convite", "Aniversário da Ana"], lista.Select(c => c.Titulo));
+    }
+
+    [Fact]
+    public async Task Agenda_escolhida_que_sumiu_nao_derruba_a_leitura()
+    {
+        var s = new Servidor(("/calendars/primary/events", Unico)) { Falhar = "familia" };
+        var leitor = new LeitorGoogle(Google, new HttpClient(s), Token, Brasilia, ["familia@group.calendar.google.com"]);
+        Assert.Single(await leitor.Ler(De, Ate, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Lista_as_agendas_da_conta_com_a_principal_primeiro()
+    {
+        const string lista = """
+            { "items": [
+              { "id": "familia@group.calendar.google.com", "summary": "Família" },
+              { "id": "g@x.com", "summary": "g@x.com", "primary": true },
+              { "id": "pt.brazilian#holiday@group.v.calendar.google.com", "summary": "Feriados no Brasil", "summaryOverride": "Feriados" } ] }
+            """;
+        var s = new Servidor(("calendarList", lista));
+        var agendas = await LeitorGoogle.ListarAgendas(new HttpClient(s), Token, CancellationToken.None);
+        Assert.Equal([("g@x.com", true), ("familia@group.calendar.google.com", false), ("pt.brazilian#holiday@group.v.calendar.google.com", false)],
+            agendas.Select(a => (a.Id, a.Principal)));
+        Assert.Equal("Feriados", agendas[2].Nome);
     }
 
     [Fact]

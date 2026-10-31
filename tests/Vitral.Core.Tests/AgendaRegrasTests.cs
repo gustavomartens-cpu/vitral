@@ -125,4 +125,22 @@ public sealed class AgendaRegrasTests
         }
         finally { if (Directory.Exists(raiz)) Directory.Delete(raiz, true); }
     }
+
+    [Fact]
+    public void Agendas_escolhidas_ficam_no_config_por_conta()
+    {
+        var raiz = Path.Combine(Path.GetTempPath(), "vitral-agenda-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var config = new ServicoConfig(Path.Combine(raiz, "config.json"));
+            var outra = new ContaAgenda(ProvedorAgenda.Google, "outra@x.com", "#3DDBB5");
+            var agenda = new AgendaConfig([Google, outra]).ComAgendas(Google, ["familia@group.calendar.google.com"]);
+            config.Gravar(config.Ler() with { Agenda = agenda });
+            var lido = config.Ler().Agenda!;
+            Assert.Equal(["familia@group.calendar.google.com"], lido.AgendasDe(Google));
+            Assert.Empty(lido.AgendasDe(outra));
+            Assert.Empty(lido.ComAgendas(Google, []).AgendasDe(Google));
+        }
+        finally { if (Directory.Exists(raiz)) Directory.Delete(raiz, true); }
+    }
 }

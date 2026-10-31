@@ -33,10 +33,13 @@ internal static class Rest
         Uri.TryCreate(texto, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttps || u.Scheme == Uri.UriSchemeHttp) ? u : null;
 }
 
-/// Agenda do Google pela API REST (spec da agenda §5.1; plano: REST em vez do Calendar.v3): a agenda principal da conta,
-/// com os eventos repetidos já abertos em ocorrências, página por página.
+/// Uma agenda da conta do Google, para a pessoa escolher quais o Vitral lê.
+public sealed record AgendaGoogle(string Id, string Nome, bool Principal);
+
+/// Agenda do Google pela API REST (spec da agenda §5.1; plano: REST em vez do Calendar.v3): a agenda principal da conta e
+/// as que a pessoa escolheu (<paramref name="extras"/>), com os eventos repetidos já abertos em ocorrências, página por página.
 public sealed class LeitorGoogle(ContaAgenda conta, HttpClient http, Func<CancellationToken, Task<string>> token,
-    TimeZoneInfo? fuso = null) : IFonteAgenda
+    TimeZoneInfo? fuso = null, IReadOnlyList<string>? extras = null) : IFonteAgenda
 {
     private const string Base = "https://www.googleapis.com/calendar/v3";
     private readonly TimeZoneInfo _fuso = fuso ?? TimeZoneInfo.Local;
@@ -45,24 +48,55 @@ public sealed class LeitorGoogle(ContaAgenda conta, HttpClient http, Func<Cancel
 
     public async Task<IReadOnlyList<Compromisso>> Ler(DateTimeOffset de, DateTimeOffset ate, CancellationToken cancelar)
     {
-        // Só a agenda principal: é onde o Google põe o que a pessoa criou e os convites que recebeu; as compartilhadas
-        // (de colegas, de equipes) trariam compromissos em que ela não está (conferência com o Gustavo, 28/10).
+        // A principal sempre: é onde o Google põe o que a pessoa criou e os convites que recebeu. As compartilhadas só as
+        // escolhidas — sozinhas, trariam compromissos em que ela não está (conferência com o Gustavo, 28/10).
         var compromissos = new List<Compromisso>();
-        foreach (var agenda in new[] { "primary" })
+        var vistos = new HashSet<string>(StringComparer.Ordinal); // o mesmo convite em duas agendas aparece uma vez
+        foreach (var agenda in new[] { "primary" }.Concat(extras ?? []))
         {
             string? pagina = null;
             do
             {
                 string url = $"{Base}/calendars/{Uri.EscapeDataString(agenda)}/events?timeMin={Rest.Utc(de)}&timeMax={Rest.Utc(ate)}"
                     + "&singleEvents=true&orderBy=startTime&maxResults=250" + (pagina is null ? "" : $"&pageToken={Uri.EscapeDataString(pagina)}");
-                using var doc = await Rest.Buscar(http, url, token, cancelar);
-                if (doc.RootElement.TryGetProperty("items", out var itens))
-                    foreach (var e in itens.EnumerateArray())
-                        if (Converter(agenda, e) is { } c) compromissos.Add(c);
-                pagina = doc.RootElement.Texto("nextPageToken");
+                JsonDocument doc;
+                try { doc = await Rest.Buscar(http, url, token, cancelar); }
+                // Agenda escolhida que deixou de ser compartilhada ou foi apagada: segue com as outras.
+                catch (HttpRequestException e) when (agenda != "primary" && e.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.Forbidden or HttpStatusCode.Gone) { break; }
+                using (doc)
+                {
+                    if (doc.RootElement.TryGetProperty("items", out var itens))
+                        foreach (var e in itens.EnumerateArray())
+                            if ((e.Texto("iCalUID") is not { } uid || vistos.Add(uid + "|" + Inicio(e)))
+                                && Converter(agenda, e) is { } c) compromissos.Add(c);
+                    pagina = doc.RootElement.Texto("nextPageToken");
+                }
             } while (pagina is not null);
         }
         return compromissos;
+    }
+
+    /// Ocorrências de um evento repetido dividem o iCalUID: o início separa uma da outra.
+    private static string? Inicio(JsonElement e) =>
+        e.TryGetProperty("start", out var s) ? s.Texto("dateTime") ?? s.Texto("date") : null;
+
+    /// As agendas da conta (a principal primeiro), com o nome que a pessoa deu, se deu.
+    public static async Task<IReadOnlyList<AgendaGoogle>> ListarAgendas(HttpClient http, Func<CancellationToken, Task<string>> token,
+        CancellationToken cancelar)
+    {
+        var agendas = new List<AgendaGoogle>();
+        string? pagina = null;
+        do
+        {
+            using var doc = await Rest.Buscar(http, $"{Base}/users/me/calendarList?maxResults=250"
+                + (pagina is null ? "" : $"&pageToken={Uri.EscapeDataString(pagina)}"), token, cancelar);
+            if (doc.RootElement.TryGetProperty("items", out var itens))
+                foreach (var a in itens.EnumerateArray())
+                    if (a.Texto("id") is { } id)
+                        agendas.Add(new AgendaGoogle(id, a.Texto("summaryOverride") ?? a.Texto("summary") ?? id, a.Verdade("primary")));
+            pagina = doc.RootElement.Texto("nextPageToken");
+        } while (pagina is not null);
+        return agendas.OrderByDescending(a => a.Principal).ToList();
     }
 
     private Compromisso? Converter(string agenda, JsonElement e)

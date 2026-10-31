@@ -83,8 +83,19 @@ internal sealed class ServicoAgendaApp
             else await _microsoft.Sair(conta.Email);
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("ServicoAgendaApp.Remover", e); }
-        var cfg = Config;
+        var cfg = Config.ComAgendas(conta, []); // as agendas escolhidas saem junto
         Gravar(cfg with { Contas = cfg.Contas.Where(c => c != conta).ToList() });
+    }
+
+    /// As agendas da conta do Google, para a janela de escolha. Erro sobe para a janela mostrar.
+    public Task<IReadOnlyList<AgendaGoogle>> AgendasDoGoogle(ContaAgenda conta) =>
+        LeitorGoogle.ListarAgendas(_http, _google.Token(conta.Email), CancellationToken.None);
+
+    /// Grava as agendas escolhidas além da principal e lê de novo.
+    public async Task DefinirAgendas(ContaAgenda conta, IEnumerable<string> ids)
+    {
+        Gravar(Config.ComAgendas(conta, ids));
+        await AtualizarAgora();
     }
 
     public void DefinirAntecedencia(int minutos) => Gravar(Config with { AntecedenciaMin = minutos }, remontar: false);
@@ -97,11 +108,15 @@ internal sealed class ServicoAgendaApp
         if (remontar) Montar();
     }
 
-    private void Montar() => Agenda.DefinirFontes(Config.Contas.Select(Fonte).OfType<IFonteAgenda>().ToList());
-
-    private IFonteAgenda? Fonte(ContaAgenda c) => c.Provedor switch
+    private void Montar()
     {
-        ProvedorAgenda.Google when Credenciais.GoogleOk => new LeitorGoogle(c, _http, _google.Token(c.Email)),
+        var cfg = Config;
+        Agenda.DefinirFontes(cfg.Contas.Select(c => Fonte(c, cfg)).OfType<IFonteAgenda>().ToList());
+    }
+
+    private IFonteAgenda? Fonte(ContaAgenda c, AgendaConfig cfg) => c.Provedor switch
+    {
+        ProvedorAgenda.Google when Credenciais.GoogleOk => new LeitorGoogle(c, _http, _google.Token(c.Email), null, cfg.AgendasDe(c)),
         ProvedorAgenda.Microsoft when Credenciais.MicrosoftOk => new LeitorMicrosoft(c, _http, _microsoft.Token(c.Email)),
         _ => null,
     };

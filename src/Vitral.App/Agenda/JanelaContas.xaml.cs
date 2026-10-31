@@ -5,7 +5,11 @@ using Vitral.Ui;
 namespace Vitral.App.Agenda;
 
 /// Uma conta na lista da janela.
-internal sealed record LinhaConta(ContaAgenda Conta, string Email, string Provedor, string Estado, bool PrecisaEntrar, string Cor);
+internal sealed record LinhaConta(ContaAgenda Conta, string Email, string Provedor, string Estado, bool PrecisaEntrar, string Cor)
+{
+    /// Só o Google lista as agendas da conta por enquanto (a Microsoft espera o cadastro do app).
+    public bool PodeEscolher => Conta.Provedor == ProvedorAgenda.Google && !PrecisaEntrar;
+}
 
 /// Ligar e remover as contas da agenda e escolher a antecedência do aviso (spec da agenda §5.3).
 public partial class JanelaContas : Window
@@ -93,6 +97,11 @@ public partial class JanelaContas : Window
     private async void EntrarDeNovo_Click(object sender, RoutedEventArgs e)
     {
         if (((FrameworkElement)sender).DataContext is LinhaConta linha) await Entrar(linha.Conta.Provedor);
+    }
+
+    private void Agendas_Click(object sender, RoutedEventArgs e)
+    {
+        if (((FrameworkElement)sender).DataContext is LinhaConta linha) new JanelaAgendas(_agenda, linha.Conta) { Owner = this }.ShowDialog();
     }
 
     private async void Remover_Click(object sender, RoutedEventArgs e)

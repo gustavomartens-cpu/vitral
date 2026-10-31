@@ -16,5 +16,23 @@ public interface IFonteAgenda
     Task<IReadOnlyList<Compromisso>> Ler(DateTimeOffset de, DateTimeOffset ate, CancellationToken cancelar);
 }
 
-/// A agenda no config.json: as contas ligadas (sem token) e a antecedência do aviso.
-public sealed record AgendaConfig(IReadOnlyList<ContaAgenda> Contas, int AntecedenciaMin = 10, bool Avisar = true);
+/// Uma agenda além da principal que a pessoa escolheu ler, na conta do e-mail.
+public sealed record AgendaEscolhida(ProvedorAgenda Provedor, string Email, string Id);
+
+/// A agenda no config.json: as contas ligadas (sem token), a antecedência do aviso e as agendas escolhidas além da
+/// principal de cada conta (nulo = nenhuma).
+public sealed record AgendaConfig(IReadOnlyList<ContaAgenda> Contas, int AntecedenciaMin = 10, bool Avisar = true,
+    IReadOnlyList<AgendaEscolhida>? Escolhidas = null)
+{
+    private static bool DaConta(AgendaEscolhida a, ContaAgenda c) =>
+        a.Provedor == c.Provedor && string.Equals(a.Email, c.Email, StringComparison.OrdinalIgnoreCase);
+
+    public IReadOnlyList<string> AgendasDe(ContaAgenda conta) =>
+        (Escolhidas ?? []).Where(a => DaConta(a, conta)).Select(a => a.Id).ToList();
+
+    /// Troca as escolhidas da conta pelas <paramref name="ids"/>; as das outras contas ficam.
+    public AgendaConfig ComAgendas(ContaAgenda conta, IEnumerable<string> ids) => this with
+    {
+        Escolhidas = [.. (Escolhidas ?? []).Where(a => !DaConta(a, conta)), .. ids.Select(id => new AgendaEscolhida(conta.Provedor, conta.Email, id))],
+    };
+}
