@@ -102,7 +102,13 @@ public partial class App : Application
         Atualizador.Pronta += AvisarAtualizacao;
         _barra.Reiniciar = Atualizador.Reiniciar;
         _relogioAtualizacao = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
-        _relogioAtualizacao.Tick += async (_, _) => await Atualizador.TiqueAsync();
+        _relogioAtualizacao.Tick += async (_, _) =>
+        {
+            await Atualizador.TiqueAsync();
+            // Mantém ligada a acessibilidade do app do Claude: o gancho lê por ela que conversa está à vista, e o
+            // Chromium só monta essa leitura depois que alguém pergunta.
+            _ = Task.Run(() => { try { Claude.JanelasDoClaude.Listar(); } catch (Exception) { /* só aquecimento */ } });
+        };
         _relogioAtualizacao.Start();
         // Depois de AoIniciar: um teste que ficou aberto já voltou, e o observador começa com a lista certa.
         _observadorIcones = new BarraDeTarefas.ObservadorIcones(registro, estadoIcones, _notificador);
