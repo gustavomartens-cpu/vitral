@@ -6,9 +6,9 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 
 - **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir
   o dia inteiro do Outlook na tela.
-- **Pequenos acertos da agenda** (revisão final da 0.12.0): clique num aviso do Claude deixa o lembrete da agenda vivo
-  sem o ponto; compromisso preso na fila atrás de ficha longa pode aparecer já terminado; login do Google lento ou com a
-  API desligada sem mensagem clara; login da Microsoft sem limite de tempo; escolher outras agendas além da principal.
+- **Sobras da agenda e da sessão à vista** (revisão final da 0.13.5): fim dos 5 min do login some com a mensagem sem
+  explicar; janela pequena por cima do Claude maximizado faz ele contar como não visível (vale a regra antiga); janela
+  atribuída a um monitor que cobre o Claude no outro é ignorada; escolher agendas da Microsoft (depois do cadastro).
 - **Notificações de outros apps no notch**, e respostas por ali: precisa de identidade de pacote para ler as
   notificações do Windows.
 - **Pequenos acertos da aparência** (revisões finais da 0.10.0 e da 0.11.0): não recalcular quando o Windows avisa sem
@@ -54,4 +54,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   pontinhos na grade, aviso antes com Entrar (0.12.0), janela repaginada em vidro fumê, abrindo no perfil ativo,
   com abas por parte da tela e Configurações na engrenagem (0.13.0), fixado de app da loja que sobrevive à
   atualização do app (0.13.2), pequenos acertos da janela: foco no tema claro, mensagem inteira e que espera, pergunta
-  antes de criar, importar e sair com alteração pendente, falha ao abrir volta ao anterior (0.13.4).
+  antes de criar, importar e sair com alteração pendente, falha ao abrir volta ao anterior (0.13.4), outras agendas do Google, login da agenda com
+  mensagens claras e Cancelar, e o notch sem pedir resposta da sessão aberta no Claude em qualquer monitor (0.13.5).
