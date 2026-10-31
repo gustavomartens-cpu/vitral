@@ -59,11 +59,11 @@ internal sealed class ServicoAgendaApp
     }
 
     /// Liga uma conta: abre o navegador; devolve null se deu certo ou a pessoa desistiu, ou o texto do erro.
-    public async Task<string?> Entrar(ProvedorAgenda provedor)
+    public async Task<string?> Entrar(ProvedorAgenda provedor, CancellationToken cancelar = default)
     {
         if (!Disponivel(provedor)) return "Falta cadastrar o app (docs/agenda-cadastro.md).";
         string? email;
-        try { email = provedor == ProvedorAgenda.Google ? await _google.Entrar(CancellationToken.None) : await _microsoft.Entrar(CancellationToken.None); }
+        try { email = provedor == ProvedorAgenda.Google ? await _google.Entrar(cancelar) : await _microsoft.Entrar(cancelar); }
         catch (Exception e) when (e is InvalidOperationException or HttpRequestException) { return e.Message; }
         if (email is null) return null;
         var cfg = Config;

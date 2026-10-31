@@ -13,6 +13,17 @@ public static partial class RegrasAgenda
             .OrderBy(c => c.DiaInteiro ? 0 : 1).ThenBy(c => c.Inicio).ThenBy(c => c.Titulo, StringComparer.CurrentCulture)
             .ToList();
 
+    /// O texto para a janela de contas quando a leitura da agenda falha logo depois do login. Sem código (status nulo):
+    /// a rede não respondeu. O 403 de API desligada no projeto do Google Cloud vem com "accessNotConfigured".
+    public static string ErroDoGoogle(System.Net.HttpStatusCode? status, string? corpo) => status switch
+    {
+        null => "Sem conexão com o Google. Confira a internet e tente de novo.",
+        System.Net.HttpStatusCode.Forbidden when corpo?.Contains("accessNotConfigured", StringComparison.Ordinal) == true
+            || corpo?.Contains("SERVICE_DISABLED", StringComparison.Ordinal) == true =>
+            "A API do Google Agenda está desligada no projeto do Google Cloud. Ative-a em \"APIs e serviços\" e tente de novo.",
+        _ => $"O Google respondeu com erro {(int)status}. Tente de novo em alguns minutos.",
+    };
+
     [GeneratedRegex(@"https://meet\.google\.com/[a-z]{3}-[a-z]{4}-[a-z]{3}")] private static partial Regex Meet();
     [GeneratedRegex(@"https://teams\.microsoft\.com/l/meetup-join/[^\s""<>]+")] private static partial Regex Teams();
     [GeneratedRegex(@"https://[\w.-]*zoom\.us/j/[^\s""<>]+")] private static partial Regex Zoom();

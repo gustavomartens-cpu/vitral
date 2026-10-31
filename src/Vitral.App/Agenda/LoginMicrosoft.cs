@@ -29,10 +29,13 @@ internal sealed class LoginMicrosoft(CofreTokens cofre)
     public async Task<string?> Entrar(CancellationToken cancelar)
     {
         var app = await App();
+        // Como no Google: 5 min sem resposta no navegador conta como desistência.
+        using var limite = CancellationTokenSource.CreateLinkedTokenSource(cancelar);
+        limite.CancelAfter(TimeSpan.FromMinutes(5));
         try
         {
             var resultado = await app.AcquireTokenInteractive(Escopos).WithUseEmbeddedWebView(false)
-                .WithPrompt(Prompt.SelectAccount).ExecuteAsync(cancelar);
+                .WithPrompt(Prompt.SelectAccount).ExecuteAsync(limite.Token);
             return resultado.Account.Username;
         }
         catch (MsalClientException e) when (e.ErrorCode == MsalError.AuthenticationCanceledError) { return null; }

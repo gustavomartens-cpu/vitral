@@ -28,7 +28,7 @@ public partial class JanelaContas : Window
         Antecedencia.SelectedValue = _agenda.Config.AntecedenciaMin;
         _carregando = false;
         _agenda.Agenda.Mudou += Recarregar;
-        Closed += (_, _) => _agenda.Agenda.Mudou -= Recarregar;
+        Closed += (_, _) => { _agenda.Agenda.Mudou -= Recarregar; _login?.Cancel(); };
         Recarregar();
     }
 
@@ -51,13 +51,34 @@ public partial class JanelaContas : Window
         SemContas.Visibility = linhas.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     });
 
+    private CancellationTokenSource? _login;
+
     private async Task Entrar(ProvedorAgenda provedor)
     {
-        IsEnabled = false;
+        if (_login is not null) return;
+        _login = new CancellationTokenSource();
+        Travar(true);
         Mostrar("Continue no navegador que abriu…");
-        try { Mostrar(await _agenda.Entrar(provedor)); }
-        finally { IsEnabled = true; Recarregar(); }
+        try { Mostrar(await _agenda.Entrar(provedor, _login.Token)); }
+        finally
+        {
+            _login.Dispose();
+            _login = null;
+            Travar(false);
+            Recarregar();
+        }
     }
+
+    /// Durante o login só o Cancelar responde.
+    private void Travar(bool travar)
+    {
+        EntrarGoogle.IsEnabled = !travar && ServicoAgendaApp.Disponivel(ProvedorAgenda.Google);
+        EntrarMicrosoft.IsEnabled = !travar && ServicoAgendaApp.Disponivel(ProvedorAgenda.Microsoft);
+        Lista.IsEnabled = Antecedencia.IsEnabled = !travar;
+        CancelarLogin.Visibility = travar ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void CancelarLogin_Click(object sender, RoutedEventArgs e) => _login?.Cancel();
 
     private void Mostrar(string? texto)
     {

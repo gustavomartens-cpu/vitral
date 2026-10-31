@@ -50,13 +50,17 @@ internal sealed class LoginGoogle(CofreTokens cofre, HttpClient http)
             using var pedido = new HttpRequestMessage(HttpMethod.Get, "https://www.googleapis.com/calendar/v3/calendars/primary");
             pedido.Headers.Authorization = new AuthenticationHeaderValue("Bearer", credencial.Token.AccessToken);
             using var resposta = await http.SendAsync(pedido, limite.Token);
-            resposta.EnsureSuccessStatusCode();
+            if (!resposta.IsSuccessStatusCode)
+                throw new InvalidOperationException(RegrasAgenda.ErroDoGoogle(resposta.StatusCode, await resposta.Content.ReadAsStringAsync(limite.Token)));
             using var doc = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync(limite.Token));
             string email = doc.RootElement.GetProperty("id").GetString()!;
             await _deposito.StoreAsync(email, credencial.Token); // passa da chave temporária para a do e-mail
             return email;
         }
+        // O tempo do HttpClient (e não o Cancelar nem os 5 min) estourou: o Google não respondeu.
+        catch (OperationCanceledException) when (!limite.IsCancellationRequested) { throw new InvalidOperationException(RegrasAgenda.ErroDoGoogle(null, null)); }
         catch (OperationCanceledException) { return null; }
+        catch (HttpRequestException e) { throw new InvalidOperationException(RegrasAgenda.ErroDoGoogle(e.StatusCode, null), e); }
         catch (TokenResponseException e) when (e.Error?.Error == "access_denied")
         {
             // Cancelou no consentimento, ou o e-mail não está entre os usuários de teste do app.

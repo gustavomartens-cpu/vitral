@@ -38,7 +38,12 @@
             <Button x:Name="EntrarGoogle" Content="Entrar com Google" Style="{StaticResource BotaoVidro}" Margin="0,0,4,0" Click="EntrarGoogle_Click" />
             <Button x:Name="EntrarMicrosoft" Content="Entrar com Microsoft" Style="{StaticResource BotaoVidro}" Margin="4,0,0,0" Click="EntrarMicrosoft_Click" />
         </UniformGrid>
-        <TextBlock x:Name="Mensagem" FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed" />
+        <DockPanel Margin="0,8,0,0">
+            <!-- Enquanto o navegador espera o login: desistir sem esperar os 5 min -->
+            <Button x:Name="CancelarLogin" DockPanel.Dock="Right" Content="Cancelar" Style="{StaticResource BotaoVidro}" Padding="10,3"
+                    Margin="8,0,0,0" VerticalAlignment="Top" Visibility="Collapsed" Click="CancelarLogin_Click" />
+            <TextBlock x:Name="Mensagem" FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Visibility="Collapsed" />
+        </DockPanel>
 
         <Grid Margin="0,16,0,0">
             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
