@@ -86,6 +86,17 @@ public sealed class NotchAgendaTests
     }
 
     [Fact]
+    public void Clique_no_aviso_do_Claude_com_agenda_na_fila_mostra_a_agenda()
+    {
+        var e = Criar();
+        e.Chegou(new AvisoClaude(TipoAviso.Terminou, "vitral", "Pronto."));
+        e.Lembrou(Reuniao());
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou());
+        Assert.Equal(ModoNotch.Aviso, e.Modo);
+        Assert.True(e.AvisoEhDaAgenda);
+    }
+
+    [Fact]
     public void Aviso_que_esperou_a_ficha_e_o_compromisso_acabou_nao_aparece()
     {
         var e = Criar();

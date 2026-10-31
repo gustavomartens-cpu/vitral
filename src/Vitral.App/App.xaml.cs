@@ -107,7 +107,7 @@ public partial class App : Application
             await Atualizador.TiqueAsync();
             // Mantém ligada a acessibilidade do app do Claude: o gancho lê por ela que conversa está à vista, e o
             // Chromium só monta essa leitura depois que alguém pergunta.
-            _ = Task.Run(() => { try { Claude.JanelasDoClaude.Listar(); } catch (Exception) { /* só aquecimento */ } });
+            Claude.JanelasDoClaude.Aquecer();
         };
         _relogioAtualizacao.Start();
         // Depois de AoIniciar: um teste que ficou aberto já voltou, e o observador começa com a lista certa.

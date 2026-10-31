@@ -16,6 +16,10 @@ internal static class Rest
         ajustar?.Invoke(pedido);
         using var resposta = await http.SendAsync(pedido, cancelar);
         if (resposta.StatusCode == HttpStatusCode.Unauthorized) throw new ContaPrecisaEntrarException();
+        // O Google responde 403 também ao limite de uso: é passageiro, vira 429 (quem chama não confunde com "sem acesso").
+        if (resposta.StatusCode == HttpStatusCode.Forbidden && await resposta.Content.ReadAsStringAsync(cancelar) is var corpo
+            && (corpo.Contains("rateLimitExceeded", StringComparison.Ordinal) || corpo.Contains("quotaExceeded", StringComparison.Ordinal)))
+            throw new HttpRequestException("Limite de uso do Google.", null, HttpStatusCode.TooManyRequests);
         resposta.EnsureSuccessStatusCode();
         return await JsonDocument.ParseAsync(await resposta.Content.ReadAsStreamAsync(cancelar), cancellationToken: cancelar);
     }
@@ -76,9 +80,14 @@ public sealed class LeitorGoogle(ContaAgenda conta, HttpClient http, Func<Cancel
         return compromissos;
     }
 
-    /// Ocorrências de um evento repetido dividem o iCalUID: o início separa uma da outra.
-    private static string? Inicio(JsonElement e) =>
-        e.TryGetProperty("start", out var s) ? s.Texto("dateTime") ?? s.Texto("date") : null;
+    /// Ocorrências de um evento repetido dividem o iCalUID: o início separa uma da outra. Em UTC: cada agenda manda o
+    /// horário no fuso dela.
+    private static string? Inicio(JsonElement e)
+    {
+        if (!e.TryGetProperty("start", out var s)) return null;
+        return s.Texto("dateTime") is { } t && DateTimeOffset.TryParse(t, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
+            ? d.UtcTicks.ToString(CultureInfo.InvariantCulture) : s.Texto("date");
+    }
 
     /// As agendas da conta (a principal primeiro), com o nome que a pessoa deu, se deu.
     public static async Task<IReadOnlyList<AgendaGoogle>> ListarAgendas(HttpClient http, Func<CancellationToken, Task<string>> token,
@@ -92,7 +101,8 @@ public sealed class LeitorGoogle(ContaAgenda conta, HttpClient http, Func<Cancel
                 + (pagina is null ? "" : $"&pageToken={Uri.EscapeDataString(pagina)}"), token, cancelar);
             if (doc.RootElement.TryGetProperty("items", out var itens))
                 foreach (var a in itens.EnumerateArray())
-                    if (a.Texto("id") is { } id)
+                    // Só "livre/ocupado" não traz título nem detalhes: viraria uma lista de "(sem título)".
+                    if (a.Texto("id") is { } id && a.Texto("accessRole") != "freeBusyReader")
                         agendas.Add(new AgendaGoogle(id, a.Texto("summaryOverride") ?? a.Texto("summary") ?? id, a.Verdade("primary")));
             pagina = doc.RootElement.Texto("nextPageToken");
         } while (pagina is not null);

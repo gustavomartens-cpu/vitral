@@ -21,6 +21,8 @@ public static partial class RegrasAgenda
         System.Net.HttpStatusCode.Forbidden when corpo?.Contains("accessNotConfigured", StringComparison.Ordinal) == true
             || corpo?.Contains("SERVICE_DISABLED", StringComparison.Ordinal) == true =>
             "A API do Google Agenda está desligada no projeto do Google Cloud. Ative-a em \"APIs e serviços\" e tente de novo.",
+        System.Net.HttpStatusCode.Forbidden when corpo?.Contains("insufficientPermissions", StringComparison.Ordinal) == true =>
+            "O Google não deu acesso à agenda. Entre de novo e marque a permissão de ver a agenda na tela do Google.",
         _ => $"O Google respondeu com erro {(int)status}. Tente de novo em alguns minutos.",
     };
 

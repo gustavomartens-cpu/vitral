@@ -33,7 +33,18 @@ internal static partial class Mensageiro
         catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { return false; }
     }
 
-    private static readonly Lazy<bool> AVista = new(SessaoAVista);
+    private const int PrazoDaLeituraMs = 400;
+    private static bool? _aVista;
+
+    /// <see cref="SessaoAVista"/> uma vez por gancho e com prazo: o Claude travado (ou uma conversa enorme) não pode
+    /// segurar o Claude Code. Estourou o prazo, vale a regra antiga.
+    private static bool AVista()
+    {
+        if (_aVista is { } visto) return visto;
+        var leitura = Task.Run(SessaoAVista);
+        _aVista = leitura.Wait(PrazoDaLeituraMs) ? leitura.Result : ClaudeNaFrente();
+        return _aVista.Value;
+    }
 
     /// A conversa desta sessão está aberta numa janela do Claude que é a da frente em algum monitor (com várias
     /// sessões, as outras continuam avisando). Sem o id da conversa (sessão de terminal), ou sem conseguir ler os
@@ -54,8 +65,9 @@ internal static partial class Mensageiro
 
     /// Segura o Stop para a resposta pelo notch? Lido uma vez, no começo: se a conversa está à vista, quem é a sessão
     /// (pelas variáveis do Claude Code) e se o gancho já foi religado com o tempo da resposta.
+    /// Só o Stop lê as janelas; o pedido de permissão não paga essa leitura.
     public static bool SegurarStop(string entrada) =>
-        Segurar.NoStop(entrada, AVista.Value,
+        entrada.Contains("\"Stop\"", StringComparison.Ordinal) && Segurar.NoStop(entrada, AVista(),
             Segurar.SessaoComGente(Environment.GetEnvironmentVariable("CLAUDE_CODE_ENTRYPOINT"), Environment.GetEnvironmentVariable("CLAUDE_CODE_SESSION_ATTENDED")),
             GanchoComTempo());
 
@@ -90,7 +102,7 @@ internal static partial class Mensageiro
                 Escrever(RespostaPermissao.ParaClaude(escolha, entrada));
                 return;
             }
-            if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !AVista.Value) is not { } lido) return;
+            if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !AVista()) is not { } lido) return;
             // A conversa no app do Claude (herdada da sessão), para o clique no notch abrir exatamente ela.
             var aviso = lido with { AppId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp) };
             // Fora do app, o Stop vira ficha de resposta e segura a sessão até o texto (spec da resposta §3.3); sem

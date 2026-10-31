@@ -13,6 +13,11 @@ public sealed class ErrosLoginAgendaTests
     }
 
     [Fact]
+    public void Permissao_desmarcada_no_consentimento_pede_para_entrar_marcando() =>
+        Assert.Contains("marque a permissão", RegrasAgenda.ErroDoGoogle(HttpStatusCode.Forbidden,
+            """{"error":{"code":403,"errors":[{"reason":"insufficientPermissions"}]}}"""));
+
+    [Fact]
     public void Sem_resposta_do_servidor_e_sem_conexao() =>
         Assert.Equal("Sem conexão com o Google. Confira a internet e tente de novo.", RegrasAgenda.ErroDoGoogle(null, null));
 

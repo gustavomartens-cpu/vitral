@@ -51,6 +51,6 @@ public partial class JanelaAgendas : Window
     {
         Salvar.IsEnabled = false;
         await _agenda.DefinirAgendas(_conta, _linhas.Where(l => l.Marcada && !l.Agenda.Principal).Select(l => l.Agenda.Id));
-        DialogResult = true;
+        if (IsVisible) DialogResult = true; // fechada durante a leitura: a escolha já foi gravada, nada a fechar
     }
 }

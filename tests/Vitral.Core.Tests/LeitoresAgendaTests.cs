@@ -19,13 +19,15 @@ public sealed class LeitoresAgendaTests
 
         /// Endereços com este trecho respondem 404 (a agenda saiu da conta).
         public string? Falhar { get; set; }
+        public HttpStatusCode FalharStatus { get; set; } = HttpStatusCode.NotFound;
+        public string FalharCorpo { get; set; } = "";
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage pedido, CancellationToken c)
         {
             Pedidos.Add(pedido);
             if (Status != HttpStatusCode.OK) return Task.FromResult(new HttpResponseMessage(Status));
             string url = pedido.RequestUri!.ToString();
-            if (Falhar is not null && url.Contains(Falhar, StringComparison.Ordinal)) return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            if (Falhar is not null && url.Contains(Falhar, StringComparison.Ordinal)) return Task.FromResult(new HttpResponseMessage(FalharStatus) { Content = new StringContent(FalharCorpo) });
             var json = respostas.Where(r => url.Contains(r.Trecho, StringComparison.Ordinal)).Select(r => r.Json).FirstOrDefault()
                 ?? throw new InvalidOperationException("sem resposta para " + url);
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) });
@@ -170,6 +172,41 @@ public sealed class LeitoresAgendaTests
         var leitor = new LeitorGoogle(Google, new HttpClient(s), Token, Brasilia, ["familia@group.calendar.google.com"]);
         var lista = await leitor.Ler(De, Ate, CancellationToken.None);
         Assert.Equal(["Convite", "Aniversário da Ana"], lista.Select(c => c.Titulo));
+    }
+
+    [Fact]
+    public async Task Mesmo_convite_em_fusos_diferentes_aparece_uma_vez()
+    {
+        const string emUtc = """
+            { "items": [ { "id": "x9", "iCalUID": "u1@google.com", "status": "confirmed", "summary": "Convite",
+                "start": { "dateTime": "2026-10-28T17:30:00Z" }, "end": { "dateTime": "2026-10-28T18:30:00Z" } } ] }
+            """;
+        var s = new Servidor(("/calendars/primary/events", Unico), ("/calendars/sala%40resource.calendar.google.com/events", emUtc));
+        var leitor = new LeitorGoogle(Google, new HttpClient(s), Token, Brasilia, ["sala@resource.calendar.google.com"]);
+        Assert.Single(await leitor.Ler(De, Ate, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Limite_de_uso_numa_agenda_escolhida_e_erro_passageiro()
+    {
+        var s = new Servidor(("/calendars/primary/events", Unico))
+        {
+            Falhar = "familia", FalharStatus = HttpStatusCode.Forbidden,
+            FalharCorpo = """{"error":{"code":403,"errors":[{"reason":"rateLimitExceeded"}]}}""",
+        };
+        var leitor = new LeitorGoogle(Google, new HttpClient(s), Token, Brasilia, ["familia@group.calendar.google.com"]);
+        await Assert.ThrowsAsync<HttpRequestException>(() => leitor.Ler(De, Ate, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Agenda_so_de_livre_ocupado_nao_aparece_na_lista()
+    {
+        const string lista = """
+            { "items": [ { "id": "g@x.com", "summary": "g@x.com", "primary": true, "accessRole": "owner" },
+              { "id": "colega@x.com", "summary": "Colega", "accessRole": "freeBusyReader" } ] }
+            """;
+        var agendas = await LeitorGoogle.ListarAgendas(new HttpClient(new Servidor(("calendarList", lista))), Token, CancellationToken.None);
+        Assert.Equal(["g@x.com"], agendas.Select(a => a.Id));
     }
 
     [Fact]
