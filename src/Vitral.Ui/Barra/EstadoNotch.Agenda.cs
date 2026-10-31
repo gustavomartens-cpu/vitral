@@ -48,6 +48,9 @@ public sealed partial class EstadoNotch
     /// O próximo da fila vai para o aviso; false se a fila está vazia.
     private bool MostrarAgenda()
     {
+        // Esperando atrás de uma ficha longa, o compromisso pode ter acabado: não avisa o que já passou.
+        var agoraComFuso = new DateTimeOffset(agora());
+        _agenda.RemoveAll(a => a.Compromisso.Fim <= agoraComFuso);
         if (_agenda.Count == 0) return false;
         AvisoAgendaAtual = _agenda[0];
         _agenda.RemoveAt(0);

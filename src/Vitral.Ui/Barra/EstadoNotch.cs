@@ -205,7 +205,9 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         else if (acao is AcaoNotch.AbrirClaude or AcaoNotch.Reiniciar) { Pendente = false; PedidoPerdido = false; }
         else if (acao == AcaoNotch.AbrirPendencias && Aviso?.Tipo != TipoAviso.Atualizacao) Pendente = false; // viu a lista
         CliqueNaAgenda(acao);
-        Ir(acao is AcaoNotch.AbrirClaude or AcaoNotch.AbrirPendencias && Pendente ? ModoNotch.Lembrete : ModoNotch.Normal);
+        // O lembrete da agenda continua com o ponto depois de um clique em outra coisa (no aviso do Claude, por exemplo).
+        Ir((acao is AcaoNotch.AbrirClaude or AcaoNotch.AbrirPendencias && Pendente) || AvisoAgendaAtual is not null
+            ? ModoNotch.Lembrete : ModoNotch.Normal);
         return acao;
     }
 

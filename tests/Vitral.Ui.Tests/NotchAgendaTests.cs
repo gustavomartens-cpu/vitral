@@ -72,6 +72,32 @@ public sealed class NotchAgendaTests
     }
 
     [Fact]
+    public void Clique_no_aviso_do_Claude_mantem_o_lembrete_da_agenda_com_o_ponto()
+    {
+        var e = Criar();
+        var r = Reuniao();
+        e.Lembrou(r);
+        Avancar(6.1, e);
+        Assert.Equal(ModoNotch.Lembrete, e.Modo);
+        e.Chegou(new AvisoClaude(TipoAviso.Terminou, "vitral", "Pronto."));
+        Assert.Equal(AcaoNotch.AbrirClaude, e.Clicou());
+        Assert.Equal(ModoNotch.Lembrete, e.Modo);
+        Assert.Equal(r, e.AvisoAgendaAtual);
+    }
+
+    [Fact]
+    public void Aviso_que_esperou_a_ficha_e_o_compromisso_acabou_nao_aparece()
+    {
+        var e = Criar();
+        e.Pediu(new PedidoPermissao("p1", "vitral", "Bash", "Claude quer rodar um comando", "ls"));
+        e.Lembrou(Reuniao(minutosAte: -59.9)); // termina em 6 s
+        _agora = _agora.AddSeconds(30);
+        e.Desistiu("p1");
+        Assert.NotEqual(ModoNotch.Aviso, e.Modo);
+        Assert.Null(e.AvisoAgendaAtual);
+    }
+
+    [Fact]
     public void Clique_abre_o_calendario_no_dia()
     {
         var e = Criar();
