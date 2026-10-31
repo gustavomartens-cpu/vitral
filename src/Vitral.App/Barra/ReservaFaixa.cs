@@ -54,6 +54,18 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
         // Janela comum oculta (não "message-only"): precisa receber as mensagens de difusão, como TaskbarCreated.
         _janela = new HwndSource(new HwndSourceParameters("Vitral.ReservaFaixa") { Width = 0, Height = 0, WindowStyle = 0 });
         _janela.AddHook(Processar);
+        _conferencia.Tick += (_, _) => ConferirTelaCheia(registrar: false);
+        _conferencia.Start();
+    }
+
+    // Tela cheia: o Vitral confere sozinho se a janela da frente cobre o monitor principal; o aviso do Windows só adianta
+    // a conferência. Ele falha com alguns jogos e manda "saiu" quando um overlay abre (31/10).
+    private readonly System.Windows.Threading.DispatcherTimer _conferencia = new() { Interval = TimeSpan.FromSeconds(1.5) };
+    private readonly Ui.Barra.VigiaTelaCheia _vigia = new();
+
+    private void ConferirTelaCheia(bool registrar)
+    {
+        if (_vigia.Conferir(TelaCheiaDeVerdade(registrar)) is { } mudou) TelaCheia?.Invoke(mudou);
     }
 
     public bool Registrada => _registro.Registrada;
@@ -104,7 +116,7 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
     private DateTime _ultimoSetPos;
 
     /// O aviso também chega com a área de trabalho em primeiro plano ou tela cheia em outro monitor: confere.
-    private static bool TelaCheiaDeVerdade()
+    private static bool TelaCheiaDeVerdade(bool registrar)
     {
         var janela = GetForegroundWindow();
         if (janela == IntPtr.Zero || !GetWindowRect(janela, out var r)) return false;
@@ -112,7 +124,7 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
         var m = MonitorPrincipal.Ler();
         bool real = Ui.Barra.TelaCheia.EhDeVerdade(classe,
             new Ui.Barra.Retangulo(r.Esq, r.Topo, r.Dir - r.Esq, r.Base - r.Topo), new Ui.Barra.Retangulo(m.X, m.Y, m.Largura, m.Altura));
-        if (!real) LogBarra.Info($"Aviso de tela cheia ignorado ({classe})");
+        if (!real && registrar) LogBarra.Info($"Aviso de tela cheia do Windows sem janela cobrindo o monitor ({classe})");
         return real;
     }
 
@@ -161,7 +173,7 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
         {
             if (msg == _mensagemAppBar)
             {
-                if ((int)wParam == AbnFullScreenApp) TelaCheia?.Invoke(lParam != IntPtr.Zero && TelaCheiaDeVerdade());
+                if ((int)wParam == AbnFullScreenApp) ConferirTelaCheia(registrar: lParam != IntPtr.Zero);
                 else if ((int)wParam == AbnPosChanged) AgendarReposicionar();
             }
             else if (msg == _mensagemTaskbarCriada)
@@ -179,6 +191,7 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
 
     public void Dispose()
     {
+        _conferencia.Stop();
         Liberar();
         _janela.RemoveHook(Processar);
         _janela.Dispose();
