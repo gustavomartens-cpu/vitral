@@ -14,6 +14,11 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 - **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir
   o dia inteiro do Outlook na tela.
 - **Escolher agendas da Microsoft** (depois do cadastro no Azure).
+- **Bug: app em tela cheia perde a tela cheia ao clicar no outro monitor** (Gustavo, 02/11/2026): com um app
+  cobrindo o monitor principal, clicar numa janela do outro monitor faz o notch, a doca e as ilhas voltarem por cima do
+  app, e é preciso desmaximizar e maximizar de novo. Causa provável: a conferência da tela cheia (0.13.6, `ReservaFaixa`
+  / `VigiaTelaCheia`) olha a janela da frente (`GetForegroundWindow`), que passa a ser a do outro monitor; o certo é
+  olhar a janela mais acima na ordem Z dentro do monitor principal.
 - **Completar os painéis da barra do topo** (escolhido em 01/11/2026, depois das notificações): o que falta do Win+A
   (Bluetooth, modo avião, brilho, não perturbe...) nos painéis das ilhas; o Win+A do Windows fica como está.
 - **Sobras das notificações** (revisão final da 0.15.0): ícone com falha passageira fica sem ícone até fechar; clique no
