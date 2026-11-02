@@ -31,6 +31,11 @@ static constexpr CLSID CLSID_VitralIniciar = { 0x9c3e7a14, 0x2b6d, 0x4f1e, { 0x8
 
 static HMODULE g_module = nullptr;
 static std::wstring g_cores; // caminho do arquivo de cores (dos dados de inicialização)
+// O Vitral que conectou está vivo. Quando ele morre, o Iniciar volta ao original, para de seguir o arquivo de cores
+// e libera a vaga (o mutex): o Vitral reaberto, ou uma versão nova da DLL, conecta de novo no mesmo Iniciar.
+static std::atomic<bool> g_hostVivo{ false };
+static HANDLE g_vaga = nullptr;
+static std::atomic_flag g_vigiandoCores = ATOMIC_FLAG_INIT;
 
 // ---------- log: <pasta das cores>\logs\iniciar-<pid>.log, até 256 KB ----------
 
@@ -125,13 +130,17 @@ struct Fundo
 
 static std::mutex g_estadoMutex;
 static std::map<InstanceHandle, Fundo> g_fundos;
+static std::optional<Cores> g_atuais; // as cores em vigor (nulo ou desligado = o original); com g_estadoMutex
 static std::atomic<bool> g_achouFundo{ false };
+static thread_local bool t_pintando = false; // a mudança é nossa: o vigia das propriedades não reage
 
 /// Na thread do Iniciar (dispatcher do elemento).
 static void Pintar(const Fundo& f, const std::optional<Cores>& cores)
 {
     auto b = f.borda.get();
     if (!b) return;
+    t_pintando = true;
+    struct Fim { ~Fim() { t_pintando = false; } } fim;
     if (!cores || !cores->ligado)
     {
         b.Background(f.fundoOriginal);
@@ -162,7 +171,7 @@ static void Pintar(const Fundo& f, const std::optional<Cores>& cores)
 static void PintarTodos(std::optional<Cores> cores)
 {
     std::map<InstanceHandle, Fundo> copia;
-    { std::lock_guard lock(g_estadoMutex); copia = g_fundos; }
+    { std::lock_guard lock(g_estadoMutex); copia = g_fundos; g_atuais = cores; }
     for (auto& [h, f] : copia)
     {
         auto b = f.borda.get();
@@ -175,10 +184,38 @@ static void PintarTodos(std::optional<Cores> cores)
     }
 }
 
+/// O Iniciar trocou uma propriedade do fundo por conta própria (ele reaplica o visual dele ao abrir): o valor dele
+/// vira o novo original e, com as cores ligadas, o fundo é pintado de novo. Na thread do Iniciar.
+static void Reagir(InstanceHandle h, const wux::DependencyObject& o, const wux::DependencyProperty& p)
+{
+    try
+    {
+        if (t_pintando) return;
+        auto b = o.as<wux::Controls::Border>();
+        Fundo f;
+        std::optional<Cores> cores;
+        {
+            std::lock_guard lock(g_estadoMutex);
+            auto it = g_fundos.find(h);
+            if (it == g_fundos.end()) return;
+            if (p == wux::Controls::Border::BackgroundProperty()) it->second.fundoOriginal = b.Background();
+            else if (p == wux::Controls::Border::BorderBrushProperty()) it->second.bordaOriginal = b.BorderBrush();
+            else if (p == wux::Controls::Border::BorderThicknessProperty()) it->second.espessuraOriginal = b.BorderThickness();
+            else it->second.cantosOriginais = b.CornerRadius();
+            f = it->second;
+            cores = g_atuais;
+        }
+        if (g_hostVivo && cores && cores->ligado) { Pintar(f, cores); Log(L"REPINTADO"); }
+    }
+    catch (...) { Log(L"ERRO_REAGIR|" + std::to_wstring(static_cast<uint32_t>(winrt::to_hresult()))); }
+}
+
 static void CALLBACK HostMorreu(PVOID, BOOLEAN)
 {
     Log(L"HOST_MORREU");
+    g_hostVivo = false;
     PintarTodos(std::nullopt);
+    if (HANDLE vaga = std::exchange(g_vaga, nullptr)) CloseHandle(vaga);
 }
 
 /// Espera mudanças na pasta do arquivo de cores e reaplica. Arquivo ilegível mantém o último visual.
@@ -190,6 +227,7 @@ static void VigiarCores()
     while (WaitForSingleObject(aviso, INFINITE) == WAIT_OBJECT_0)
     {
         Sleep(30); // a troca do arquivo gera mais de um aviso
+        if (!g_hostVivo) { if (!FindNextChangeNotification(aviso)) break; continue; }
         if (auto cores = LerCores())
         {
             Log(cores->ligado ? L"CORES" : L"DESLIGADO");
@@ -245,9 +283,22 @@ public:
             f.bordaOriginal = b.BorderBrush();
             f.espessuraOriginal = b.BorderThickness();
             f.cantosOriginais = b.CornerRadius();
-            { std::lock_guard lock(g_estadoMutex); g_fundos[el.Handle] = f; }
+            auto cores = g_hostVivo ? LerCores() : std::nullopt;
+            bool novo;
+            {
+                std::lock_guard lock(g_estadoMutex);
+                novo = !g_fundos.contains(el.Handle); // reconexão: o mesmo elemento já tem os vigias
+                g_fundos[el.Handle] = f;
+                g_atuais = cores;
+            }
             g_achouFundo = true;
-            auto cores = LerCores();
+            if (novo)
+            {
+                InstanceHandle h = el.Handle;
+                for (auto p : { wux::Controls::Border::BackgroundProperty(), wux::Controls::Border::BorderBrushProperty(),
+                         wux::Controls::Border::BorderThicknessProperty(), wux::Controls::Border::CornerRadiusProperty() })
+                    b.RegisterPropertyChangedCallback(p, [h](const wux::DependencyObject& o, const wux::DependencyProperty& dp) { Reagir(h, o, dp); });
+            }
             Pintar(f, cores && cores->ligado ? cores : std::nullopt); // já estamos na thread do Iniciar
             Log(L"PINTADO|" + std::to_wstring(el.Handle));
         }
@@ -282,10 +333,11 @@ public:
         if (!site) return S_OK;
         try
         {
-            // Uma conexão por processo: o handle fica aberto de propósito até o Iniciar morrer.
+            // Uma conexão por vez: o handle fica aberto enquanto o Vitral que conectou estiver vivo.
             std::wstring mutexNome = L"Local\\VitralIniciar-" + std::to_wstring(GetCurrentProcessId());
             HANDLE mtx = CreateMutexW(nullptr, FALSE, mutexNome.c_str());
             if (mtx && GetLastError() == ERROR_ALREADY_EXISTS) { CloseHandle(mtx); return S_OK; }
+            g_vaga = mtx;
 
             winrt::com_ptr<IXamlDiagnostics> diag;
             winrt::check_hresult(site->QueryInterface(__uuidof(IXamlDiagnostics), diag.put_void()));
@@ -302,7 +354,8 @@ public:
                 if (!host || !RegisterWaitForSingleObject(&espera, host, HostMorreu, nullptr, INFINITE, WT_EXECUTEONLYONCE))
                     Log(L"FALHA_VIGIAR_HOST=" + std::to_wstring(GetLastError()));
             }
-            if (!g_cores.empty()) std::thread(VigiarCores).detach();
+            g_hostVivo = true;
+            if (!g_cores.empty() && !g_vigiandoCores.test_and_set()) std::thread(VigiarCores).detach();
 
             winrt::com_ptr<IVisualTreeService3> servico;
             winrt::check_hresult(diag->QueryInterface(__uuidof(IVisualTreeService3), servico.put_void()));

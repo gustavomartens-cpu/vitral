@@ -42,6 +42,11 @@
     <Resource Include="Recursos\vitral.ico" />
   </ItemGroup>
 
+  <!-- O componente do Iniciar (tools/compilar-iniciar.ps1; o build.ps1 compila antes de publicar) -->
+  <ItemGroup Condition="Exists('..\..\artifacts\iniciar\VitralIniciar.dll')">
+    <None Include="..\..\artifacts\iniciar\VitralIniciar.dll" Link="Iniciar\VitralIniciar.dll" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Vitral.Core\Vitral.Core.csproj" />
     <ProjectReference Include="..\Vitral.Ui\Vitral.Ui.csproj" />

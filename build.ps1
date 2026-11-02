@@ -36,6 +36,10 @@ $publish = Join-Path $PSScriptRoot 'artifacts\publish'
 $release = Join-Path $PSScriptRoot 'artifacts\release'
 
 Passo 'Testes' { dotnet test --nologo -v q }
+Passo 'Componente do Iniciar' {
+    pwsh -NoProfile -File (Join-Path $PSScriptRoot 'tools\compilar-iniciar.ps1')
+    if (-not (Test-Path (Join-Path $PSScriptRoot 'artifacts\iniciar\VitralIniciar.dll'))) { throw 'VitralIniciar.dll não foi gerada' }
+}
 Passo 'Publicar (win-x64, com o .NET embutido)' {
     if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
     dotnet publish src/Vitral.App -c Release -r win-x64 --self-contained -p:Version=$Versao -o $publish --nologo -v q

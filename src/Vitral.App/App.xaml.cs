@@ -68,6 +68,8 @@ public partial class App : Application
         _estadoDoca = new EstadoDoca(_doca, _barraWindows, config);
         var estadoAparencia = new Core.Aparencia.EstadoAparencia(Tema.ServicoAparencia.Instancia, config); // spec da aparência §5
         var estadoFormas = new Core.Formas.EstadoFormas(Tema.ServicoFormas.Instancia, config); // spec das formas §5.1
+        ServicoDoIniciar = new Vitral.App.Iniciar.ServicoIniciar(registro, _notificador); // spec do Iniciar §4.2
+        var estadoIniciar = new Core.Iniciar.EstadoIniciar(ServicoDoIniciar, config);
         // Travamento fatal com a doca ligada: a barra do Windows volta antes de o processo sumir.
         // Na thread da interface também devolve os ícones da bandeja (a janela da ManagedShell morre com o processo).
         AppDomain.CurrentDomain.UnhandledException += (_, _) =>
@@ -78,15 +80,17 @@ public partial class App : Application
         };
         // Sair da conta ou desligar o Windows: mesma limpeza do Sair (barra do Windows e ocultar automático de volta).
         SessionEnding += (_, _) => Sair();
-        var retratos = new ServicoRetratos(registro, Pastas.Retratos, _estadoBarra.Atual, estadoIcones.Atual, _estadoDoca.Atual, estadoAparencia.Atual, estadoFormas.Atual);
+        var retratos = new ServicoRetratos(registro, Pastas.Retratos, _estadoBarra.Atual, estadoIcones.Atual, _estadoDoca.Atual, estadoAparencia.Atual, estadoFormas.Atual,
+            estadoIniciar.AtualPerfil);
         var perfis = new RepositorioPerfis(Pastas.Perfis);
-        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, _estadoBarra, estadoIcones, _estadoDoca, estadoAparencia, estadoFormas), retratos, perfis, config);
+        Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, _estadoBarra, estadoIcones, _estadoDoca, estadoAparencia, estadoFormas, estadoIniciar), retratos, perfis, config);
         Inicializacao = new Inicializacao(registro);
 
         bool peloWindows = e.Args.Contains(Vitral.Core.Configuracao.Inicializacao.Argumento);
         var estado = Servico.AoIniciar(peloWindows);
         estadoAparencia.AoIniciar(); // antes das janelas: elas já nascem com a aparência e as formas guardadas
         estadoFormas.AoIniciar();
+        estadoIniciar.AoIniciar(); // depois da aparência: as cores do Iniciar vêm da doca
         _estadoBarra.Mostrar(); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
         _estadoDoca.AoIniciar(); // liga a doca se estava ligada; senão garante a barra do Windows
         _ = _agenda.AtualizarAgora(); // a primeira leitura da agenda (depois, a cada 5 min)
@@ -157,6 +161,9 @@ public partial class App : Application
     internal void AvisarAtualizacao(string versao) =>
         _barra?.Avisar(new Vitral.Core.Claude.AvisoClaude(Vitral.Core.Claude.TipoAviso.Atualizacao, "Vitral", $"{versao} pronto"));
 
+    /// O Iniciar com o visual da doca (spec do Iniciar §4.2).
+    internal Vitral.App.Iniciar.ServicoIniciar? ServicoDoIniciar { get; private set; }
+
     internal void Sair()
     {
         LimparParaSair();
@@ -176,6 +183,7 @@ public partial class App : Application
         _barraWindows?.Dispose();
         _canalAvisos?.Dispose();
         _bandejaApps?.Dispose(); // devolve os ícones ao Windows
+        ServicoDoIniciar?.Dispose(); // o Iniciar volta ao do Windows quando o processo sai
         _observadorIcones?.Dispose();
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));
         _bandeja?.Dispose();
