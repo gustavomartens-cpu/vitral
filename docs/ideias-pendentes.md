@@ -9,12 +9,11 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 - **Escolher agendas da Microsoft** (depois do cadastro no Azure).
 - **Notificações de outros apps no notch**, e respostas por ali: precisa de identidade de pacote para ler as
   notificações do Windows.
-- **Sobras da aparência** (revisão final da 0.13.7): papel de parede no mesmo caminho (apresentação, Spotlight) não
-  relê por causa do cache do WPF (`IgnoreImageCache`); a prévia da aba abre com o Windows padrão até a primeira mudança
-  (chamar `EditorAparencia.Recalcular()` depois de ligar o `LerWindows`); barra única com mídia ligada e nada tocando
-  ainda mostra a faixa; a prévia das formas sempre desenha a faixa da barra única; opção desconhecida some ao regravar
-  ou exportar o perfil (fixar em teste ou preservar); troca de tema sem mudar valores não reaplica o vidro (só se o
-  acrílico sumir); `Loaded` duplo da prévia assina o serviço duas vezes; o "Personalizada" some ao escolher outra cor.
+- **Sobras da 0.13.9** (revisão final): barra única só com a mídia fecha e recria a faixa quando a sessão some e volta
+  (jogo, navegador entre vídeos), com uma piscada da ilha sem fundo (chamar `Posicionar` antes da visibilidade,
+  esconder em vez de fechar, juntar as rajadas); erro no meio da assinatura da sessão de mídia deixa um evento preso;
+  as chamadas ao Windows dentro do lock da mídia podem segurar a interface (trocar por geração se aparecer no log);
+  a prévia fechada sem `Unloaded` fica presa ao serviço.
 - **Sobras da janela e da agenda** (revisão final da 0.13.8): a pergunta de salvar fica presa à janela principal mesmo
   com Configurações aberta, e um segundo clique em "reiniciar" abre outra por cima (usar a janela ativa como dono e
   travar a reentrada em `App.PodeFechar`); dono minimizado pode esconder a caixa (filtrar `WindowState`); "Importado: B"
@@ -22,7 +21,6 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
   confunde (perguntar "a edição será perdida"); comentário do login da Microsoft promete que fechar o navegador avisa;
   cobertura do Claude conta a borda invisível do DWM e a parte fora da tela; testes do Importar sem conflito com
   Cancelar/Descartar, conflito com Salvar/Descartar, arquivo inexistente com pendência e bordas da cobertura.
-- **Erro na troca de sessão de mídia:** `NullReferenceException` em `FonteMidiaWindows.TrocarSessao` no log (01/11).
 
 ## Testes a fundo pendentes
 
@@ -64,4 +62,7 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   Windows e o papel de parede, cor personalizada no seletor, opção desconhecida vira "Não mexer", raio do notch na
   prévia e barra única sem faixa vazia (0.13.7), sessão à vista pela parte descoberta da janela do Claude, Importar
   perguntando "Substituir?" antes, Descartar com perfil que falha, Sair e reiniciar perguntando com a janela à vista,
-  mensagem parada com a janela minimizada e login de 5 min explicado (0.13.8).
+  mensagem parada com a janela minimizada e login de 5 min explicado (0.13.8), faixa da barra única só com a mídia
+  tocando, cor personalizada guardada, prévia com o Windows real e o papel de parede relido, erro da troca de sessão
+  de mídia (0.13.9). Fica de propósito: a prévia das formas desenha as ilhas de exemplo mesmo desligadas, e a opção
+  desconhecida some ao regravar o perfil numa versão antiga (fixado em teste).
