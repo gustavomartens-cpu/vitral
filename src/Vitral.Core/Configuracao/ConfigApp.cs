@@ -8,7 +8,7 @@ public sealed record TesteEmAndamento(string Perfil, string Retrato);
 public sealed record ConfigApp(string? PerfilAtivo, bool IniciarComWindows, TesteEmAndamento? TesteEmAndamento,
     Perfis.BarraTopoPerfil? BarraTopo = null, IReadOnlyList<string>? IconesVisiveis = null,
     Perfis.BarraBaixoPerfil? BarraBaixo = null, bool? OcultarAutomaticoAntesDaDoca = null, Perfis.AparenciaPerfil? Aparencia = null, Perfis.FormasPerfil? Formas = null,
-    Agenda.AgendaConfig? Agenda = null)
+    Agenda.AgendaConfig? Agenda = null, Iniciar.IniciarPerfil? Iniciar = null)
 {
     public static ConfigApp Padrao { get; } = new(null, true, null);
 }

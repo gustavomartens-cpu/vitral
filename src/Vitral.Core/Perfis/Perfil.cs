@@ -7,7 +7,7 @@ public enum Alinhamento { Esquerda, Centro }
 /// Um perfil visual (spec §4.2). Seção ou campo nulo significa "não mexer".
 public sealed record Perfil(int Esquema, string Nome, string? BuildTestada, AjustesNativosPerfil? Nativo, BarraTopoPerfil? BarraTopo = null,
     BarraTarefasPerfil? BarraTarefas = null, BarraBaixoPerfil? BarraBaixo = null, AparenciaPerfil? Aparencia = null,
-    FormasPerfil? Formas = null);
+    FormasPerfil? Formas = null, Iniciar.IniciarPerfil? Iniciar = null);
 
 /// Ajustes que o próprio Windows oferece. Cores em "#RRGGBB".
 public sealed record AjustesNativosPerfil(
