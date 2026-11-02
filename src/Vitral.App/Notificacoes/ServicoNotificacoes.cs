@@ -20,6 +20,7 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
     private readonly Dictionary<string, ImageSource?> _icones = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherTimer _espera = new(DispatcherPriority.Background, ui) { Interval = TimeSpan.FromSeconds(1) };
     private bool _lendo;
+    private DateTime _ultimaLeitura;
 
     public EstadoNotificacoes Estado { get; private set; } = EstadoNotificacoes.SemIdentidade;
     public IReadOnlyList<NotificacaoApp> Atuais => _atuais;
@@ -42,8 +43,15 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
                 Publicar(EstadoNotificacoes.SemPermissao);
                 return;
             }
+            // A primeira mudança relê na hora (o aviso desce junto com a notificação); as que vêm em seguida, dentro de 1 s,
+            // esperam e viram uma leitura só.
             _espera.Tick += async (_, _) => { _espera.Stop(); await Ler(avisar: true); };
-            _ouvinte.NotificationChanged += (_, _) => ui.BeginInvoke(() => { if (!_espera.IsEnabled) _espera.Start(); });
+            _ouvinte.NotificationChanged += (_, _) => ui.BeginInvoke(async () =>
+            {
+                if (_espera.IsEnabled) return;
+                if (DateTime.UtcNow - _ultimaLeitura >= _espera.Interval) await Ler(avisar: true);
+                else _espera.Start();
+            });
             Estado = EstadoNotificacoes.Ligado;
             quieto.Calar([]);
             await Ler(avisar: false); // as que já estavam lá não descem no notch
@@ -59,6 +67,7 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
     {
         if (_ouvinte is null || _lendo) return;
         _lendo = true;
+        _ultimaLeitura = DateTime.UtcNow;
         try
         {
             var lidas = await _ouvinte.GetNotificationsAsync(NotificationKinds.Toast);
@@ -118,9 +127,11 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
         ImageSource? icone = null;
         try
         {
-            if (_apps.TryGetValue(appId, out var info))
+            // Apps sem logo (o PowerShell, alguns programas antigos) ficam sem ícone.
+            if (_apps.TryGetValue(appId, out var info) && info.DisplayInfo?.GetLogo(new Windows.Foundation.Size(32, 32)) is { } logo
+                && await logo.OpenReadAsync() is { } aberto)
             {
-                using var fluxo = await info.DisplayInfo.GetLogo(new Windows.Foundation.Size(32, 32)).OpenReadAsync();
+                using var fluxo = aberto;
                 using var copia = new MemoryStream();
                 await fluxo.AsStreamForRead().CopyToAsync(copia);
                 copia.Position = 0;

@@ -74,6 +74,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private readonly DispatcherTimer _tique = new() { Interval = TimeSpan.FromMilliseconds(250) };
     // Lembrete da agenda: confere de vez em quando se o compromisso já acabou (o _tique só corre com aviso ou mouse).
     private readonly DispatcherTimer _tiqueAgenda = new() { Interval = TimeSpan.FromSeconds(15) };
+    private readonly TextBlock _textoSino = new() { Text = "Notificações", FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
+    private readonly Image _iconeNotificacao = new() { Width = 22, Height = 22, Visibility = Visibility.Collapsed };
     private readonly TextBlock _iconeAgenda = new() { Text = "", FontSize = 20, Visibility = Visibility.Collapsed, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private Border? _entrar;
 
@@ -241,6 +243,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _iconeAgenda.FontFamily = (FontFamily)Application.Current.Resources["FonteIcones"];
         _iconeAgenda.SetResourceReference(TextBlock.ForegroundProperty, "Ambar");
         _simbolo.Children.Add(_iconeAgenda);
+        _simbolo.Children.Add(_iconeNotificacao);
         _entrar = Pilula.Criar("Entrar", Pilula.Estilo.Principal, EntrarNaReuniao);
         _entrar.Margin = new Thickness(12, 0, 0, 0);
         _entrar.VerticalAlignment = VerticalAlignment.Center;
@@ -281,8 +284,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     {
         var linha = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(6, 0, 18, 0) };
         linha.Children.Add(new TextBlock { Text = "", FontFamily = (FontFamily)Application.Current.Resources["FonteIcones"], FontSize = 13, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
-        linha.Children.Add(new TextBlock { Text = "Notificações", FontSize = 11, VerticalAlignment = VerticalAlignment.Center });
-        return Lateral(linha, "Central de notificações");
+        linha.Children.Add(_textoSino);
+        return Lateral(linha, "Notificações");
     }
 
     private static Border Lateral(UIElement conteudo, string dica) => new()
@@ -297,6 +300,20 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     /// Um compromisso entrou na antecedência (spec da agenda §5.5): espera a vez como os outros avisos.
     public void Lembrar(AvisoAgenda aviso) => _estado.Lembrou(aviso);
 
+    /// Notificações de outros apps (spec das notificações §5): esperam a vez como os outros avisos.
+    public void Notificar(AvisoNotificacao aviso) => _estado.Notificou(aviso);
+
+    /// O Vitral lê as notificações (o sino abre o painel dele) e quantas há (o número do sino).
+    public void NotificacoesMudaram(bool ligadas, int quantas)
+    {
+        _estado.NotificacoesLigadas = ligadas;
+        _estado.Contador = quantas;
+        _textoSino.Text = ligadas && quantas > 0 ? $"Notificações · {quantas}" : "Notificações";
+    }
+
+    /// O ícone do app de uma notificação (o App liga o serviço).
+    public Func<string, Task<ImageSource?>>? IconeDoApp { get; set; }
+
     /// O compromisso foi cancelado: sai da fila e do lembrete.
     public void SumiuDaAgenda(string idCompromisso) => _estado.Sumiu(idCompromisso);
 
@@ -304,12 +321,26 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     /// quando o aviso aparece, e não quando chega).
     private void PreencherAviso()
     {
-        bool agenda = _estado.AvisoEhDaAgenda && _estado.AvisoAgendaAtual is not null;
+        var notificacao = _estado.AvisoNotificacaoAtual;
+        bool agenda = notificacao is null && _estado.AvisoEhDaAgenda && _estado.AvisoAgendaAtual is not null;
         var aviso = _estado.Aviso;
-        bool atualizacao = !agenda && aviso?.Tipo == TipoAviso.Atualizacao;
-        _simbolo.Children[0].Visibility = !agenda && !atualizacao ? Visibility.Visible : Visibility.Collapsed;
+        bool atualizacao = notificacao is null && !agenda && aviso?.Tipo == TipoAviso.Atualizacao;
+        _simbolo.Children[0].Visibility = notificacao is null && !agenda && !atualizacao ? Visibility.Visible : Visibility.Collapsed;
         _logoVitral.Visibility = atualizacao ? Visibility.Visible : Visibility.Collapsed;
         _iconeAgenda.Visibility = agenda ? Visibility.Visible : Visibility.Collapsed;
+        _iconeNotificacao.Visibility = notificacao is null ? Visibility.Collapsed : Visibility.Visible;
+        if (notificacao is not null)
+        {
+            // Notificação de outro app (spec das notificações §5): ícone e nome do app, título e texto.
+            _iconeNotificacao.Source = null;
+            if (IconeDoApp is { } icone) _ = PreencherIcone(icone, notificacao.AppId);
+            _titulo.Text = notificacao.Quantas > 1 ? notificacao.Titulo ?? "" : $"{notificacao.NomeApp} · {notificacao.Titulo}";
+            _detalhe.Text = notificacao.Quantas > 1 ? "abra o painel no sino" : notificacao.Texto ?? "";
+            _abrir.Text = "abrir ›";
+            _abrir.Visibility = Visibility.Visible;
+            _entrar!.Visibility = Visibility.Collapsed;
+            return;
+        }
         if (agenda)
         {
             var c = _estado.AvisoAgendaAtual!.Compromisso;
@@ -341,6 +372,16 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         };
         _detalhe.Text = atualizacao ? "clique para reiniciar e atualizar"
             : string.IsNullOrEmpty(aviso.Texto) ? aviso.Sessao : $"{aviso.Sessao} · {aviso.Texto}";
+    }
+
+    private async Task PreencherIcone(Func<string, Task<ImageSource?>> icone, string appId)
+    {
+        try
+        {
+            var imagem = await icone(appId);
+            if (_estado.AvisoNotificacaoAtual?.AppId == appId) _iconeNotificacao.Source = imagem; // ainda é a mesma
+        }
+        catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("JanelaNotch.Icone", e); }
     }
 
     /// A pílula "Entrar": abre o link da reunião e encerra o aviso.
@@ -388,6 +429,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             case AcaoNotch.AbrirNotificacoes: Atalhos.CentralDeNotificacoes(); break;
             case AcaoNotch.Reiniciar: PediuReiniciar?.Invoke(); break;
             case AcaoNotch.AbrirPendencias: Pediu?.Invoke(Painel.Pendencias); break;
+            case AcaoNotch.AbrirPainelNotificacoes: Pediu?.Invoke(Painel.Notificacoes); break;
+            case AcaoNotch.AbrirApp when _estado.AppPedido is { } app: Notificacoes.ServicoNotificacoes.AbrirApp(app); break;
         }
     }
 

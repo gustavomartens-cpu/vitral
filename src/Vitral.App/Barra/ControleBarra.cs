@@ -154,6 +154,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             notch.PediuReiniciar += () => Reiniciar?.Invoke();
             notch.CalendarioNoDia += dia => _vmCalendario?.AbrirDia(dia); // o aviso da agenda abre o calendário no dia
             notch.LarguraNormalMudou += Posicionar;
+        if (Notificacoes is { } s) // o notch recriado volta com o sino e os ícones das notificações
+        {
+            notch.IconeDoApp = s.Icone;
+            notch.NotificacoesMudaram(s.Estado == Core.Notificacoes.EstadoNotificacoes.Ligado, s.Atuais.Count);
+        }
             notch.SizeChanged += (_, _) => PosicionarAgrupado.Pedir(); // a HWND pode mudar de tamanho ao trocar de escala
             // Depois de o WPF terminar a troca de escala dele, que deixa a HWND no tamanho antigo (PosicaoNativa.Colocar)
             notch.DpiChanged += (_, _) => ReajustarAgrupado.Pedir();
@@ -189,6 +194,38 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
     /// O clique no aviso de atualização (o App liga ao ServicoAtualizacao).
     public Action? Reiniciar { get; set; }
+
+    private PainelNotificacoesViewModel? _vmNotificacoes;
+    private Notificacoes.ServicoNotificacoes? _notificacoes;
+
+    /// As notificações dos outros apps (spec das notificações): o sino do notch conta, as novas descem no notch e o
+    /// painel lista.
+    public Notificacoes.ServicoNotificacoes? Notificacoes
+    {
+        get => _notificacoes;
+        set
+        {
+            _notificacoes = value;
+            if (value is null) return;
+            value.Mudou += (estado, lista) =>
+            {
+                _relogio?.NotificacoesMudaram(estado == Core.Notificacoes.EstadoNotificacoes.Ligado, lista.Count);
+                _vmNotificacoes?.Atualizar(estado, lista);
+            };
+            value.Novas += novas => { foreach (var a in AvisoNotificacao.De(novas)) _relogio?.Notificar(a); };
+            if (_relogio is not null) _relogio.IconeDoApp = value.Icone;
+        }
+    }
+
+    private void LigarPainelNotificacoes(PainelNotificacoesViewModel vm, Notificacoes.ServicoNotificacoes s)
+    {
+        vm.PediuLimpar += id => _ = s.Limpar(id);
+        vm.PediuLimparApp += app => _ = s.LimparApp(app);
+        vm.PediuLimparTudo += () => _ = s.LimparTudo();
+        vm.PediuAbrirApp += app => { Vitral.App.Notificacoes.ServicoNotificacoes.AbrirApp(app); _coordenador.FecharTodos(); };
+        vm.PediuCentral += () => { Atalhos.CentralDeNotificacoes(); _coordenador.FecharTodos(); };
+        vm.Atualizar(s.Estado, s.Atuais);
+    }
 
     /// Aviso do Claude chegou pelo canal: vai para o notch; sem a barra do topo (ou sem o relógio), é descartado. O de
     /// versão nova, que só vem uma vez, espera o notch voltar (tela cheia, barra desligada).
@@ -254,7 +291,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             if (aberto == Painel.Nenhum) return;
 
             var janelaPainel = JanelaDoPainel(aberto);
-            Window? ilha = aberto switch { Painel.Calendario or Painel.Pendencias => _relogio, Painel.Midia => _midia, _ => _status };
+            Window? ilha = aberto switch { Painel.Calendario or Painel.Pendencias or Painel.Notificacoes => _relogio, Painel.Midia => _midia, _ => _status };
             if (janelaPainel is null || ilha is null)
             {
                 _coordenador.FecharTodos(); // painel ainda não existe nesta versão
@@ -262,7 +299,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             }
             var alinhamento = aberto switch
             {
-                Painel.Calendario or Painel.Pendencias => AlinhamentoPainel.Centro,
+                Painel.Calendario or Painel.Pendencias or Painel.Notificacoes => AlinhamentoPainel.Centro,
                 Painel.Midia => AlinhamentoPainel.Esquerda,
                 _ => AlinhamentoPainel.Direita,
             };
@@ -286,6 +323,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             if (painel == Painel.Calendario) { _vmCalendario?.Reabrir(); if (Agenda is not null) _ = Agenda.AtualizarAgora(); }
             if (painel == Painel.Bateria) _vmBateria?.Abrir();
             if (painel == Painel.Wifi) _ = _vmWifi?.AbrirAsync();
+            if (painel == Painel.Notificacoes && Notificacoes is not null) _vmNotificacoes?.Atualizar(Notificacoes.Estado, Notificacoes.Atuais); // o "há quanto tempo" anda
             return existente;
         }
         JanelaPainel? nova = null;
@@ -312,6 +350,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
                 var lista = new PainelPendencias(_relogio.Pendencias);
                 lista.Vazia += () => { if (_coordenador.Aberto == Painel.Pendencias) _coordenador.FecharTodos(); };
                 nova = new JanelaPainel("Pendências", 460) { Conteudo = lista };
+                break;
+            case Painel.Notificacoes when Notificacoes is not null:
+                _vmNotificacoes = new PainelNotificacoesViewModel(() => DateTimeOffset.Now);
+                LigarPainelNotificacoes(_vmNotificacoes, Notificacoes);
+                nova = new JanelaPainel("Notificações", 380) { Conteudo = new PainelNotificacoes(_vmNotificacoes, Notificacoes.Icone) };
                 break;
             case Painel.Icones:
                 nova = new JanelaPainel("Ícones", 280) { Conteudo = new PainelIcones(), DataContext = Guardar(new PainelIconesViewModel(bandeja)) };

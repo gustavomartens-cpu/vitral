@@ -84,6 +84,7 @@ public partial class App : Application
         _quieto.Devolver();
         ServicoDeNotificacoes = new Vitral.App.Notificacoes.ServicoNotificacoes(Dispatcher, _quieto);
         ServicoDeNotificacoes.Novas += novas => Barra.LogBarra.Info($"Notificações novas: {novas.Count}");
+        _barra.Notificacoes = ServicoDeNotificacoes; // o sino, os avisos e o painel do notch
         // Travamento fatal com a doca ligada: a barra do Windows volta antes de o processo sumir.
         // Na thread da interface também devolve os ícones da bandeja (a janela da ManagedShell morre com o processo).
         AppDomain.CurrentDomain.UnhandledException += (_, _) =>
