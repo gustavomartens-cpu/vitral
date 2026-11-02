@@ -64,10 +64,11 @@ public sealed class NotificacoesTests
     }
 
     [Fact]
-    public void Cala_os_apps_menos_o_Claude_e_os_ja_calados()
+    public void Cala_os_apps_menos_os_ja_calados()
     {
         var cala = RegrasNotificacoes.ParaCalar([("Chrome", null), ("Microsoft.SkyDrive.Desktop", 0), ("Claude_pzs8sxrjxfjjc!Claude", null), ("Email", 1)]);
-        Assert.Equal(["Chrome", "Email"], cala);
+        // O Claude também: os avisos dele vêm pelos ganchos no notch, e o balão do Windows seria repetição (02/11).
+        Assert.Equal(["Chrome", "Claude_pzs8sxrjxfjjc!Claude", "Email"], cala);
     }
 
     [Fact]

@@ -115,18 +115,46 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
     private Ret _ultimaFaixa;
     private DateTime _ultimoSetPos;
 
-    /// O aviso também chega com a área de trabalho em primeiro plano ou tela cheia em outro monitor: confere.
+    /// O aviso também chega com a área de trabalho em primeiro plano ou tela cheia em outro monitor: confere. Pela ordem
+    /// das janelas no monitor principal, e não pela janela da frente: clicar no outro monitor não tira a tela cheia (02/11).
     private static bool TelaCheiaDeVerdade(bool registrar)
     {
-        var janela = GetForegroundWindow();
-        if (janela == IntPtr.Zero || !GetWindowRect(janela, out var r)) return false;
-        string classe = NomeDaClasse(janela);
         var m = MonitorPrincipal.Ler();
-        bool real = Ui.Barra.TelaCheia.EhDeVerdade(classe,
-            new Ui.Barra.Retangulo(r.Esq, r.Topo, r.Dir - r.Esq, r.Base - r.Topo), new Ui.Barra.Retangulo(m.X, m.Y, m.Largura, m.Altura));
-        if (!real && registrar) LogBarra.Info($"Aviso de tela cheia do Windows sem janela cobrindo o monitor ({classe})");
+        var janelas = new List<(string Classe, Ui.Barra.Retangulo Janela)>();
+        uint proprio = (uint)Environment.ProcessId;
+        EnumWindows((h, _) =>
+        {
+            if (Conta(h, proprio) && GetWindowRect(h, out var r))
+                janelas.Add((NomeDaClasse(h), new Ui.Barra.Retangulo(r.Esq, r.Topo, r.Dir - r.Esq, r.Base - r.Topo)));
+            return true;
+        }, IntPtr.Zero);
+        bool real = Ui.Barra.TelaCheia.NoPrincipal(janelas, new Ui.Barra.Retangulo(m.X, m.Y, m.Largura, m.Altura));
+        if (!real && registrar)
+            LogBarra.Info($"Aviso de tela cheia do Windows sem janela cobrindo o monitor ({janelas.FirstOrDefault().Classe})");
         return real;
     }
+
+    private const int GwlExStyle = -20, DwmCloaked = 14;
+    private const long Ferramenta = 0x80, Transparente = 0x20;
+
+    /// Uma janela que alguém vê: visível, não minimizada nem escondida pelo Windows, fora das sobreposições (ferramenta ou
+    /// transparente ao mouse) e das do próprio Vitral (notch, doca, ilhas).
+    private static bool Conta(IntPtr h, uint proprio)
+    {
+        if (!IsWindowVisible(h) || IsIconic(h)) return false;
+        GetWindowThreadProcessId(h, out uint processo);
+        if (processo == proprio) return false;
+        if (DwmGetWindowAttribute(h, DwmCloaked, out int escondida, sizeof(int)) == 0 && escondida != 0) return false;
+        return (GetWindowLongPtr(h, GwlExStyle) & (Ferramenta | Transparente)) == 0;
+    }
+
+    private delegate bool Visitar(IntPtr h, IntPtr l);
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool EnumWindows(Visitar v, IntPtr l);
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool IsWindowVisible(IntPtr h);
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool IsIconic(IntPtr h);
+    [LibraryImport("user32.dll")] private static partial uint GetWindowThreadProcessId(IntPtr h, out uint processo);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static partial long GetWindowLongPtr(IntPtr h, int i);
+    [LibraryImport("dwmapi.dll")] private static partial int DwmGetWindowAttribute(IntPtr h, int atributo, out int valor, int tamanho);
 
     private static unsafe string NomeDaClasse(IntPtr janela)
     {
@@ -135,7 +163,6 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
         return n > 0 ? new string(buffer, 0, n) : "";
     }
 
-    [LibraryImport("user32.dll")] private static partial IntPtr GetForegroundWindow();
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool GetWindowRect(IntPtr janela, out Ret ret);
     [LibraryImport("user32.dll", EntryPoint = "GetClassNameW")] private static unsafe partial int GetClassName(IntPtr janela, char* classe, int tamanho);
 

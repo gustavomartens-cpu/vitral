@@ -7,6 +7,20 @@ public static class TelaCheia
 {
     private static readonly HashSet<string> AreaDeTrabalho = new(StringComparer.Ordinal) { "Progman", "WorkerW", "Shell_TrayWnd" };
 
+    /// A tela cheia do monitor principal pela ordem das janelas (de cima para baixo), e não pela janela da frente: clicar
+    /// numa janela do outro monitor não tira a tela cheia do app que cobre o principal (Gustavo, 02/11). Vale a primeira
+    /// janela que encosta no monitor principal.
+    public static bool NoPrincipal(IEnumerable<(string Classe, Retangulo Janela)> deCimaParaBaixo, Retangulo monitorPrincipal)
+    {
+        foreach (var (classe, janela) in deCimaParaBaixo)
+        {
+            bool encosta = janela.X < monitorPrincipal.X + monitorPrincipal.Largura && janela.X + janela.Largura > monitorPrincipal.X
+                && janela.Y < monitorPrincipal.Y + monitorPrincipal.Altura && janela.Y + janela.Altura > monitorPrincipal.Y;
+            if (encosta) return EhDeVerdade(classe, janela, monitorPrincipal);
+        }
+        return false;
+    }
+
     public static bool EhDeVerdade(string classeDaJanela, Retangulo janela, Retangulo monitorPrincipal) =>
         !AreaDeTrabalho.Contains(classeDaJanela)
         && janela.X <= monitorPrincipal.X && janela.Y <= monitorPrincipal.Y

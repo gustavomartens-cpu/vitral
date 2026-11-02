@@ -35,15 +35,16 @@ public static class RegrasNotificacoes
         pastaRegistrada is null
         || !string.Equals(pastaRegistrada.TrimEnd('\\', '/'), pastaAtual.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
 
-    /// Windows quieto (spec §4): os apps cujo balão o Vitral desliga. Fica de fora o app do Claude (as notificações dele
-    /// não aparecem no Vitral) e quem já estava com o balão desligado (escolha do usuário, que o Vitral não devolve).
+    /// Windows quieto (spec §4): os apps cujo balão o Vitral desliga. Fica de fora quem já estava com o balão desligado
+    /// (escolha do usuário, que o Vitral não devolve) e as exceções abaixo.
     public static IReadOnlyList<string> ParaCalar(IEnumerable<(string AppId, int? ShowBanner)> apps) =>
         apps.Where(a => a.ShowBanner != 0 && !NuncaCalar(a.AppId)).Select(a => a.AppId).ToList();
 
     // Ficam com o balão do Windows (revisão final da 0.15.0): o que precisa dos botões do balão (chamadas no Celular,
-    // alarmes, Teams), os avisos do próprio Windows, o Claude (fora do Vitral) e o próprio Vitral.
+    // alarmes, Teams), os avisos do próprio Windows e o próprio Vitral. O Claude é calado: os avisos dele vêm pelos ganchos
+    // no notch, e o balão do Windows era repetição (pedido do Gustavo, 02/11).
     private static readonly string[] Excecoes =
-        ["Claude_", "Vitral_", "Vitral.Dev_", "Microsoft.YourPhone_", "Microsoft.WindowsAlarms_", "Windows.SystemToast.", "MSTeams_", "com.squirrel.Teams."];
+        ["Vitral_", "Vitral.Dev_", "Microsoft.YourPhone_", "Microsoft.WindowsAlarms_", "Windows.SystemToast.", "MSTeams_", "com.squirrel.Teams."];
 
     private static bool NuncaCalar(string appId) => Excecoes.Any(e => appId.StartsWith(e, StringComparison.OrdinalIgnoreCase));
 
