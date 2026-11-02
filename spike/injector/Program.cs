@@ -49,10 +49,11 @@ foreach (var nome in alvo == "explorer" ? new[] { "TranslucentTB", "windhawk", "
 
 // Resolve o alvo: PID e uma janela (para a rota interna).
 (uint pid, IntPtr janela, uint thread) = alvo == "explorer" ? Nativo.AlvoExplorer() : Nativo.AlvoIniciar();
+if (uint.TryParse(Arg("--pid", ""), out uint pidForcado)) (pid, janela, thread) = (pidForcado, IntPtr.Zero, 0); // prova da central: qualquer processo
 if (pid == 0) { Console.WriteLine($"Alvo '{alvo}' não encontrado (no Iniciar: abra-o uma vez antes)."); return 1; }
 Console.WriteLine($"Alvo {alvo}: PID {pid}, thread {thread}");
 
-if (Mutex.TryOpenExisting($"Local\\VitralTap-{pid}", out var existente))
+if (dll.EndsWith("VitralTapSpike.dll", StringComparison.OrdinalIgnoreCase) && Mutex.TryOpenExisting($"Local\\VitralTap-{pid}", out var existente))
 {
     existente.Dispose();
     Console.WriteLine("Já anexado a este processo (mutex existe). Nada feito.");

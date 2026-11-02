@@ -1,0 +1,4 @@
+LIBRARY SondaFundos
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE
