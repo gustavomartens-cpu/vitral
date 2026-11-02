@@ -4,6 +4,13 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 
 ## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)
 
+- **Sobras do Iniciar** (revisão final da 0.14.0): o log da DLL ganha 5 a 15 linhas "REPINTADO" a cada abertura,
+  gravadas durante a animação; a leitura das cores espera até 250 ms na thread do Iniciar quando o arquivo some; o
+  caminho das cores é regravado sem trava numa reconexão; os logs por processo nunca são apagados; uma cópia
+  interrompida da DLL não é refeita; falta teste do retrato original sem a seção "iniciar"; a pasta dos logs aceita
+  escrita de outros apps isolados (só mudaria a linha de estado).
+- **Iniciar, próximas etapas** (spec do Iniciar §7): central de notificações e configurações rápidas, busca, textos e
+  ícones do Iniciar com as cores da doca, assinatura digital da DLL.
 - **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir
   o dia inteiro do Outlook na tela.
 - **Escolher agendas da Microsoft** (depois do cadastro no Azure).
@@ -65,4 +72,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   mensagem parada com a janela minimizada e login de 5 min explicado (0.13.8), faixa da barra única só com a mídia
   tocando, cor personalizada guardada, prévia com o Windows real e o papel de parede relido, erro da troca de sessão
   de mídia (0.13.9). Fica de propósito: a prévia das formas desenha as ilhas de exemplo mesmo desligadas, e a opção
-  desconhecida some ao regravar o perfil numa versão antiga (fixado em teste).
+  desconhecida some ao regravar o perfil numa versão antiga (fixado em teste). Menu Iniciar com o vidro, a cor, a
+  borda e os cantos da doca, por um componente dentro do Iniciar, com reserva pela cor de destaque do Windows (0.14.0).
