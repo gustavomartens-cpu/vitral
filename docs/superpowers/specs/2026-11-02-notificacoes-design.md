@@ -36,15 +36,18 @@ Windows pintada.
 
 - `ServicoNotificacoes` (App) lê `GetNotificationsAsync(Toast)` e publica uma lista de `NotificacaoApp(Id, AppId,
   NomeApp, Titulo, Texto, Chegou, Icone)`.
-- Mudanças: o evento `NotificationChanged` quando ele chega a um app desktop com identidade; senão (a Task 1 decide),
-  um vigia no `wpndatabase.db-wal` dispara a releitura (com intervalo mínimo de 1 s).
+- Mudanças: o evento `NotificationChanged`, que chega a um app desktop com identidade (provado na Task 1), dispara a
+  releitura (com intervalo mínimo de 1 s).
 - Filtro: o app do Claude (`AppId` começando por `Claude_`) fica fora.
 - Ícone: `AppInfo.DisplayInfo.GetLogo(32x32)`, guardado por app.
 
 ## 4. Windows quieto
 
-O balão do Windows não aparece enquanto o Vitral cuida das notificações. O caminho é decidido na Task 1, nesta ordem
-de preferência, e o escolhido é registrado aqui:
+O balão do Windows não aparece enquanto o Vitral cuida das notificações. **Escolhido na Task 1: o caminho 1**, com o
+DWORD `ShowBanner = 0` em `HKCU\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings\<AUMID>` (vale na hora).
+O Vitral cala, ao ligar, todos os apps que já têm chave ali e os que aparecerem depois; os que já estavam com
+`ShowBanner = 0` ficam como estão e não entram na lista para devolver; o app do Claude não é calado. Os caminhos
+avaliados, na ordem:
 1. Desligar só o balão (banner), app por app, na configuração de notificações do Windows, guardando o valor antigo e
    devolvendo ao sair.
 2. Ligar o "não perturbe" do Windows (caminho não documentado), devolvendo ao sair.

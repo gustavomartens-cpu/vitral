@@ -41,3 +41,13 @@ topo, com a pintura só como complemento.
 - **Em aberto para o desenho:** o aviso de notificação nova (`NotificationChanged`) num app desktop; os efeitos da
   identidade no Vitral (atualização do Velopack trocando a pasta `current`, bandeja, registro); fora do modo de
   desenvolvedor, o pacote precisa de assinatura.
+
+## Windows quieto e aviso de mudança (02/11, Task 1 do plano das notificações)
+
+- **Aviso de mudança:** `UserNotificationListener.NotificationChanged` dispara num exe desktop com identidade (pacote
+  esparso): `Added` chegou na hora para uma notificação de teste.
+- **Windows quieto:** o valor DWORD `ShowBanner = 0` em
+  `HKCU\Software\Microsoft\Windows\CurrentVersion\Notifications\Settings\<AUMID>` (o mesmo que "Mostrar banners de
+  notificação" desligado na tela do Windows; o OneDrive já estava assim) cala o balão **na hora**, sem reiniciar nada:
+  o canto da tela mudou em 629 pontos com o balão e em 0 sem ele. A notificação continua indo para a central e chega
+  ao `GetNotificationsAsync`. Desfazer = apagar o valor (ou voltar o anterior). Os caminhos 2 e 3 não foram testados.
