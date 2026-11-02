@@ -26,7 +26,9 @@ if (rota is not ("externa" or "interna") || alvo is not ("explorer" or "iniciar"
 // Pastas: a DLL fica em spike\out; os resultados em spike\resultados.
 string spike = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
 string outDir = Path.Combine(spike, "out");
-string dll = Path.Combine(outDir, "VitralTapSpike.dll");
+string dll = Path.Combine(outDir, Arg("--dll", "VitralTapSpike.dll"));
+bool prova = dll.EndsWith("IniciarProva.dll", StringComparison.OrdinalIgnoreCase);
+int segurar = int.Parse(Arg("--segurar", "0"));
 string logs = Path.Combine(outDir, "logs");
 string csv = Path.Combine(spike, "resultados", "rotas.csv");
 if (!File.Exists(dll)) { Console.WriteLine($"DLL não encontrada: {dll}"); return 1; }
@@ -34,7 +36,7 @@ Directory.CreateDirectory(logs);
 Directory.CreateDirectory(Path.GetDirectoryName(csv)!);
 
 // Só um consumidor de XAML Diagnostics por processo.
-foreach (var nome in new[] { "TranslucentTB", "windhawk", "ExplorerBlurMica" })
+foreach (var nome in alvo == "explorer" ? new[] { "TranslucentTB", "windhawk", "ExplorerBlurMica" } : new[] { "windhawk" })
 {
     if (Process.GetProcessesByName(nome).Length > 0)
     {
@@ -78,17 +80,18 @@ long ms = relogio.ElapsedMilliseconds;
 RotaInterna.Remover(hook);
 
 // Processos AppContainer (Iniciar) não enxergam o evento Local\ do injector: confere pelo log.
-string log = Path.Combine(logs, $"tap-{pid}.log");
+string log = Path.Combine(logs, prova ? $"iniciar-{pid}.log" : $"tap-{pid}.log");
 Thread.Sleep(2000);
 string conteudo = LerCompartilhado(log); // o componente pode estar escrevendo no log agora
 if (!ok && conteudo.Contains("ADVISE|hr=0")) ok = true;
 
-int fills = Contar(conteudo, "FILL_APLICADO|");
+int fills = Contar(conteudo, prova ? "PINTADO|" : "FILL_APLICADO|");
 string frames = conteudo.Split('\n').LastOrDefault(l => l.Contains("FRAMES="))?.Split("FRAMES=")[1].Trim() ?? "0";
 string resultado = ok ? $"OK(frames={frames};fills={fills})" : "TIMEOUT";
 Console.WriteLine($"Resultado: {resultado} em {ms} ms. Log: {log}");
 Registrar(resultado, ms);
 
+if (!semHost && ok && segurar > 0) { Thread.Sleep(segurar * 1000); return 0; }
 if (!semHost && ok)
 {
     Console.WriteLine("Olhe as barras. Pressione Enter para encerrar este host (a barra deve voltar ao normal).");

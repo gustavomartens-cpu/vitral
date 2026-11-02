@@ -1,0 +1,4 @@
+LIBRARY IniciarProva
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE
