@@ -4,7 +4,7 @@ namespace Vitral.Ui.Barra;
 
 public enum ModoNotch { Normal, Aviso, Lembrete, Permissao, Resposta }
 
-public enum AcaoNotch { Nenhuma, AbrirClaude, AbrirCalendario, AbrirNotificacoes, Reiniciar, AbrirPendencias }
+public enum AcaoNotch { Nenhuma, AbrirClaude, AbrirCalendario, AbrirNotificacoes, Reiniciar, AbrirPendencias, AbrirApp, AbrirPainelNotificacoes }
 
 /// Onde o clique caiu: no meio (relógio ou aviso) ou numa das laterais (spec do notch vivo §3.4).
 public enum ParteNotch { Meio, Esquerda, Direita }
@@ -71,6 +71,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         AvisoNasRespostas(aviso);
         Aviso = aviso;
         AvisoEhDaAgenda = false; // o do Claude toma o aviso; o da agenda, se havia, fica no lembrete
+        AvisoNotificacaoAtual = null; // a notificação na tela sai (continua no painel do sino)
         Pendente = true;
         if (aviso.Tipo != TipoAviso.Atualizacao) PedidoPerdido = false; // a lateral passa a mostrar o aviso novo
         // O pedido ou a ficha de outra sessão continuam na frente.
@@ -125,7 +126,8 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         TiqueAgenda(t);
         if (Modo == ModoNotch.Aviso && !_mouse && (t - _inicio).TotalSeconds >= Duracao)
         {
-            if (!MostrarAgenda()) Ir(ModoNotch.Lembrete); // um aviso da agenda esperando entra no lugar
+            if (AvisoNotificacaoAtual is not null) EncerrarNotificacao();
+            else if (!MostrarAgenda() && !MostrarNotificacao()) Ir(ModoNotch.Lembrete); // um aviso esperando entra no lugar
         }
         else if (Modo is ModoNotch.Normal or ModoNotch.Lembrete && _mouse && !Laterais && (t - _entrou).TotalSeconds >= EsperaLaterais)
         {
@@ -145,7 +147,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
             Pendente = true;
         }
         if (_respostas.Count > 0) { MostrarResposta(); return; }
-        if (MostrarAgenda()) return;
+        if (MostrarAgenda() || MostrarNotificacao()) return;
         Ir(Pendente || AvisoAgendaAtual is not null ? ModoNotch.Lembrete : ModoNotch.Normal, forcar: true);
     }
 
@@ -185,20 +187,28 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
     public AcaoNotch Clicou(ParteNotch parte = ParteNotch.Meio)
     {
         if (Modo is ModoNotch.Permissao or ModoNotch.Resposta) return AcaoNotch.Nenhuma; // nas fichas, só os botões respondem
+        AppPedido = null;
         // A lateral, nesta ordem: o pedido perdido abre o Claude; as pendências abrem a lista; o aviso (ou o lembrete) de
         // uma versão nova do Vitral reinicia; os do Claude abrem o Claude.
         var abrir = PedidoPerdido ? AcaoNotch.AbrirClaude
             : Pendencias.Quantas > 0 ? AcaoNotch.AbrirPendencias
             : Aviso?.Tipo == TipoAviso.Atualizacao && Pendente ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         // O clique no próprio aviso segue o aviso (a ordem das pendências vale só para a lateral).
-        var doAviso = AvisoEhDaAgenda ? AcaoNotch.AbrirCalendario
+        var doAviso = AvisoNotificacaoAtual is not null ? AcaoNotch.AbrirApp
+            : AvisoEhDaAgenda ? AcaoNotch.AbrirCalendario
             : Aviso?.Tipo == TipoAviso.Atualizacao ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         var acao = parte switch
         {
             ParteNotch.Esquerda => abrir,
-            ParteNotch.Direita => AcaoNotch.AbrirNotificacoes,
+            ParteNotch.Direita => NotificacoesLigadas ? AcaoNotch.AbrirPainelNotificacoes : AcaoNotch.AbrirNotificacoes,
             _ => Modo == ModoNotch.Aviso ? doAviso : AcaoNotch.AbrirCalendario,
         };
+        if (acao == AcaoNotch.AbrirApp)
+        {
+            AppPedido = AvisoNotificacaoAtual!.AppId;
+            EncerrarNotificacao();
+            return acao;
+        }
         // O pedido perdido em cima de uma atualização pendente: abrir o Claude limpa só o pedido; o lembrete da
         // atualização continua.
         if (acao == AcaoNotch.AbrirClaude && PedidoPerdido && Aviso?.Tipo == TipoAviso.Atualizacao) PedidoPerdido = false;
