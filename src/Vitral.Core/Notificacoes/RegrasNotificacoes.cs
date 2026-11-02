@@ -30,6 +30,11 @@ public static class RegrasNotificacoes
         return (agora.Where(n => !idsAntes.Contains(n.Id)).ToList(), antes.Where(n => !idsAgora.Contains(n.Id)).Select(n => n.Id).ToList());
     }
 
+    /// O pacote esparso aponta para a pasta do Vitral.exe (spec §2): registra só se ainda não está registrado com ela.
+    public static bool PrecisaRegistrar(string? pastaRegistrada, string pastaAtual) =>
+        pastaRegistrada is null
+        || !string.Equals(pastaRegistrada.TrimEnd('\\', '/'), pastaAtual.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
+
     public static string HaQuanto(DateTimeOffset chegou, DateTimeOffset agora)
     {
         var passou = agora - chegou;

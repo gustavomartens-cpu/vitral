@@ -55,6 +55,15 @@ public sealed class NotificacoesTests
     }
 
     [Fact]
+    public void Nao_registra_de_novo_com_a_mesma_pasta()
+    {
+        Assert.False(RegrasNotificacoes.PrecisaRegistrar(@"C:\a\current", @"C:\a\current"));
+        Assert.False(RegrasNotificacoes.PrecisaRegistrar(@"C:\A\Current\", @"c:\a\current"));
+        Assert.True(RegrasNotificacoes.PrecisaRegistrar(@"C:\a\current", @"G:\dev\vitral\bin"));
+        Assert.True(RegrasNotificacoes.PrecisaRegistrar(null, @"C:\a\current"));
+    }
+
+    [Fact]
     public void Muitas_e_sem_icone()
     {
         var muitas = Enumerable.Range(1, 150).Select(i => N((uint)i, $"App{i % 20}", i)).ToList();

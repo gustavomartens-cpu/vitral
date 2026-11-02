@@ -45,6 +45,10 @@ public partial class App : Application
         base.OnStartup(e);
         DispatcherUnhandledException += AoErroNaoTratado;
 
+        // Identidade de pacote para ler as notificações: registrada agora, só vale num processo novo.
+        if (Notificacoes.PacoteVitral.RegistrarEReabrir(e.Args)) { Shutdown(); return; }
+        Barra.LogBarra.Info($"Identidade de pacote: {(Notificacoes.PacoteVitral.TemIdentidade ? "sim" : "não")}");
+
         _instancia = new InstanciaUnica(() => Dispatcher.BeginInvoke(MostrarJanela));
         if (!_instancia.EhPrimeira)
         {

@@ -40,6 +40,8 @@
 
   <ItemGroup>
     <Resource Include="Recursos\vitral.ico" />
+    <!-- Logo do pacote esparso (identidade para as notificações) -->
+    <None Include="Recursos\PacoteLogo.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- O componente do Iniciar (tools/compilar-iniciar.ps1; o build.ps1 compila antes de publicar) -->
