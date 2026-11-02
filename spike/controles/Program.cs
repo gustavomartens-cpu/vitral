@@ -89,6 +89,39 @@ switch (cmd)
     case "ddc":
         Ddc.Listar();
         break;
+
+    case "fones":
+    {
+        // O endereço Bluetooth está no identificador do filtro (…&d8be65a80d7e_c…): cruza com os aparelhos pareados.
+        var nomes = new Dictionary<string, string>();
+        foreach (var d in await DeviceInformation.FindAllAsync(BluetoothDevice.GetDeviceSelectorFromPairingState(true)))
+            if (await BluetoothDevice.FromIdAsync(d.Id) is { } b) nomes[b.BluetoothAddress.ToString("x12")] = d.Name;
+        foreach (var (_, estado, filtro) in FonesBluetooth.Listar())
+        {
+            var m = System.Text.RegularExpressions.Regex.Match(filtro, @"&([0-9a-f]{12})_c", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            string endereco = m.Success ? m.Groups[1].Value.ToLowerInvariant() : "?";
+            Console.WriteLine($"{(nomes.TryGetValue(endereco, out var n) ? n : endereco)} [estado {estado}]");
+        }
+        break;
+    }
+
+    case "fone-conectar" or "fone-desconectar":
+    {
+        string parte = args.ElementAtOrDefault(1) ?? "";
+        string? endereco = null;
+        foreach (var d in await DeviceInformation.FindAllAsync(BluetoothDevice.GetDeviceSelectorFromPairingState(true)))
+            if (d.Name.Contains(parte, StringComparison.OrdinalIgnoreCase) && await BluetoothDevice.FromIdAsync(d.Id) is { } b)
+                endereco = b.BluetoothAddress.ToString("x12");
+        var alvo = FonesBluetooth.Listar().FirstOrDefault(f => endereco is not null && f.Filtro.Contains($"&{endereco}_c", StringComparison.OrdinalIgnoreCase));
+        if (alvo.Filtro is null) { Console.WriteLine("não achei"); break; }
+        int hr = FonesBluetooth.Pedir(alvo.Filtro, cmd == "fone-conectar");
+        Console.WriteLine($"{cmd} {alvo.Nome}: hr=0x{hr:X8}");
+        await Task.Delay(8000);
+        foreach (var d in await DeviceInformation.FindAllAsync(BluetoothDevice.GetDeviceSelectorFromPairingState(true)))
+            if (d.Name.Contains(parte, StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine($"{d.Name}: {(await BluetoothDevice.FromIdAsync(d.Id))?.ConnectionStatus}");
+        break;
+    }
 }
 
 /// "Não perturbe" (Assistente de foco) pelo COM não documentado do Windows, como fazem outros programas.
