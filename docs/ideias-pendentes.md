@@ -81,4 +81,5 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   de mídia (0.13.9). Fica de propósito: a prévia das formas desenha as ilhas de exemplo mesmo desligadas, e a opção
   desconhecida some ao regravar o perfil numa versão antiga (fixado em teste). Menu Iniciar com o vidro, a cor, a
   borda e os cantos da doca, por um componente dentro do Iniciar, com reserva pela cor de destaque do Windows (0.14.0).
-  Notificações dos outros apps no notch e num painel no sino, com o balão do Windows calado (0.15.0).
+  Notificações dos outros apps no notch e num painel no sino, com o balão do Windows calado (0.15.0), tela cheia que
+  não cai ao clicar no outro monitor e balão do app do Claude calado (0.15.1).
