@@ -44,16 +44,6 @@ public sealed class NuloComoMarca : IValueConverter
         ReferenceEquals(value, Ui.Opcoes.Nulo) ? null : value;
 }
 
-/// Miniatura da grade de temas: o tema → os valores dele com o Windows de agora (a marca "Não mexer" → nulo).
-public sealed class TemaParaValores : IValueConverter
-{
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        value is Core.Perfis.TemaAparencia t
-            ? Core.Aparencia.ResolverAparencia.Resolver(new Core.Perfis.AparenciaPerfil(t), Tema.ServicoAparencia.LerWindows()) : null;
-
-    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => Binding.DoNothing;
-}
-
 /// Transparência do personalizar (0 a 100, nula = do tema) no deslizante: nula deixa o deslizante onde está.
 public sealed class TransparenciaNoDeslizante : IValueConverter
 {

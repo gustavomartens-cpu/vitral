@@ -36,6 +36,9 @@ public sealed partial class PrincipalViewModel : ObservableObject
     public EditorAparenciaViewModel EditorAparencia { get; } = new();
     public EditorFormasViewModel EditorFormas { get; } = new();
 
+    /// Os cantos do notch da aparência em vigor (o App liga o serviço real).
+    public Func<Core.Perfis.CantosParte> CantosEmVigor { get; set; } = () => Core.Perfis.CantosParte.Redondos;
+
     public EditorBarraTarefasViewModel EditorBarraTarefas { get; }
 
     [ObservableProperty] private string? _selecionado;
@@ -59,6 +62,10 @@ public sealed partial class PrincipalViewModel : ObservableObject
         _dialogos = dialogos;
         _relogio = relogio;
         EditorBarraTarefas = new EditorBarraTarefasViewModel(programasBandeja ?? (() => []));
+        // O raio do notch vem dos cantos da aparência: a prévia das formas segue a aparência do editor, ou a em vigor
+        // com "Não mexer".
+        EditorFormas.CantosNotch = () => EditorAparencia.Previa?.Notch.Cantos ?? CantosEmVigor();
+        EditorAparencia.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(EditorAparencia.Previa)) EditorFormas.Recalcular(); };
         foreach (var editor in new System.ComponentModel.INotifyPropertyChanged[] { Editor, EditorBarra, EditorBarraTarefas, EditorDoca, EditorAparencia, EditorFormas })
             editor.PropertyChanged += (_, _) => AtualizarAlteracoes();
         AtualizarLista();

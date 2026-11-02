@@ -401,7 +401,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             bool unica = formas.Ilhas.Disposicao == Core.Perfis.DisposicaoIlhas.BarraUnica;
             _midia?.AplicarSemVidro(unica);
             _status?.AplicarSemVidro(unica);
-            AjustarFundo(unica, PosicaoIlhas.Barra(monitor, formas.Ilhas), formas.Ilhas.CantosRetos, p.Dpi);
+            AjustarFundo(PosicaoIlhas.ComFundo(unica, _midia is not null, _status is not null), PosicaoIlhas.Barra(monitor, formas.Ilhas), formas.Ilhas.CantosRetos, p.Dpi);
             var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0,
                 formas.Ilhas, formas.Notch);
             if (_midia is not null) PosicaoNativa.Colocar(_midia, m.X, m.Y, p.Dpi);
@@ -411,7 +411,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("ControleBarra.Posicionar", e); }
     }
 
-    /// Barra única: o fundo de vidro de lado a lado, criado na primeira vez e fechado ao voltar para ilhas separadas.
+    /// Barra única: o fundo de vidro de lado a lado, criado na primeira vez e fechado ao voltar para ilhas separadas
+    /// (ou quando mídia e status estão desligados).
     private void AjustarFundo(bool unica, Retangulo barra, bool cantosRetos, uint dpi)
     {
         if (!unica)

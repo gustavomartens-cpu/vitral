@@ -16,6 +16,13 @@ public sealed partial class EditorAjustesAparencia : ObservableObject
     [ObservableProperty] private CantosParte? _cantos;
     [ObservableProperty] private bool _diferenciar;
 
+    /// As paletas do seletor, com a cor escolhida sempre marcável (ver <see cref="Opcoes.ComCor"/>).
+    public IReadOnlyList<Opcao<object>> CoresFundo => Opcoes.ComCor(Opcoes.FundosAparencia, CorFundo);
+    public IReadOnlyList<Opcao<object>> CoresDestaque => Opcoes.ComCor(Opcoes.DestaquesAparencia, CorDestaque);
+
+    partial void OnCorFundoChanged(string? value) => OnPropertyChanged(nameof(CoresFundo));
+    partial void OnCorDestaqueChanged(string? value) => OnPropertyChanged(nameof(CoresDestaque));
+
     public void Carregar(AjustesAparencia? a)
     {
         Material = a?.Material;

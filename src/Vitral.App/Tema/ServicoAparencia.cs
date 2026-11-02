@@ -22,21 +22,41 @@ internal sealed class ServicoAparencia : IControleAparencia
     };
     private AparenciaPerfil _perfil = EstadoAparencia.Padrao;
 
+    private readonly VigiaWindows _vigia = new();
+
     private ServicoAparencia()
     {
+        VisualDoWindows = LerWindows();
+        _vigia.Mudou(VisualDoWindows);
         Recalcular();
-        // Modo, destaque e transparência do Windows: recalcula (o Automático muda; a transparência vale para todos).
+        // Modo, destaque e transparência do Windows: recalcula só quando mudaram (o Automático muda; a transparência vale
+        // para todos). O Windows manda o aviso muitas vezes sem mudar nada. Este é o único lugar que escuta: as ilhas,
+        // os painéis e a doca se refazem pelo Mudou.
         SystemEvents.UserPreferenceChanged += (_, e) =>
         {
             if (e.Category is UserPreferenceCategory.General or UserPreferenceCategory.Color or UserPreferenceCategory.VisualStyle)
-                Application.Current?.Dispatcher.BeginInvoke(Recalcular);
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    var agora = LerWindows();
+                    if (!_vigia.Mudou(agora)) return;
+                    VisualDoWindows = agora;
+                    Recalcular();
+                });
+            else if (e.Category is UserPreferenceCategory.Desktop)
+                Application.Current?.Dispatcher.BeginInvoke(() => PapelDeParedeMudou?.Invoke());
         };
     }
 
     public ValoresAparencia Atual { get; private set; } = null!;
 
+    /// O visual do Windows da última leitura que mudou algo.
+    public VisualWindows VisualDoWindows { get; private set; }
+
     /// Os valores mudaram: o vidro e o que é desenhado em código se refazem.
     public event Action? Mudou;
+
+    /// Aviso de área de trabalho do Windows (troca de papel de parede, entre outros): a prévia relê a imagem.
+    public event Action? PapelDeParedeMudou;
 
     public void Aplicar(AparenciaPerfil aparencia)
     {
@@ -60,7 +80,7 @@ internal sealed class ServicoAparencia : IControleAparencia
 
     private void Recalcular()
     {
-        Atual = ResolverAparencia.Resolver(_perfil, LerWindows());
+        Atual = ResolverAparencia.Resolver(_perfil, VisualDoWindows);
         foreach (var (parte, d) in _dicionarios) Preencher(d, Valores(parte));
         Mudou?.Invoke();
     }

@@ -58,13 +58,6 @@ internal sealed partial class JanelaPainel : Window
         };
         Content = _casca;
         VidroIlha.Preparar(this, _casca);
-        Microsoft.Win32.UserPreferenceChangedEventHandler aoMudar = (_, e) =>
-        {
-            if (e.Category is Microsoft.Win32.UserPreferenceCategory.General or Microsoft.Win32.UserPreferenceCategory.Color)
-                Dispatcher.BeginInvoke(() => VidroIlha.Atualizar(this, _casca));
-        };
-        Microsoft.Win32.SystemEvents.UserPreferenceChanged += aoMudar;
-        Closed += (_, _) => Microsoft.Win32.SystemEvents.UserPreferenceChanged -= aoMudar;
         SourceInitialized += (_, _) =>
         {
             var h = new WindowInteropHelper(this).Handle;

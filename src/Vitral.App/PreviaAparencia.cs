@@ -22,12 +22,35 @@ public sealed class PreviaAparencia : FrameworkElement
     public static readonly DependencyProperty RaioProperty = DependencyProperty.Register(nameof(Raio),
         typeof(double), typeof(PreviaAparencia), new FrameworkPropertyMetadata(10.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
+    // O papel de parede trocou: a próxima prévia desenhada relê a imagem (antes das prévias redesenharem).
+    static PreviaAparencia() => ServicoAparencia.Instancia.PapelDeParedeMudou += () => _fundoLido = false;
+
     public PreviaAparencia()
     {
-        // Com SemValoresUsaAtual, desenha a aparência em vigor: redesenha quando ela muda (enquanto está na tela).
+        // A aparência em vigor (SemValoresUsaAtual), o Windows (miniaturas e Automático) ou o papel de parede mudaram:
+        // redesenha enquanto está na tela.
         Action redesenhar = InvalidateVisual;
-        Loaded += (_, _) => ServicoAparencia.Instancia.Mudou += redesenhar;
-        Unloaded += (_, _) => ServicoAparencia.Instancia.Mudou -= redesenhar;
+        Loaded += (_, _) =>
+        {
+            ServicoAparencia.Instancia.Mudou += redesenhar;
+            ServicoAparencia.Instancia.PapelDeParedeMudou += redesenhar;
+        };
+        Unloaded += (_, _) =>
+        {
+            ServicoAparencia.Instancia.Mudou -= redesenhar;
+            ServicoAparencia.Instancia.PapelDeParedeMudou -= redesenhar;
+        };
+    }
+
+    public static readonly DependencyProperty TemaProperty = DependencyProperty.Register(nameof(Tema),
+        typeof(object), typeof(PreviaAparencia), new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
+
+    /// Miniatura da grade de temas: o tema, resolvido com o Windows de agora a cada desenho (a marca "Não mexer" ou
+    /// nulo → o aviso).
+    public object? Tema
+    {
+        get => GetValue(TemaProperty);
+        set => SetValue(TemaProperty, value);
     }
 
     public static readonly DependencyProperty FormasProperty = DependencyProperty.Register(nameof(Formas),
@@ -89,7 +112,9 @@ public sealed class PreviaAparencia : FrameworkElement
         bool detalhe = w >= 200;
         double s = detalhe ? Math.Min(w / LarguraBase, h / AlturaBase) : Math.Min(w / 260, h / 125);
         var dip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
-        if ((Valores ?? (SemValoresUsaAtual ? ServicoAparencia.Instancia.Atual : null)) is not { } v)
+        var doTema = Tema is Core.Perfis.TemaAparencia t
+            ? ResolverAparencia.Resolver(new Core.Perfis.AparenciaPerfil(t), ServicoAparencia.Instancia.VisualDoWindows) : null;
+        if ((Valores ?? doTema ?? (SemValoresUsaAtual ? ServicoAparencia.Instancia.Atual : null)) is not { } v)
         {
             dc.DrawRectangle(new SolidColorBrush(Color.FromArgb(0x8C, 0x10, 0x12, 0x18)), null, area);
             var aviso = Texto(detalhe ? "Não mexer: o Vitral fica com a aparência que estiver" : "fica como está",

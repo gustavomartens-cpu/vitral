@@ -16,7 +16,7 @@
                 <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.MateriaisAparencia}"
                          SelectedValue="{Binding Material, Converter={StaticResource NuloComoMarca}}" />
                 <TextBlock Text="Cor do fundo" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
-                <ListBox Style="{StaticResource SeletorCor}" ItemsSource="{x:Static ui:Opcoes.FundosAparencia}"
+                <ListBox Style="{StaticResource SeletorCor}" ItemsSource="{Binding CoresFundo}"
                          SelectedValue="{Binding CorFundo, Converter={StaticResource NuloComoMarca}}" />
                 <DockPanel Margin="0,6,0,4">
                     <TextBlock DockPanel.Dock="Right" FontSize="12" Text="{Binding Transparencia, StringFormat={}{0}%, TargetNullValue='do tema'}" />
@@ -40,7 +40,7 @@
                     </Slider>
                 </DockPanel>
                 <TextBlock Text="Destaque" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,10,0,4" />
-                <ListBox Style="{StaticResource SeletorCor}" ItemsSource="{x:Static ui:Opcoes.DestaquesAparencia}"
+                <ListBox Style="{StaticResource SeletorCor}" ItemsSource="{Binding CoresDestaque}"
                          SelectedValue="{Binding CorDestaque, Converter={StaticResource NuloComoMarca}}" />
                 <TextBlock Text="Cantos" FontSize="12" Foreground="{StaticResource TextoSecundario}" Margin="0,8,0,4" />
                 <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.CantosAparencia}"

@@ -10,7 +10,6 @@
     <tema:MeiaAltura x:Key="MeiaAltura" />
     <BooleanToVisibilityConverter x:Key="BoolParaVisivel" />
     <local:NuloComoMarca x:Key="NuloComoMarca" />
-    <local:TemaParaValores x:Key="TemaParaValores" />
     <local:TransparenciaNoDeslizante x:Key="TransparenciaNoDeslizante" />
 
     <!-- Foco de teclado sempre visível: contorno branco de 2 px (spec da interface §4.2) -->
@@ -530,7 +529,7 @@
                             <ControlTemplate TargetType="ListBoxItem">
                                 <Border x:Name="Aro" CornerRadius="10" BorderThickness="1" BorderBrush="{DynamicResource Linha}" Background="{DynamicResource Superficie}" Padding="5">
                                     <StackPanel>
-                                        <local:PreviaAparencia Height="50" Raio="6" Valores="{Binding Valor, Converter={StaticResource TemaParaValores}}" />
+                                        <local:PreviaAparencia Height="50" Raio="6" Tema="{Binding Valor}" />
                                         <TextBlock Text="{Binding Rotulo}" FontSize="11.5" Foreground="{DynamicResource Texto}" HorizontalAlignment="Center" Margin="0,5,0,1" />
                                     </StackPanel>
                                 </Border>

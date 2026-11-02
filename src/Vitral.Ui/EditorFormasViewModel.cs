@@ -22,6 +22,9 @@ public sealed partial class EditorFormasViewModel : ObservableObject
     /// nos campos não escolhidos.
     public Func<FormasPerfil> Atuais { get; set; } = () => new FormasPerfil();
 
+    /// Os cantos do notch na prévia: os da aparência no editor (o PrincipalViewModel liga), como na tela.
+    public Func<CantosParte> CantosNotch { get; set; } = () => CantosParte.Redondos;
+
     public void Carregar(FormasPerfil? f)
     {
         FormatoDoca = f?.Doca?.Formato;
@@ -48,5 +51,5 @@ public sealed partial class EditorFormasViewModel : ObservableObject
         if (e.PropertyName != nameof(Previa)) Recalcular();
     }
 
-    public void Recalcular() => Previa = ResolverFormas.Resolver(ResolverFormas.Mesclar(Atuais(), ParaPerfil()), CantosParte.Redondos);
+    public void Recalcular() => Previa = ResolverFormas.Resolver(ResolverFormas.Mesclar(Atuais(), ParaPerfil()), CantosNotch());
 }

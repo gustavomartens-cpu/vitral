@@ -49,14 +49,6 @@ internal sealed partial class JanelaIlha : Window
             _casca.CornerRadius = new CornerRadius(0, 0, 9, 9);
             _casca.BorderThickness = new Thickness(1, 0, 1, 1);
         }
-        // Transparência do Windows ligada/desligada com a barra aberta: troca entre acrílico e sólido.
-        Microsoft.Win32.UserPreferenceChangedEventHandler aoMudar = (_, e) =>
-        {
-            if (e.Category is Microsoft.Win32.UserPreferenceCategory.General or Microsoft.Win32.UserPreferenceCategory.Color)
-                Dispatcher.BeginInvoke(() => VidroIlha.Atualizar(this, _casca));
-        };
-        Microsoft.Win32.SystemEvents.UserPreferenceChanged += aoMudar;
-        Closed += (_, _) => Microsoft.Win32.SystemEvents.UserPreferenceChanged -= aoMudar;
         SourceInitialized += (_, _) =>
         {
             var h = new WindowInteropHelper(this).Handle;

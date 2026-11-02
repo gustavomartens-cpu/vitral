@@ -91,4 +91,14 @@ public static class Opcoes
         new("do tema", Nulo), new("Âmbar", "#F2B544"), new("Azul", "#4CC2FF"), new("Verde-água", "#3DDBB5"),
         new("Coral", "#FF8A8A"), new("Branco", "#FFFFFF"), new("Terracota", "#D97757"),
     ];
+
+    /// A paleta com a cor escolhida marcável (revisão final da 0.11.0): da paleta em outra grafia (minúsculas), o
+    /// quadrado dela leva a grafia escolhida; fora da paleta (importada, digitada), entra um quadrado "Personalizada".
+    public static IReadOnlyList<Opcao<object>> ComCor(IReadOnlyList<Opcao<object>> paleta, string? cor)
+    {
+        if (cor is null || paleta.Any(o => Equals(o.Valor, cor))) return paleta;
+        int i = paleta.ToList().FindIndex(o => o.Valor is string s && string.Equals(s, cor, StringComparison.OrdinalIgnoreCase));
+        if (i >= 0) return [.. paleta.Select((o, j) => j == i ? o with { Valor = cor } : o)];
+        return [.. paleta, new($"Personalizada ({cor})", cor)];
+    }
 }
