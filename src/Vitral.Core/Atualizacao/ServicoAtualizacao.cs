@@ -75,13 +75,18 @@ public sealed class ServicoAtualizacao
         Pronta?.Invoke(nova);
     }
 
-    /// A troca que não pôde ser agendada vira Falhou: a linha avisa, e a próxima conferência baixa de novo.
     /// Antes de reiniciar: o App pergunta pela edição não salva da janela; false = o usuário desistiu.
     public Func<bool> PodeReiniciar { get; set; } = () => true;
 
+    /// A troca que não pôde ser agendada vira Falhou: a linha avisa, e a próxima conferência baixa de novo. Desistir na
+    /// pergunta da edição avisa a versão de novo: o clique no notch já tinha tirado o aviso.
     public void Reiniciar()
     {
-        if (!PodeReiniciar()) return;
+        if (!PodeReiniciar())
+        {
+            if (Estado == EstadoAtualizacao.Pronta && Versao is { } pronta) Pronta?.Invoke(pronta);
+            return;
+        }
         if (!_fonte.Reiniciar()) Ir(EstadoAtualizacao.Falhou, Versao);
     }
 

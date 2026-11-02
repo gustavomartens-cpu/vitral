@@ -20,6 +20,23 @@ public sealed class SobrasJanelaAgendaTests
     }
 
     [Fact]
+    public async Task Cancelar_o_reinicio_avisa_a_versao_de_novo()
+    {
+        // O clique no notch já tirou o aviso: desistir de reiniciar não pode deixar a versão pronta sem aviso nenhum.
+        var agora = new DateTime(2026, 11, 1, 9, 0, 0);
+        var fonte = new FonteFalsa { Nova = "9.9.9" };
+        var s = new ServicoAtualizacao(fonte, () => agora) { PodeReiniciar = () => false };
+        var avisos = new List<string>();
+        s.Pronta += avisos.Add;
+        agora = agora.AddMinutes(2);
+        await s.TiqueAsync();
+        Assert.Equal(["9.9.9"], avisos);
+        s.Reiniciar();
+        Assert.Equal(["9.9.9", "9.9.9"], avisos);
+        Assert.Equal(0, fonte.Reinicios);
+    }
+
+    [Fact]
     public void Login_que_passou_dos_5_minutos_explica_e_o_Cancelar_fica_quieto()
     {
         Assert.Null(RegrasAgenda.LoginInterrompido(usuarioCancelou: true, tempoEsgotou: true));

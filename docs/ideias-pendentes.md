@@ -15,6 +15,13 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
   ainda mostra a faixa; a prévia das formas sempre desenha a faixa da barra única; opção desconhecida some ao regravar
   ou exportar o perfil (fixar em teste ou preservar); troca de tema sem mudar valores não reaplica o vidro (só se o
   acrílico sumir); `Loaded` duplo da prévia assina o serviço duas vezes; o "Personalizada" some ao escolher outra cor.
+- **Sobras da janela e da agenda** (revisão final da 0.13.8): a pergunta de salvar fica presa à janela principal mesmo
+  com Configurações aberta, e um segundo clique em "reiniciar" abre outra por cima (usar a janela ativa como dono e
+  travar a reentrada em `App.PodeFechar`); dono minimizado pode esconder a caixa (filtrar `WindowState`); "Importado: B"
+  sem dizer que A continua aberto quando a troca é cancelada; Salvar na pendência do perfil que vai ser substituído
+  confunde (perguntar "a edição será perdida"); comentário do login da Microsoft promete que fechar o navegador avisa;
+  cobertura do Claude conta a borda invisível do DWM e a parte fora da tela; testes do Importar sem conflito com
+  Cancelar/Descartar, conflito com Salvar/Descartar, arquivo inexistente com pendência e bordas da cobertura.
 - **Erro na troca de sessão de mídia:** `NullReferenceException` em `FonteMidiaWindows.TrocarSessao` no log (01/11).
 
 ## Testes a fundo pendentes
