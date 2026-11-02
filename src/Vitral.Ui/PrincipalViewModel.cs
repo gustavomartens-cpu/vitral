@@ -35,6 +35,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
     public EditorDocaViewModel EditorDoca { get; } = new();
     public EditorAparenciaViewModel EditorAparencia { get; } = new();
     public EditorFormasViewModel EditorFormas { get; } = new();
+    public EditorIniciarViewModel EditorIniciar { get; } = new();
 
     /// Os cantos do notch da aparência em vigor (o App liga o serviço real).
     public Func<Core.Perfis.CantosParte> CantosEmVigor { get; set; } = () => Core.Perfis.CantosParte.Redondos;
@@ -66,7 +67,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
         // com "Não mexer".
         EditorFormas.CantosNotch = () => EditorAparencia.Previa?.Notch.Cantos ?? CantosEmVigor();
         EditorAparencia.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(EditorAparencia.Previa)) EditorFormas.Recalcular(); };
-        foreach (var editor in new System.ComponentModel.INotifyPropertyChanged[] { Editor, EditorBarra, EditorBarraTarefas, EditorDoca, EditorAparencia, EditorFormas })
+        foreach (var editor in new System.ComponentModel.INotifyPropertyChanged[] { Editor, EditorBarra, EditorBarraTarefas, EditorDoca, EditorAparencia, EditorFormas, EditorIniciar })
             editor.PropertyChanged += (_, _) => AtualizarAlteracoes();
         AtualizarLista();
         PerfilAtivo = servico.PerfilAtivo;
@@ -78,7 +79,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
     private string Assinatura() => System.Text.Json.JsonSerializer.Serialize(new object?[]
     {
         Editor.ParaPerfil(), EditorBarra.ParaPerfil(), EditorBarraTarefas.ParaPerfil(), EditorDoca.ParaPerfil(),
-        EditorAparencia.ParaPerfil(), EditorFormas.ParaPerfil(),
+        EditorAparencia.ParaPerfil(), EditorFormas.ParaPerfil(), EditorIniciar.ParaPerfil(),
     });
 
     private void AtualizarAlteracoes()
@@ -198,6 +199,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
             EditorDoca.Carregar(p?.BarraBaixo);
             EditorAparencia.Carregar(p?.Aparencia);
             EditorFormas.Carregar(p?.Formas);
+            EditorIniciar.Carregar(p?.Iniciar);
         }
         finally { _carregando = false; }
         MarcarSemAlteracoes();
@@ -271,6 +273,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
         var doca = EditorDoca.ParaPerfil();
         var aparencia = EditorAparencia.ParaPerfil();
         var formas = EditorFormas.ParaPerfil();
+        var iniciar = EditorIniciar.ParaPerfil();
         if (ajustes.CorDestaque is { } cor)
         {
             try { Cor.DeHex(cor); }
@@ -293,6 +296,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
                 BarraBaixo = doca,
                 Aparencia = aparencia,
                 Formas = formas,
+                Iniciar = iniciar,
             };
             _perfis.Salvar(p);
             return true;

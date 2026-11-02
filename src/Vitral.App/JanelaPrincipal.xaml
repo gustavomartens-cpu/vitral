@@ -427,6 +427,28 @@
                                                        Formas="{Binding DataContext.EditorFormas.Previa, RelativeSource={RelativeSource AncestorType=Window}}" />
                                 <TextBlock Text="A prévia usa o seu papel de parede. Para ver de verdade, use Testar (20 s)."
                                            FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="2,6,0,0" />
+                                <!-- O Menu Iniciar com o vidro da doca (spec do Iniciar §4.3) -->
+                                <Border Style="{StaticResource CartaoVidro}" Margin="0,16,8,0"
+                                        DataContext="{Binding DataContext.EditorIniciar, RelativeSource={RelativeSource AncestorType=Window}}">
+                                    <StackPanel>
+                                        <TextBlock Text="MENU INICIAR" Style="{StaticResource Rotulo}" Margin="0,0,0,6" />
+                                        <ListBox Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.ModosIniciar}"
+                                                 SelectedValue="{Binding Modo, Converter={StaticResource NuloComoMarca}}" />
+                                        <TextBlock Text="Combinar com o Vitral usa o vidro, a cor, a borda e os cantos da doca."
+                                                   FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="2,6,0,0" />
+                                        <TextBlock Text="{Binding TextoEstado}" FontSize="12" TextWrapping="Wrap" Margin="2,10,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers><DataTrigger Binding="{Binding TextoEstado}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <Button Content="Usar a cor de destaque do Windows no Iniciar" Command="{Binding UsarDestaqueCommand}"
+                                                Style="{StaticResource BotaoVidro}" HorizontalAlignment="Left" Margin="0,8,0,0" Padding="12,5"
+                                                ToolTip="Liga a opção do Windows; ela também pinta a barra de tarefas do Windows."
+                                                Visibility="{Binding MostrarReserva, Converter={StaticResource BoolParaVisivel}}" />
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1">

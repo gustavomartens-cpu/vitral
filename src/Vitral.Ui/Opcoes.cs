@@ -56,6 +56,13 @@ public static class Opcoes
         new("Violeta", "#783CB4"), new("Verde-mar", "#1F6F5C"), new("Vinho", "#7A2E2E"), new("Claro", "#F4F4F6"),
     ];
 
+    /// Aba Aparência, Menu Iniciar (spec do Iniciar §4.3).
+    public static IReadOnlyList<Opcao<object>> ModosIniciar { get; } =
+    [
+        new("Não mexer", Nulo), new("Combinar com o Vitral", Core.Iniciar.ModoIniciar.Vitral),
+        new("Visual do Windows", Core.Iniciar.ModoIniciar.Windows),
+    ];
+
     // Aba Formas (spec das formas §5.4): "Não mexer" primeiro, como marca Nulo.
     public static IReadOnlyList<Opcao<object>> FormatosDoca { get; } =
         [new("Não mexer", Nulo), new("Flutuante", Core.Perfis.FormatoDoca.Flutuante), new("Corrida", Core.Perfis.FormatoDoca.Corrida)];

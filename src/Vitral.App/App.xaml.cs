@@ -129,6 +129,10 @@ public partial class App : Application
         Principal.CantosEmVigor = () => Tema.ServicoAparencia.Instancia.Valores(Tema.ParteAparencia.Notch).Cantos;
         // O Windows mudou (modo, destaque) ou outro perfil foi aplicado: a prévia da aba Aparência acompanha.
         Tema.ServicoAparencia.Instancia.Mudou += Principal.EditorAparencia.Recalcular;
+        // O Iniciar: a linha de estado acompanha o serviço, e o botão da reserva liga a opção nativa.
+        Principal.EditorIniciar.Estado = ServicoDoIniciar.Estado;
+        ServicoDoIniciar.EstadoMudou += m => Principal.EditorIniciar.Estado = m;
+        Principal.EditorIniciar.PediuDestaqueDoWindows += ServicoDoIniciar.UsarDestaqueDoWindows;
         Principal.EditorFormas.Atuais = estadoFormas.Atual; // "Não mexer" mantém o que está: a prévia mostra isso
         Tema.ServicoFormas.Instancia.Mudou += Principal.EditorFormas.Recalcular;
         Principal.EditorFormas.Recalcular();
