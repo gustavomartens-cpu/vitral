@@ -14,8 +14,15 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 - **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir
   o dia inteiro do Outlook na tela.
 - **Escolher agendas da Microsoft** (depois do cadastro no Azure).
-- **Notificações de outros apps no notch**, e respostas por ali: precisa de identidade de pacote para ler as
-  notificações do Windows.
+- **Completar os painéis da barra do topo** (escolhido em 01/11/2026, depois das notificações): o que falta do Win+A
+  (Bluetooth, modo avião, brilho, não perturbe...) nos painéis das ilhas; o Win+A do Windows fica como está.
+- **Sobras das notificações** (revisão final da 0.15.0): ícone com falha passageira fica sem ícone até fechar; clique no
+  aviso da rajada abre o app da primeira em vez do painel; título vazio deixa "App · " no aviso; o modelo do painel
+  fica órfão depois de fechar os painéis; o Encerrar vem depois de passos sem proteção na saída; uma versão antiga do
+  Vitral regravando o config apaga a lista do que foi calado; app calado pelo Vitral e desligado de vez pelo usuário
+  volta ligado na saída; se o Vitral nunca mais for aberto (sem desinstalar), o balão fica calado.
+- **Notificações, depois:** responder e os botões próprios das notificações (o Windows não deixa outro app acioná-los);
+  assinatura do pacote para funcionar sem o modo de desenvolvedor.
 - **Sobras da 0.13.9** (revisão final): barra única só com a mídia fecha e recria a faixa quando a sessão some e volta
   (jogo, navegador entre vídeos), com uma piscada da ilha sem fundo (chamar `Posicionar` antes da visibilidade,
   esconder em vez de fechar, juntar as rajadas); erro no meio da assinatura da sessão de mídia deixa um evento preso;
@@ -74,3 +81,4 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   de mídia (0.13.9). Fica de propósito: a prévia das formas desenha as ilhas de exemplo mesmo desligadas, e a opção
   desconhecida some ao regravar o perfil numa versão antiga (fixado em teste). Menu Iniciar com o vidro, a cor, a
   borda e os cantos da doca, por um componente dentro do Iniciar, com reserva pela cor de destaque do Windows (0.14.0).
+  Notificações dos outros apps no notch e num painel no sino, com o balão do Windows calado (0.15.0).
