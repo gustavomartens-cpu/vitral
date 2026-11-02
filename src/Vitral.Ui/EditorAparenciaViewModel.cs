@@ -26,6 +26,10 @@ public sealed partial class EditorAjustesAparencia : ObservableObject
     public void Carregar(AjustesAparencia? a)
     {
         Material = a?.Material;
+        // Passa pelo "do tema" antes: a lista do seletor troca antes da seleção, e uma cor personalizada que some da
+        // lista faria a ListBox gravar nulo por cima da cor nova (revisão final da 0.13.7). O "do tema" existe em todas.
+        CorFundo = null;
+        CorDestaque = null;
         CorFundo = a?.CorFundo;
         Transparencia = a?.Transparencia;
         CorDestaque = a?.CorDestaque;

@@ -11,10 +11,13 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
   atribuída a um monitor que cobre o Claude no outro é ignorada; escolher agendas da Microsoft (depois do cadastro).
 - **Notificações de outros apps no notch**, e respostas por ali: precisa de identidade de pacote para ler as
   notificações do Windows.
-- **Pequenos acertos da aparência** (revisões finais da 0.10.0 e da 0.11.0): não recalcular quando o Windows avisa sem
-  mudar nada; tirar os avisos de tema antigos das ilhas, painéis e doca; prévia das abas acompanhar o Windows e a troca
-  de papel de parede; cor fora da paleta aparecer no seletor; enum novo no perfil exige subir o esquema; raio do notch
-  na prévia seguir os cantos da aparência; barra única com mídia e status desligadas mostra uma faixa vazia.
+- **Sobras da aparência** (revisão final da 0.13.7): papel de parede no mesmo caminho (apresentação, Spotlight) não
+  relê por causa do cache do WPF (`IgnoreImageCache`); a prévia da aba abre com o Windows padrão até a primeira mudança
+  (chamar `EditorAparencia.Recalcular()` depois de ligar o `LerWindows`); barra única com mídia ligada e nada tocando
+  ainda mostra a faixa; a prévia das formas sempre desenha a faixa da barra única; opção desconhecida some ao regravar
+  ou exportar o perfil (fixar em teste ou preservar); troca de tema sem mudar valores não reaplica o vidro (só se o
+  acrílico sumir); `Loaded` duplo da prévia assina o serviço duas vezes; o "Personalizada" some ao escolher outra cor.
+- **Erro na troca de sessão de mídia:** `NullReferenceException` em `FonteMidiaWindows.TrocarSessao` no log (01/11).
 - **Sobras da janela** (revisão final da 0.13.4): "Descartar" numa troca para um perfil que falha ao abrir volta com
   as alterações ainda pendentes; Importar pergunta pela pendência antes do "Substituir?" (Descartar e depois recusar
   perde as alterações); janela minimizada conta os 6 s da mensagem; a pergunta do "Sair" pela bandeja abre sem dono e
@@ -56,4 +59,6 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   atualização do app (0.13.2), pequenos acertos da janela: foco no tema claro, mensagem inteira e que espera, pergunta
   antes de criar, importar e sair com alteração pendente, falha ao abrir volta ao anterior (0.13.4), outras agendas do Google, login da agenda com
   mensagens claras e Cancelar, e o notch sem pedir resposta da sessão aberta no Claude em qualquer monitor (0.13.5),
-  barras, notch e doca somem com jogo em tela cheia mesmo sem o aviso do Windows (0.13.6).
+  barras, notch e doca somem com jogo em tela cheia mesmo sem o aviso do Windows (0.13.6), prévia acompanhando o
+  Windows e o papel de parede, cor personalizada no seletor, opção desconhecida vira "Não mexer", raio do notch na
+  prévia e barra única sem faixa vazia (0.13.7).

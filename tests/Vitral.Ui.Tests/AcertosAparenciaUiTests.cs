@@ -22,6 +22,24 @@ public sealed class AcertosAparenciaUiTests : IDisposable
     }
 
     [Fact]
+    public void Trocar_de_cor_personalizada_para_outra_nao_perde_a_cor()
+    {
+        // Imita a ListBox: quando a lista troca e o item marcado não está nela, a seleção vira nula e volta para o campo.
+        var e = new EditorAjustesAparencia();
+        Opcao<object>? marcado = null;
+        e.PropertyChanged += (_, a) =>
+        {
+            if (a.PropertyName == nameof(e.CoresFundo) && marcado is not null && !e.CoresFundo.Contains(marcado)) { marcado = null; e.CorFundo = null; }
+            if (a.PropertyName == nameof(e.CorFundo)) marcado = e.CoresFundo.FirstOrDefault(o => Equals(o.Valor, e.CorFundo ?? Opcoes.Nulo));
+        };
+        e.Carregar(new Core.Perfis.AjustesAparencia(CorFundo: "#123456"));
+        e.Carregar(new Core.Perfis.AjustesAparencia(CorFundo: "#654321"));
+        Assert.Equal("#654321", e.CorFundo);
+        e.Carregar(new Core.Perfis.AjustesAparencia(CorFundo: "#0A0F20"));
+        Assert.Equal("#0A0F20", e.CorFundo);
+    }
+
+    [Fact]
     public void Cor_da_paleta_em_minusculas_marca_o_quadrado_dela()
     {
         var e = new EditorAjustesAparencia { CorDestaque = "#f2b544" };
