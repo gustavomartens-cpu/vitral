@@ -29,7 +29,7 @@ internal sealed class LoginMicrosoft(CofreTokens cofre)
     public async Task<string?> Entrar(CancellationToken cancelar)
     {
         var app = await App();
-        // Como no Google: 5 min sem resposta no navegador conta como desistência.
+        // Como no Google: 5 min sem resposta no navegador param o login, com a explicação na janela.
         using var limite = CancellationTokenSource.CreateLinkedTokenSource(cancelar);
         limite.CancelAfter(TimeSpan.FromMinutes(5));
         try
@@ -38,8 +38,13 @@ internal sealed class LoginMicrosoft(CofreTokens cofre)
                 .WithPrompt(Prompt.SelectAccount).ExecuteAsync(limite.Token);
             return resultado.Account.Username;
         }
-        catch (MsalClientException e) when (e.ErrorCode == MsalError.AuthenticationCanceledError) { return null; }
-        catch (OperationCanceledException) { return null; }
+        // Fechar o navegador ou o Cancelar ficam quietos; os 5 min explicam.
+        catch (Exception e) when (e is OperationCanceledException or MsalClientException { ErrorCode: MsalError.AuthenticationCanceledError })
+        {
+            bool esgotou = limite.IsCancellationRequested && !cancelar.IsCancellationRequested;
+            return RegrasAgenda.LoginInterrompido(usuarioCancelou: !esgotou, tempoEsgotou: esgotou) is { } texto
+                ? throw new InvalidOperationException(texto, e) : null;
+        }
         catch (MsalServiceException e) when (e.Message.Contains("AADSTS65001") || e.Message.Contains("AADSTS90094"))
         {
             throw new InvalidOperationException("A organização precisa aprovar o Vitral (peça ao administrador do Microsoft 365).", e);

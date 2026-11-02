@@ -100,6 +100,7 @@ public partial class App : Application
         VersaoAtual = fonte.VersaoAtual;
         Atualizador = new Vitral.Core.Atualizacao.ServicoAtualizacao(fonte, () => DateTime.Now);
         Atualizador.Pronta += AvisarAtualizacao;
+        Atualizador.PodeReiniciar = PodeFechar; // pelo notch e pela linha de Configurações
         _barra.Reiniciar = Atualizador.Reiniciar;
         _relogioAtualizacao = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
         _relogioAtualizacao.Tick += async (_, _) =>
@@ -134,6 +135,14 @@ public partial class App : Application
         _bandeja = new Bandeja(this);
         if (!peloWindows) MostrarJanela();
         else if (estado.Aviso is not null || estado.TesteCancelado) _bandeja.Avisar("Vitral", Principal.Mensagem ?? "");
+    }
+
+    /// Antes de sair ou reiniciar para atualizar: com edição pendente, a janela aparece primeiro, para a pergunta de
+    /// salvar abrir presa a ela (e não perdida atrás das outras) e mostrar o que está pendente.
+    internal bool PodeFechar()
+    {
+        if (Principal.TemAlteracoes) MostrarJanela();
+        return Principal.PodeSair();
     }
 
     internal void MostrarJanela()

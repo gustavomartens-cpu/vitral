@@ -13,6 +13,13 @@ public static partial class RegrasAgenda
             .OrderBy(c => c.DiaInteiro ? 0 : 1).ThenBy(c => c.Inicio).ThenBy(c => c.Titulo, StringComparer.CurrentCulture)
             .ToList();
 
+    /// O login parou no meio: o Cancelar do usuário fica quieto (nulo); o limite de 5 min explica e chama de novo; o resto
+    /// (o pedido caiu sem resposta) é falta de conexão.
+    public static string? LoginInterrompido(bool usuarioCancelou, bool tempoEsgotou) =>
+        usuarioCancelou ? null
+        : tempoEsgotou ? "O login não terminou em 5 minutos. Clique em Entrar para tentar de novo."
+        : ErroDoGoogle(null, null);
+
     /// O texto para a janela de contas quando a leitura da agenda falha logo depois do login. Sem código (status nulo):
     /// a rede não respondeu. O 403 de API desligada no projeto do Google Cloud vem com "accessNotConfigured".
     public static string ErroDoGoogle(System.Net.HttpStatusCode? status, string? corpo) => status switch

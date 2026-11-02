@@ -210,6 +210,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
     {
         if (_revertendo) return;
         // Trocar com alteração pendente pergunta antes (spec da interface §3.6); Cancelar (ou salvar com erro) fica onde estava.
+        bool descartou = false;
         if (oldValue is not null && TemAlteracoes)
         {
             var resposta = _dialogos.PerguntarSalvar(oldValue);
@@ -218,6 +219,7 @@ public sealed partial class PrincipalViewModel : ObservableObject
                 Reverter(oldValue);
                 return;
             }
+            descartou = resposta == RespostaPendente.Descartar;
         }
         if (newValue is null) { CarregarEditores(null); return; }
         try { CarregarEditores(_perfis.Carregar(newValue)); }
@@ -226,6 +228,11 @@ public sealed partial class PrincipalViewModel : ObservableObject
             // O editor ainda mostra o anterior: ficar no novo deixaria "Salvar" gravar o anterior por cima dele.
             Reverter(oldValue);
             if (oldValue is null) CarregarEditores(null);
+            else if (descartou) // pediu para descartar: volta ao anterior como está no disco, sem a edição
+            {
+                try { CarregarEditores(_perfis.Carregar(oldValue)); }
+                catch (Exception e2) when (e2 is not OutOfMemoryException) { MarcarSemAlteracoes(); }
+            }
             Mensagem = $"Não foi possível abrir \"{newValue}\": {e.Message}";
         }
     }
@@ -382,7 +389,9 @@ public sealed partial class PrincipalViewModel : ObservableObject
     private void Importar()
     {
         string? arquivo = _dialogos.EscolherArquivoParaAbrir(FiltroVitral);
-        if (arquivo is null || !ResolverPendencia()) return;
+        if (arquivo is null) return;
+        // Sem conflito, o perfil aberto não muda: a troca para o importado pergunta pela pendência, como qualquer troca.
+        // Com conflito, primeiro o "Substituir?": recusar não pode custar a edição aberta.
         IReadOnlyList<Perfil>? importados;
         try
         {
@@ -392,6 +401,11 @@ public sealed partial class PrincipalViewModel : ObservableObject
         {
             string nomes = string.Join(", ", e.Nomes.Select(n => $"\"{n}\""));
             if (!_dialogos.Confirmar($"O perfil {nomes} já existe neste computador. Substituir?")) { Mensagem = "Importação cancelada."; return; }
+            if (Selecionado is { } emEdicao && e.Nomes.Contains(emEdicao, StringComparer.OrdinalIgnoreCase) && !ResolverPendencia())
+            {
+                Mensagem = "Importação cancelada.";
+                return;
+            }
             importados = Executar(() => Pacote.Importar(arquivo, _perfis, substituir: true));
         }
         catch (Exception e) when (e is not OutOfMemoryException)

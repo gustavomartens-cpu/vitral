@@ -21,10 +21,10 @@ internal sealed class DialogosWpf : IDialogos
     }
 
     public bool Confirmar(string pergunta) =>
-        MessageBox.Show(pergunta, "Vitral", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+        Caixa(pergunta, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
     public Ui.RespostaPendente PerguntarSalvar(string perfil) =>
-        MessageBox.Show($"Salvar as mudanças em \"{perfil}\"?", "Vitral", MessageBoxButton.YesNoCancel, MessageBoxImage.Question) switch
+        Caixa($"Salvar as mudanças em \"{perfil}\"?", MessageBoxButton.YesNoCancel, MessageBoxImage.Question) switch
         {
             MessageBoxResult.Yes => Ui.RespostaPendente.Salvar,
             MessageBoxResult.No => Ui.RespostaPendente.Descartar,
@@ -32,7 +32,13 @@ internal sealed class DialogosWpf : IDialogos
         };
 
     public void Avisar(string mensagem) =>
-        MessageBox.Show(mensagem, "Vitral", MessageBoxButton.OK, MessageBoxImage.Information);
+        Caixa(mensagem, MessageBoxButton.OK, MessageBoxImage.Information);
+
+    /// Presa à janela principal quando ela está à vista: sem dono, a pergunta pode abrir atrás das outras janelas.
+    private static MessageBoxResult Caixa(string texto, MessageBoxButton botoes, MessageBoxImage icone) =>
+        Application.Current?.Windows.OfType<JanelaPrincipal>().FirstOrDefault(j => j.IsVisible) is { } dono
+            ? MessageBox.Show(dono, texto, "Vitral", botoes, icone)
+            : MessageBox.Show(texto, "Vitral", botoes, icone);
 
     public string? PedirTexto(string pergunta, string sugestao)
     {

@@ -76,8 +76,12 @@ public sealed class ServicoAtualizacao
     }
 
     /// A troca que não pôde ser agendada vira Falhou: a linha avisa, e a próxima conferência baixa de novo.
+    /// Antes de reiniciar: o App pergunta pela edição não salva da janela; false = o usuário desistiu.
+    public Func<bool> PodeReiniciar { get; set; } = () => true;
+
     public void Reiniciar()
     {
+        if (!PodeReiniciar()) return;
         if (!_fonte.Reiniciar()) Ir(EstadoAtualizacao.Falhou, Versao);
     }
 

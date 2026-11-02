@@ -6,9 +6,10 @@ using Vitral.Core.Claude;
 
 namespace Vitral.App.Claude;
 
-/// As janelas do app do Claude: qual é a da frente em cada monitor e que conversa cada uma mostra (spec: pedido do
-/// Gustavo, 30/10). A ordem do EnumWindows é a de cima para baixo; a primeira janela "de verdade" de cada monitor é a
-/// que está à vista nele. A conversa vem do endereço dos documentos pela acessibilidade (UI Automation).
+/// As janelas do app do Claude: quais estão à vista e que conversa cada uma mostra (spec: pedido do Gustavo, 30/10). A
+/// ordem do EnumWindows é a de cima para baixo; uma janela do Claude está à vista com pelo menos metade dela descoberta
+/// pelas janelas "de verdade" acima (ver <see cref="Cobertura"/>). A conversa vem do endereço dos documentos pela
+/// acessibilidade (UI Automation).
 internal static partial class JanelasDoClaude
 {
     private const int GwlExStyle = -20, DwmCloaked = 14;
@@ -22,27 +23,27 @@ internal static partial class JanelasDoClaude
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool GetWindowRect(IntPtr h, out Retangulo r);
     [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static partial long GetWindowLongPtr(IntPtr h, int i);
     [LibraryImport("user32.dll")] private static partial uint GetWindowThreadProcessId(IntPtr h, out uint processo);
-    [LibraryImport("user32.dll")] private static partial IntPtr MonitorFromWindow(IntPtr h, uint quando);
     [LibraryImport("user32.dll", EntryPoint = "GetClassNameW", StringMarshalling = StringMarshalling.Utf16)]
     private static partial int GetClassName(IntPtr h, [Out] char[] nome, int tamanho);
     [LibraryImport("dwmapi.dll")] private static partial int DwmGetWindowAttribute(IntPtr h, int atributo, out int valor, int tamanho);
 
     [StructLayout(LayoutKind.Sequential)] private struct Retangulo { public int Esquerda, Topo, Direita, Base; }
 
-    /// As janelas do Claude, cada uma dizendo se é a da frente no seu monitor; só as da frente têm os endereços lidos.
+    /// As janelas do Claude, cada uma dizendo se está à vista; só as à vista têm os endereços lidos.
     public static IReadOnlyList<JanelaClaude> Listar()
     {
         var claude = Pids("claude");
         if (claude.Count == 0) return [];
         var vitral = Pids("Vitral");
-        var monitoresVistos = new HashSet<IntPtr>();
+        var acima = new List<Area>(); // as janelas que contam, de cima para baixo, de qualquer monitor
         var achadas = new List<(IntPtr Janela, bool NaFrente)>();
         EnumWindows((h, _) =>
         {
             GetWindowThreadProcessId(h, out var processo);
-            if (!Conta(h, vitral.Contains(processo))) return true;
-            bool primeiraDoMonitor = monitoresVistos.Add(MonitorFromWindow(h, 2 /* o mais próximo */));
-            if (claude.Contains(processo)) achadas.Add((h, primeiraDoMonitor));
+            if (!Conta(h, vitral.Contains(processo)) || !GetWindowRect(h, out var r)) return true;
+            var area = new Area(r.Esquerda, r.Topo, r.Direita - r.Esquerda, r.Base - r.Topo);
+            if (claude.Contains(processo)) achadas.Add((h, Cobertura.AVista(area, acima)));
+            acima.Add(area);
             return true;
         }, IntPtr.Zero);
         return achadas.Select(a => new JanelaClaude(a.NaFrente, a.NaFrente ? Enderecos(a.Janela) : [])).ToList();

@@ -57,8 +57,11 @@ internal sealed class LoginGoogle(CofreTokens cofre, HttpClient http)
             await _deposito.StoreAsync(email, credencial.Token); // passa da chave temporária para a do e-mail
             return email;
         }
-        // O tempo do HttpClient (e não o Cancelar nem os 5 min) estourou: o Google não respondeu.
-        catch (OperationCanceledException) when (!limite.IsCancellationRequested) { throw new InvalidOperationException(RegrasAgenda.ErroDoGoogle(null, null)); }
+        // O Cancelar fica quieto; os 5 min explicam; o tempo do HttpClient estourado é o Google sem responder.
+        catch (OperationCanceledException) when (RegrasAgenda.LoginInterrompido(cancelar.IsCancellationRequested, limite.IsCancellationRequested) is { } texto)
+        {
+            throw new InvalidOperationException(texto);
+        }
         catch (OperationCanceledException) { return null; }
         catch (HttpRequestException e) { throw new InvalidOperationException(RegrasAgenda.ErroDoGoogle(e.StatusCode, null), e); }
         catch (TokenResponseException e) when (e.Error?.Error == "access_denied")

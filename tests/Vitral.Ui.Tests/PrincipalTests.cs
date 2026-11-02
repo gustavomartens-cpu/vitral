@@ -373,16 +373,52 @@ public sealed class PrincipalTests : IDisposable
     }
 
     [Fact]
-    public void Importar_com_pendencia_e_Cancelar_nao_importa()
+    public void Importar_substituindo_o_aberto_com_pendencia_e_Cancelar_nao_importa()
     {
-        _amb.Perfis.Salvar(Claro("A"));
+        string zip = PrepararPacoteComClaroDiferente();
         var vm = Criar();
-        vm.Editor.ModoApps = ModoOpcional.Escuro;
-        _dialogos.ArquivoParaAbrir = Path.Combine(_amb.Raiz, "nao-existe.vitral");
+        vm.Selecionado = "Claro";
+        vm.Editor.ModoSistema = ModoOpcional.Escuro;
+        _dialogos.ArquivoParaAbrir = zip;
+        _dialogos.RespostaConfirmar = true;
         _dialogos.RespostaPendente = RespostaPendente.Cancelar;
         vm.ImportarCommand.Execute(null);
-        Assert.Empty(_dialogos.Avisos); // nem tentou abrir o arquivo
+        Assert.Equal(["Claro"], _dialogos.PerguntasDeSalvar);
         Assert.True(vm.TemAlteracoes);
+        Assert.Equal(Modo.Claro, _amb.Perfis.Carregar("Claro").Nativo!.ModoApps);
+    }
+
+    [Fact]
+    public void Importar_recusando_substituir_nao_pergunta_da_pendencia_e_mantem_a_edicao()
+    {
+        string zip = PrepararPacoteComClaroDiferente();
+        var vm = Criar();
+        vm.Selecionado = "Claro";
+        vm.Editor.ModoSistema = ModoOpcional.Escuro;
+        _dialogos.ArquivoParaAbrir = zip;
+        _dialogos.RespostaConfirmar = false;
+        _dialogos.RespostaPendente = RespostaPendente.Descartar;
+        vm.ImportarCommand.Execute(null);
+        Assert.Empty(_dialogos.PerguntasDeSalvar);
+        Assert.True(vm.TemAlteracoes);
+        Assert.Equal(ModoOpcional.Escuro, vm.Editor.ModoSistema);
+    }
+
+    [Fact]
+    public void Descartar_numa_troca_que_falha_volta_ao_anterior_como_esta_no_disco()
+    {
+        _amb.Perfis.Salvar(Claro("A"));
+        _amb.Perfis.Salvar(Claro("B"));
+        foreach (var f in Directory.EnumerateFiles(Path.Combine(_amb.Raiz, "perfis"), "perfil.json", SearchOption.AllDirectories))
+            if (File.ReadAllText(f).Contains("\"B\"")) File.WriteAllText(f, "{ quebrado");
+        var vm = Criar();
+        vm.Selecionado = "A";
+        vm.Editor.ModoApps = ModoOpcional.Escuro;
+        _dialogos.RespostaPendente = RespostaPendente.Descartar;
+        vm.Selecionado = "B";
+        Assert.Equal("A", vm.Selecionado);
+        Assert.False(vm.TemAlteracoes);
+        Assert.Equal(ModoOpcional.Claro, vm.Editor.ModoApps);
     }
 
     [Fact]
