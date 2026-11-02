@@ -35,6 +35,15 @@ public static class RegrasNotificacoes
         pastaRegistrada is null
         || !string.Equals(pastaRegistrada.TrimEnd('\\', '/'), pastaAtual.TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase);
 
+    /// Windows quieto (spec §4): os apps cujo balão o Vitral desliga. Fica de fora o app do Claude (as notificações dele
+    /// não aparecem no Vitral) e quem já estava com o balão desligado (escolha do usuário, que o Vitral não devolve).
+    public static IReadOnlyList<string> ParaCalar(IEnumerable<(string AppId, int? ShowBanner)> apps) =>
+        apps.Where(a => a.ShowBanner != 0 && !a.AppId.StartsWith("Claude_", StringComparison.OrdinalIgnoreCase))
+            .Select(a => a.AppId).ToList();
+
+    /// O que o Vitral calou e ainda não devolveu (gravado no config): devolve na saída e, depois de uma queda, ao abrir.
+    public static IReadOnlyList<string> ParaDevolver(IReadOnlyList<string>? gravados) => gravados ?? [];
+
     public static string HaQuanto(DateTimeOffset chegou, DateTimeOffset agora)
     {
         var passou = agora - chegou;

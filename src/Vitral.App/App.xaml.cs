@@ -28,6 +28,10 @@ public partial class App : Application
     private Bandeja? _bandeja;
     private ControleBarra? _barra;
     private Agenda.ServicoAgendaApp? _agenda; // spec da agenda
+    private Vitral.App.Notificacoes.WindowsQuieto? _quieto;
+
+    /// As notificações dos outros apps (spec das notificações).
+    internal Vitral.App.Notificacoes.ServicoNotificacoes? ServicoDeNotificacoes { get; private set; }
     private BarraDeTarefas.ObservadorIcones? _observadorIcones;
     private EstadoBarra? _estadoBarra;
     private EstadoDoca? _estadoDoca;
@@ -46,8 +50,8 @@ public partial class App : Application
         DispatcherUnhandledException += AoErroNaoTratado;
 
         // Identidade de pacote para ler as notificações: registrada agora, só vale num processo novo.
-        if (Notificacoes.PacoteVitral.RegistrarEReabrir(e.Args)) { Shutdown(); return; }
-        Barra.LogBarra.Info($"Identidade de pacote: {(Notificacoes.PacoteVitral.TemIdentidade ? "sim" : "não")}");
+        if (Vitral.App.Notificacoes.PacoteVitral.RegistrarEReabrir(e.Args)) { Shutdown(); return; }
+        Barra.LogBarra.Info($"Identidade de pacote: {(Vitral.App.Notificacoes.PacoteVitral.TemIdentidade ? "sim" : "não")}");
 
         _instancia = new InstanciaUnica(() => Dispatcher.BeginInvoke(MostrarJanela));
         if (!_instancia.EhPrimeira)
@@ -74,10 +78,17 @@ public partial class App : Application
         var estadoFormas = new Core.Formas.EstadoFormas(Tema.ServicoFormas.Instancia, config); // spec das formas §5.1
         ServicoDoIniciar = new Vitral.App.Iniciar.ServicoIniciar(registro, _notificador); // spec do Iniciar §4.2
         var estadoIniciar = new Core.Iniciar.EstadoIniciar(ServicoDoIniciar, config);
+        // Notificações no notch (spec das notificações): o balão do Windows calado de uma vez anterior (uma queda) volta
+        // agora; o serviço cala de novo quando estiver lendo.
+        _quieto = new Vitral.App.Notificacoes.WindowsQuieto(config);
+        _quieto.Devolver();
+        ServicoDeNotificacoes = new Vitral.App.Notificacoes.ServicoNotificacoes(Dispatcher, _quieto);
+        ServicoDeNotificacoes.Novas += novas => Barra.LogBarra.Info($"Notificações novas: {novas.Count}");
         // Travamento fatal com a doca ligada: a barra do Windows volta antes de o processo sumir.
         // Na thread da interface também devolve os ícones da bandeja (a janela da ManagedShell morre com o processo).
         AppDomain.CurrentDomain.UnhandledException += (_, _) =>
         {
+            _quieto?.Devolver();
             _barraWindows?.Mostrar();
             if (Dispatcher.CheckAccess())
                 try { _bandejaApps?.Desligar(); } catch (Exception) { /* processo caindo: melhor esforço */ }
@@ -97,6 +108,7 @@ public partial class App : Application
         estadoIniciar.AoIniciar(); // depois da aparência: as cores do Iniciar vêm da doca
         _estadoBarra.Mostrar(); // volta como estava (no login, o perfil ativo acabou de ser reaplicado)
         _estadoDoca.AoIniciar(); // liga a doca se estava ligada; senão garante a barra do Windows
+        _ = ServicoDeNotificacoes.Iniciar(); // pede a permissão na primeira vez
         _ = _agenda.AtualizarAgora(); // a primeira leitura da agenda (depois, a cada 5 min)
         // Avisos do Claude Code (spec do notch vivo §4.4)
         _canalAvisos = new Claude.CanalAvisos(Dispatcher, a => _barra?.Avisar(a),
@@ -191,6 +203,8 @@ public partial class App : Application
         _barraWindows?.Dispose();
         _canalAvisos?.Dispose();
         _bandejaApps?.Dispose(); // devolve os ícones ao Windows
+        ServicoDeNotificacoes?.Dispose();
+        _quieto?.Devolver(); // o balão do Windows volta
         ServicoDoIniciar?.Dispose(); // o Iniciar volta ao do Windows quando o processo sai
         _observadorIcones?.Dispose();
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));

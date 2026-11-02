@@ -64,6 +64,20 @@ public sealed class NotificacoesTests
     }
 
     [Fact]
+    public void Cala_os_apps_menos_o_Claude_e_os_ja_calados()
+    {
+        var cala = RegrasNotificacoes.ParaCalar([("Chrome", null), ("Microsoft.SkyDrive.Desktop", 0), ("Claude_pzs8sxrjxfjjc!Claude", null), ("Email", 1)]);
+        Assert.Equal(["Chrome", "Email"], cala);
+    }
+
+    [Fact]
+    public void Restaura_o_que_ficou_ligado()
+    {
+        Assert.Equal(["A", "B"], RegrasNotificacoes.ParaDevolver(["A", "B"]));
+        Assert.Empty(RegrasNotificacoes.ParaDevolver(null));
+    }
+
+    [Fact]
     public void Muitas_e_sem_icone()
     {
         var muitas = Enumerable.Range(1, 150).Select(i => N((uint)i, $"App{i % 20}", i)).ToList();
