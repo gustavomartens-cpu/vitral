@@ -1,0 +1,4 @@
+LIBRARY VitralIniciar
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE

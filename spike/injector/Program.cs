@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Vitral.Spike.Injector;
 
-var clsid = new Guid("6B1C2E52-8F0A-4C3B-9A5E-3D7F1E2A9C41");
+var clsidPadrao = "6B1C2E52-8F0A-4C3B-9A5E-3D7F1E2A9C41";
 
 string Arg(string nome, string padrao)
 {
@@ -29,6 +29,8 @@ string outDir = Path.Combine(spike, "out");
 string dll = Path.Combine(outDir, Arg("--dll", "VitralTapSpike.dll"));
 bool prova = dll.EndsWith("IniciarProva.dll", StringComparison.OrdinalIgnoreCase);
 int segurar = int.Parse(Arg("--segurar", "0"));
+var clsid = new Guid(Arg("--clsid", clsidPadrao));
+string cores = Arg("--cores", "");
 string logs = Path.Combine(outDir, "logs");
 string csv = Path.Combine(spike, "resultados", "rotas.csv");
 if (!File.Exists(dll)) { Console.WriteLine($"DLL não encontrada: {dll}"); return 1; }
@@ -58,7 +60,7 @@ if (Mutex.TryOpenExisting($"Local\\VitralTap-{pid}", out var existente))
     return 2;
 }
 
-string dados = $"hostpid={(semHost ? 0 : Environment.ProcessId)};modo={modo}";
+string dados = $"hostpid={(semHost ? 0 : Environment.ProcessId)};modo={modo}" + (cores.Length > 0 ? $";cores={cores}" : "");
 File.WriteAllText(Path.Combine(outDir, "init.txt"), dados);
 
 using var pronto = new EventWaitHandle(false, EventResetMode.ManualReset, $"Local\\VitralTapReady-{pid}");
@@ -80,7 +82,9 @@ long ms = relogio.ElapsedMilliseconds;
 RotaInterna.Remover(hook);
 
 // Processos AppContainer (Iniciar) não enxergam o evento Local\ do injector: confere pelo log.
-string log = Path.Combine(logs, prova ? $"iniciar-{pid}.log" : $"tap-{pid}.log");
+string log = cores.Length > 0 ? Path.Combine(Path.GetDirectoryName(cores)!, "logs", $"iniciar-{pid}.log")
+    : Path.Combine(logs, prova ? $"iniciar-{pid}.log" : $"tap-{pid}.log");
+if (cores.Length > 0) prova = true;
 Thread.Sleep(2000);
 string conteudo = LerCompartilhado(log); // o componente pode estar escrevendo no log agora
 if (!ok && conteudo.Contains("ADVISE|hr=0")) ok = true;
