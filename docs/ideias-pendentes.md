@@ -6,9 +6,7 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 
 - **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir
   o dia inteiro do Outlook na tela.
-- **Sobras da agenda e da sessão à vista** (revisão final da 0.13.5): fim dos 5 min do login some com a mensagem sem
-  explicar; janela pequena por cima do Claude maximizado faz ele contar como não visível (vale a regra antiga); janela
-  atribuída a um monitor que cobre o Claude no outro é ignorada; escolher agendas da Microsoft (depois do cadastro).
+- **Escolher agendas da Microsoft** (depois do cadastro no Azure).
 - **Notificações de outros apps no notch**, e respostas por ali: precisa de identidade de pacote para ler as
   notificações do Windows.
 - **Sobras da aparência** (revisão final da 0.13.7): papel de parede no mesmo caminho (apresentação, Spotlight) não
@@ -18,10 +16,6 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
   ou exportar o perfil (fixar em teste ou preservar); troca de tema sem mudar valores não reaplica o vidro (só se o
   acrílico sumir); `Loaded` duplo da prévia assina o serviço duas vezes; o "Personalizada" some ao escolher outra cor.
 - **Erro na troca de sessão de mídia:** `NullReferenceException` em `FonteMidiaWindows.TrocarSessao` no log (01/11).
-- **Sobras da janela** (revisão final da 0.13.4): "Descartar" numa troca para um perfil que falha ao abrir volta com
-  as alterações ainda pendentes; Importar pergunta pela pendência antes do "Substituir?" (Descartar e depois recusar
-  perde as alterações); janela minimizada conta os 6 s da mensagem; a pergunta do "Sair" pela bandeja abre sem dono e
-  pode ficar atrás de outras janelas; reiniciar para atualizar não pergunta pela edição não salva.
 
 ## Testes a fundo pendentes
 
@@ -61,4 +55,6 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   mensagens claras e Cancelar, e o notch sem pedir resposta da sessão aberta no Claude em qualquer monitor (0.13.5),
   barras, notch e doca somem com jogo em tela cheia mesmo sem o aviso do Windows (0.13.6), prévia acompanhando o
   Windows e o papel de parede, cor personalizada no seletor, opção desconhecida vira "Não mexer", raio do notch na
-  prévia e barra única sem faixa vazia (0.13.7).
+  prévia e barra única sem faixa vazia (0.13.7), sessão à vista pela parte descoberta da janela do Claude, Importar
+  perguntando "Substituir?" antes, Descartar com perfil que falha, Sair e reiniciar perguntando com a janela à vista,
+  mensagem parada com a janela minimizada e login de 5 min explicado (0.13.8).
