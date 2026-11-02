@@ -35,6 +35,25 @@ public sealed class AcertosAparenciaTests
     }
 
     [Fact]
+    public void Opcao_desconhecida_some_ao_regravar_sem_virar_nulo_no_arquivo()
+    {
+        // Por desenho: a versão antiga não sabe o que a opção quer dizer, então regrava como "Não mexer" (campo ausente).
+        const string json = """{ "esquema": 4, "nome": "Futuro", "formas": { "doca": { "formato": "espiral", "icones": "grande" } } }""";
+        string regravado = PerfilJson.Escrever(PerfilJson.Ler(json));
+        Assert.DoesNotContain("espiral", regravado);
+        Assert.DoesNotContain("\"formato\"", regravado);
+        Assert.DoesNotContain("null", regravado);
+        Assert.Contains("\"icones\": \"grande\"", regravado);
+    }
+
+    [Fact]
+    public void Numero_em_enum_anulavel_continua_recusando()
+    {
+        const string json = """{ "esquema": 4, "nome": "Futuro", "formas": { "doca": { "formato": 7 } } }""";
+        Assert.ThrowsAny<Exception>(() => PerfilJson.Ler(json));
+    }
+
+    [Fact]
     public void Valor_de_enum_desconhecido_em_campo_obrigatorio_ainda_recusa()
     {
         const string json = """{ "esquema": 4, "nome": "Futuro", "aparencia": { "tema": "holografico" } }""";

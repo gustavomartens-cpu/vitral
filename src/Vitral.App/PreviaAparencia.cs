@@ -29,14 +29,20 @@ public sealed class PreviaAparencia : FrameworkElement
     {
         // A aparência em vigor (SemValoresUsaAtual), o Windows (miniaturas e Automático) ou o papel de parede mudaram:
         // redesenha enquanto está na tela.
+        // O WPF às vezes manda Loaded duas vezes sem Unloaded no meio: assina uma vez só.
         Action redesenhar = InvalidateVisual;
+        bool assinada = false;
         Loaded += (_, _) =>
         {
+            if (assinada) return;
+            assinada = true;
             ServicoAparencia.Instancia.Mudou += redesenhar;
             ServicoAparencia.Instancia.PapelDeParedeMudou += redesenhar;
         };
         Unloaded += (_, _) =>
         {
+            if (!assinada) return;
+            assinada = false;
             ServicoAparencia.Instancia.Mudou -= redesenhar;
             ServicoAparencia.Instancia.PapelDeParedeMudou -= redesenhar;
         };
@@ -269,7 +275,8 @@ public sealed class PreviaAparencia : FrameworkElement
             imagem.UriSource = new Uri(caminho);
             imagem.DecodePixelWidth = LarguraFundo * 2;
             imagem.CacheOption = BitmapCacheOption.OnLoad;
-            imagem.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+            // Apresentação e Spotlight gravam cada imagem no mesmo arquivo: sem IgnoreImageCache, o WPF devolve a antiga.
+            imagem.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
             imagem.EndInit();
             imagem.Freeze();
             BitmapSource origem = imagem;

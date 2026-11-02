@@ -16,9 +16,12 @@ public sealed partial class EditorAjustesAparencia : ObservableObject
     [ObservableProperty] private CantosParte? _cantos;
     [ObservableProperty] private bool _diferenciar;
 
-    /// As paletas do seletor, com a cor escolhida sempre marcável (ver <see cref="Opcoes.ComCor"/>).
-    public IReadOnlyList<Opcao<object>> CoresFundo => Opcoes.ComCor(Opcoes.FundosAparencia, CorFundo);
-    public IReadOnlyList<Opcao<object>> CoresDestaque => Opcoes.ComCor(Opcoes.DestaquesAparencia, CorDestaque);
+    // As cores do perfil carregado: a personalizada continua na lista depois de escolher outra, para dar para voltar.
+    private string? _fundoDoPerfil, _destaqueDoPerfil;
+
+    /// As paletas do seletor, com a cor escolhida e a do perfil carregado sempre marcáveis (ver <see cref="Opcoes.ComCor"/>).
+    public IReadOnlyList<Opcao<object>> CoresFundo => Opcoes.ComCor(Opcoes.ComCor(Opcoes.FundosAparencia, _fundoDoPerfil), CorFundo);
+    public IReadOnlyList<Opcao<object>> CoresDestaque => Opcoes.ComCor(Opcoes.ComCor(Opcoes.DestaquesAparencia, _destaqueDoPerfil), CorDestaque);
 
     partial void OnCorFundoChanged(string? value) => OnPropertyChanged(nameof(CoresFundo));
     partial void OnCorDestaqueChanged(string? value) => OnPropertyChanged(nameof(CoresDestaque));
@@ -30,6 +33,9 @@ public sealed partial class EditorAjustesAparencia : ObservableObject
         // lista faria a ListBox gravar nulo por cima da cor nova (revisão final da 0.13.7). O "do tema" existe em todas.
         CorFundo = null;
         CorDestaque = null;
+        (_fundoDoPerfil, _destaqueDoPerfil) = (a?.CorFundo, a?.CorDestaque);
+        OnPropertyChanged(nameof(CoresFundo));
+        OnPropertyChanged(nameof(CoresDestaque));
         CorFundo = a?.CorFundo;
         Transparencia = a?.Transparencia;
         CorDestaque = a?.CorDestaque;
@@ -55,8 +61,14 @@ public sealed partial class EditorAparenciaViewModel : ObservableObject
         foreach (var e in new[] { Geral, Doca, Notch, Ilhas }) e.PropertyChanged += AoMudarCampo;
     }
 
-    /// O visual do Windows agora (para o Automático e a transparência); o App liga o leitor real.
-    public Func<VisualWindows> LerWindows { get; set; } = () => new VisualWindows(true, "#0078D4", true);
+    /// O visual do Windows agora (para o Automático e a transparência); o App liga o leitor real. Ligar recalcula: o
+    /// perfil já foi carregado com o padrão (escuro), e a prévia abriria escura com o Windows claro.
+    public Func<VisualWindows> LerWindows
+    {
+        get => _lerWindows;
+        set { _lerWindows = value; Recalcular(); }
+    }
+    private Func<VisualWindows> _lerWindows = () => new VisualWindows(true, "#0078D4", true);
 
     /// "Não mexer" (nulo) e os sete temas, na ordem da grade.
     public IReadOnlyList<TemaAparencia?> Temas { get; } = [null, .. Enum.GetValues<TemaAparencia>().Cast<TemaAparencia?>()];

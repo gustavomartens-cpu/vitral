@@ -47,25 +47,34 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
 
     private void AoTrocarSessao(Gerente g, CurrentSessionChangedEventArgs a) => TrocarSessao();
 
+    private readonly object _troca = new();
+
+    /// O Windows avisa as trocas de sessão em threads do pool, às vezes duas quase juntas (abrir um jogo): uma por vez,
+    /// senão uma zera a sessão no meio da outra (NullReferenceException no log de 01/11).
     private void TrocarSessao()
     {
-        try
+        lock (_troca)
         {
-            if (_sessao is not null)
+            if (_descartada) return; // a troca chegou depois do Dispose: não assina de novo
+            try
             {
-                _sessao.MediaPropertiesChanged -= AoMudarPropriedades;
-                _sessao.PlaybackInfoChanged -= AoMudarReproducao;
-                _sessao.TimelinePropertiesChanged -= AoMudarTempo;
+                if (_sessao is { } antiga)
+                {
+                    antiga.MediaPropertiesChanged -= AoMudarPropriedades;
+                    antiga.PlaybackInfoChanged -= AoMudarReproducao;
+                    antiga.TimelinePropertiesChanged -= AoMudarTempo;
+                }
+                var nova = _gerente?.GetCurrentSession();
+                _sessao = nova;
+                if (nova is not null)
+                {
+                    nova.MediaPropertiesChanged += AoMudarPropriedades;
+                    nova.PlaybackInfoChanged += AoMudarReproducao;
+                    nova.TimelinePropertiesChanged += AoMudarTempo;
+                }
             }
-            _sessao = _gerente?.GetCurrentSession();
-            if (_sessao is not null)
-            {
-                _sessao.MediaPropertiesChanged += AoMudarPropriedades;
-                _sessao.PlaybackInfoChanged += AoMudarReproducao;
-                _sessao.TimelinePropertiesChanged += AoMudarTempo;
-            }
+            catch (Exception e) { LogBarra.Erro("Midia.TrocarSessao", e); _sessao = null; }
         }
-        catch (Exception e) { LogBarra.Erro("Midia.TrocarSessao", e); _sessao = null; }
         _ = AtualizarAsync();
     }
 
@@ -166,6 +175,7 @@ internal sealed partial class FonteMidiaWindows : IFonteMidia, IDisposable
     public void Dispose()
     {
         _descartada = true;
+        lock (_troca)
         try
         {
             if (_gerente is not null) _gerente.CurrentSessionChanged -= AoTrocarSessao;

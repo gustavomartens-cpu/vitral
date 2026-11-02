@@ -38,7 +38,8 @@ internal sealed class ServicoAparencia : IControleAparencia
                 Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     var agora = LerWindows();
-                    if (!_vigia.Mudou(agora)) return;
+                    // Troca de tema do Windows (rara) redesenha sempre: o DWM pode soltar o acrílico mesmo sem mudar valores.
+                    if (!_vigia.Mudou(agora) && e.Category != UserPreferenceCategory.VisualStyle) return;
                     VisualDoWindows = agora;
                     Recalcular();
                 });

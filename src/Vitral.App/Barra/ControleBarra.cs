@@ -212,6 +212,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         // Nada mais tocando: a ilha some e o painel da mídia, se aberto, não pode ficar flutuando sem ela.
         if (_vmMidia?.Visivel != true && _coordenador.Aberto == Painel.Midia) _coordenador.FecharTodos();
         AtualizarVisibilidadeMidia();
+        if (_status is null) Posicionar(); // barra única só com a mídia: a faixa aparece e some com a música
     }
 
     private bool _telaCheia;
@@ -401,7 +402,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             bool unica = formas.Ilhas.Disposicao == Core.Perfis.DisposicaoIlhas.BarraUnica;
             _midia?.AplicarSemVidro(unica);
             _status?.AplicarSemVidro(unica);
-            AjustarFundo(PosicaoIlhas.ComFundo(unica, _midia is not null, _status is not null), PosicaoIlhas.Barra(monitor, formas.Ilhas), formas.Ilhas.CantosRetos, p.Dpi);
+            AjustarFundo(PosicaoIlhas.ComFundo(unica, _vmMidia?.Visivel == true, _status is not null), PosicaoIlhas.Barra(monitor, formas.Ilhas), formas.Ilhas.CantosRetos, p.Dpi);
             var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0,
                 formas.Ilhas, formas.Notch);
             if (_midia is not null) PosicaoNativa.Colocar(_midia, m.X, m.Y, p.Dpi);
