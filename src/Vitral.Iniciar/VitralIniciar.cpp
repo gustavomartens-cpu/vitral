@@ -41,19 +41,24 @@ static std::atomic_flag g_vigiandoCores = ATOMIC_FLAG_INIT;
 
 static std::mutex g_logMutex;
 
-static void Log(const std::wstring& linha)
+/// Nunca lança: é chamado de dentro de catch e de threads nossas.
+static void Log(const std::wstring& linha) noexcept
 {
-    std::lock_guard lock(g_logMutex);
-    if (g_cores.empty()) return;
-    std::wstring pasta = g_cores.substr(0, g_cores.find_last_of(L'\\')) + L"\\logs";
-    std::wstring arquivo = pasta + L"\\iniciar-" + std::to_wstring(GetCurrentProcessId()) + L".log";
-    WIN32_FILE_ATTRIBUTE_DATA info{};
-    bool grande = GetFileAttributesExW(arquivo.c_str(), GetFileExInfoStandard, &info) && info.nFileSizeLow > 256 * 1024;
-    FILE* f = _wfopen(arquivo.c_str(), grande ? L"w, ccs=UTF-8" : L"a, ccs=UTF-8");
-    if (!f) return;
-    SYSTEMTIME t; GetLocalTime(&t);
-    fwprintf(f, L"%02d:%02d:%02d.%03d %ls\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, linha.c_str());
-    fclose(f);
+    try
+    {
+        std::lock_guard lock(g_logMutex);
+        if (g_cores.empty()) return;
+        std::wstring pasta = g_cores.substr(0, g_cores.find_last_of(L'\\')) + L"\\logs";
+        std::wstring arquivo = pasta + L"\\iniciar-" + std::to_wstring(GetCurrentProcessId()) + L".log";
+        WIN32_FILE_ATTRIBUTE_DATA info{};
+        bool grande = GetFileAttributesExW(arquivo.c_str(), GetFileExInfoStandard, &info) && info.nFileSizeLow > 256 * 1024;
+        FILE* f = _wfopen(arquivo.c_str(), grande ? L"w, ccs=UTF-8" : L"a, ccs=UTF-8");
+        if (!f) return;
+        SYSTEMTIME t; GetLocalTime(&t);
+        fwprintf(f, L"%02d:%02d:%02d.%03d %ls\n", t.wHour, t.wMinute, t.wSecond, t.wMilliseconds, linha.c_str());
+        fclose(f);
+    }
+    catch (...) {}
 }
 
 static std::wstring Parametro(const std::wstring& dados, const std::wstring& nome)
@@ -168,19 +173,26 @@ static void Pintar(const Fundo& f, const std::optional<Cores>& cores)
 }
 
 /// De qualquer thread: manda cada fundo se pintar com as cores (nulo = devolver o original) na thread dele.
-static void PintarTodos(std::optional<Cores> cores)
+/// Roda em threads nossas (pool, vigia do arquivo): nada pode escapar daqui, senão o Iniciar cai.
+static void PintarTodos(std::optional<Cores> cores) noexcept
 {
     std::map<InstanceHandle, Fundo> copia;
-    { std::lock_guard lock(g_estadoMutex); copia = g_fundos; g_atuais = cores; }
+    try { std::lock_guard lock(g_estadoMutex); copia = g_fundos; g_atuais = cores; }
+    catch (...) { Log(L"ERRO_COPIA"); return; }
     for (auto& [h, f] : copia)
     {
-        auto b = f.borda.get();
-        if (!b) continue;
-        Fundo alvo = f;
-        b.Dispatcher().RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [alvo, cores]() {
-            try { Pintar(alvo, cores); }
-            catch (...) { Log(L"ERRO_PINTAR|" + std::to_wstring(static_cast<uint32_t>(winrt::to_hresult()))); }
-        });
+        try
+        {
+            auto b = f.borda.get();
+            if (!b) continue;
+            Fundo alvo = f;
+            // Dispatcher e RunAsync lançam se a janela do Iniciar já foi desmontada.
+            b.Dispatcher().RunAsync(winrt::Windows::UI::Core::CoreDispatcherPriority::Normal, [alvo, cores]() {
+                try { Pintar(alvo, cores); }
+                catch (...) { Log(L"ERRO_PINTAR|" + std::to_wstring(static_cast<uint32_t>(winrt::to_hresult()))); }
+            });
+        }
+        catch (...) { Log(L"ERRO_DESPACHAR|" + std::to_wstring(static_cast<uint32_t>(winrt::to_hresult()))); }
     }
 }
 
@@ -212,9 +224,9 @@ static void Reagir(InstanceHandle h, const wux::DependencyObject& o, const wux::
 
 static void CALLBACK HostMorreu(PVOID, BOOLEAN)
 {
-    Log(L"HOST_MORREU");
     g_hostVivo = false;
-    PintarTodos(std::nullopt);
+    try { Log(L"HOST_MORREU"); } catch (...) {}
+    PintarTodos(std::nullopt); // noexcept
     if (HANDLE vaga = std::exchange(g_vaga, nullptr)) CloseHandle(vaga);
 }
 
@@ -227,13 +239,19 @@ static void VigiarCores()
     while (WaitForSingleObject(aviso, INFINITE) == WAIT_OBJECT_0)
     {
         Sleep(30); // a troca do arquivo gera mais de um aviso
-        if (!g_hostVivo) { if (!FindNextChangeNotification(aviso)) break; continue; }
-        if (auto cores = LerCores())
+        if (g_hostVivo)
         {
-            Log(cores->ligado ? L"CORES" : L"DESLIGADO");
-            PintarTodos(cores->ligado ? cores : std::nullopt);
+            try // numa std::thread, uma exceção solta chama std::terminate e derruba o Iniciar
+            {
+                if (auto cores = LerCores())
+                {
+                    Log(cores->ligado ? L"CORES" : L"DESLIGADO");
+                    PintarTodos(cores->ligado ? cores : std::nullopt);
+                }
+                else Log(L"CORES_ILEGIVEIS");
+            }
+            catch (...) { try { Log(L"ERRO_CORES"); } catch (...) {} }
         }
-        else Log(L"CORES_ILEGIVEIS");
         if (!FindNextChangeNotification(aviso)) break;
     }
     FindCloseChangeNotification(aviso);
@@ -268,7 +286,7 @@ public:
             if (t == L"StartMenu.StartBlendedFlexFrame")
             {
                 Log(L"MOLDURA");
-                std::thread([] { Sleep(5000); if (!g_achouFundo) Log(L"SEM_FUNDO"); }).detach();
+                std::thread([] { Sleep(5000); try { if (!g_achouFundo) Log(L"SEM_FUNDO"); } catch (...) {} }).detach();
             }
             if (t != L"Windows.UI.Xaml.Controls.Border" || n != L"AcrylicBorder") return S_OK;
 
@@ -364,7 +382,7 @@ public:
             std::thread([servico, vigia] {
                 HRESULT hr = servico->AdviseVisualTreeChange(vigia);
                 vigia->Release();
-                Log(L"ADVISE|hr=" + std::to_wstring(static_cast<uint32_t>(hr)));
+                try { Log(L"ADVISE|hr=" + std::to_wstring(static_cast<uint32_t>(hr))); } catch (...) {}
             }).detach();
         }
         catch (...)

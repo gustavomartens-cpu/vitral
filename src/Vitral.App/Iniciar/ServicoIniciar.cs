@@ -30,7 +30,6 @@ internal sealed class ServicoIniciar : IControleIniciar, IDisposable
     private readonly DispatcherTimer _vigia = new() { Interval = TimeSpan.FromSeconds(5) };
     private readonly CancellationTokenSource _fim = new();
     private ModoIniciar _modo = ModoIniciar.Windows;
-    private int? _pidConectado;
     private bool _conectando;
 
     /// O motivo do visual atual; nulo = modo Windows (a linha de estado some).
@@ -84,7 +83,9 @@ internal sealed class ServicoIniciar : IControleIniciar, IDisposable
             Permitir(pasta, FileSystemRights.ReadAndExecute);
             string logs = Path.Combine(Path.GetDirectoryName(_cores)!, "logs");
             Directory.CreateDirectory(logs);
-            Permitir(Path.GetDirectoryName(_cores)!, FileSystemRights.Modify);
+            // O Iniciar só lê as cores; escreve só o log. A pasta das cores aceita escrita só do Vitral (revisão final).
+            Permitir(Path.GetDirectoryName(_cores)!, FileSystemRights.ReadAndExecute);
+            Permitir(logs, FileSystemRights.Modify);
             foreach (var antiga in RegrasIniciar.PastasAntigas(Directory.GetDirectories(_raiz).Where(p => !p.EndsWith("cores", StringComparison.OrdinalIgnoreCase)), versao))
                 try { Directory.Delete(antiga, recursive: true); }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } // o Iniciar ainda a usa
@@ -101,6 +102,7 @@ internal sealed class ServicoIniciar : IControleIniciar, IDisposable
     {
         var dir = new DirectoryInfo(pasta);
         var acl = dir.GetAccessControl();
+        acl.PurgeAccessRules(PacotesDeApp); // troca a regra de uma versão anterior, em vez de somar
         acl.AddAccessRule(new FileSystemAccessRule(PacotesDeApp, direitos,
             InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit, PropagationFlags.None, AccessControlType.Allow));
         dir.SetAccessControl(acl);
@@ -112,7 +114,8 @@ internal sealed class ServicoIniciar : IControleIniciar, IDisposable
         try
         {
             string json = ValoresIniciar.De(ServicoAparencia.Instancia.Valores(ParteAparencia.Doca)).ParaJson(_modo == ModoIniciar.Vitral);
-            if (File.Exists(_cores) && File.ReadAllText(_cores) == json) return;
+            var atual = new FileInfo(_cores);
+            if (atual.Exists && atual.Length == json.Length && File.ReadAllText(_cores) == json) return; // tamanho primeiro: nunca lê um arquivo enorme
             Directory.CreateDirectory(Path.GetDirectoryName(_cores)!);
             string temporario = _cores + ".tmp";
             File.WriteAllText(temporario, json);
@@ -127,56 +130,81 @@ internal sealed class ServicoIniciar : IControleIniciar, IDisposable
         if (_dll is null) { Publicar(MotivoIniciar.SemComponente); return; }
         int? pid = PidDe("StartMenuExperienceHost");
         bool windhawk = PidDe("windhawk") is not null;
-        if (windhawk && pid != _pidConectado) { Publicar(MotivoIniciar.Windhawk); return; }
-        if (_pidConectado is { } conectado && pid == conectado)
-        {
-            if (LerLog(conectado).Contains("SEM_FUNDO")) Publicar(MotivoIniciar.WindowsMudou);
-            return;
-        }
-        if (!RegrasIniciar.DeveConectar(_modo, pid, _pidConectado, windhawk)) return;
+        string novo = pid is { } p && p == _pidDoLog ? LogNovo(p) : "";
+        var (conectar, estado) = _acompanhamento.Conferir(_modo, pid, windhawk, novo, DateTime.Now);
+        if (estado is { } e) Publicar(e);
+        if (!conectar) return;
         _conectando = true;
-        uint alvo = (uint)pid!.Value;
+        int alvo = pid!.Value;
+        long antes = TamanhoDoLog(alvo);
+        (_pidDoLog, _lidoAte) = (alvo, antes); // o log é por processo: o que veio antes desta conexão não conta
         string dados = $"hostpid={Environment.ProcessId};cores={_cores}";
+        string dll = _dll;
         Task.Run(() =>
         {
-            int antes = LerLog((int)alvo).Length; // o log é por processo: o de uma conexão anterior não conta
-            int hr = ConexaoXaml.Conectar(alvo, _dll, Clsid, dados, _fim.Token);
+            int hr = ConexaoXaml.Conectar((uint)alvo, dll, Clsid, dados, _fim.Token);
             // Aceito pelo Windows não basta: a DLL pode recusar (vaga de outra conexão). Vale o "ADVISE" novo no log dela.
-            bool entrou() { string log = LerLog((int)alvo); return log.Length > antes && log[antes..].Contains("ADVISE|hr=0"); }
-            for (int i = 0; i < 25 && !entrou(); i++) Thread.Sleep(200);
-            return entrou() ? 0 : hr < 0 ? hr : unchecked((int)0x800700B7); // ERROR_ALREADY_EXISTS
+            for (int i = 0; i < 25 && !LerLog(alvo, antes).Contains("ADVISE|hr=0"); i++) Thread.Sleep(200);
+            return (Entrou: LerLog(alvo, antes).Contains("ADVISE|hr=0"), Hr: hr);
         }).ContinueWith(t =>
         {
             _conectando = false;
-            int hr = t.IsCompletedSuccessfully ? t.Result : -1;
-            if (hr < 0)
-            {
-                Barra.LogBarra.Info($"Iniciar: conexão recusada (0x{hr:X8})");
-                Publicar(MotivoIniciar.Recusou);
-                _pidConectado = (int)alvo; // não insiste no mesmo processo; um Iniciar novo tenta de novo
-                return;
-            }
-            _pidConectado = (int)alvo;
-            Publicar(MotivoIniciar.Nenhum);
+            bool entrou = t.IsCompletedSuccessfully && t.Result.Entrou;
+            if (!entrou) Barra.LogBarra.Info($"Iniciar: conexão recusada (0x{(t.IsCompletedSuccessfully ? t.Result.Hr : -1):X8})");
+            _acompanhamento.Resultado(alvo, entrou, DateTime.Now);
+            // Testar 20 s ou Desfazer pode ter voltado ao visual do Windows no meio da conexão: aí não há linha a mostrar.
+            if (_modo == ModoIniciar.Vitral) Publicar(entrou ? MotivoIniciar.Nenhum : MotivoIniciar.Recusou);
         }, TaskScheduler.FromCurrentSynchronizationContext());
     }
 
-    private string LerLog(int pid)
+    private readonly AcompanhamentoIniciar _acompanhamento = new();
+    private int? _pidDoLog;
+    private long _lidoAte;
+    private const int MaxLeitura = 64 * 1024; // a pasta do log aceita escrita do Iniciar (e de outros apps isolados)
+
+    private string CaminhoDoLog(int pid) => Path.Combine(Path.GetDirectoryName(_cores)!, "logs", $"iniciar-{pid}.log");
+
+    private long TamanhoDoLog(int pid)
     {
-        string log = Path.Combine(Path.GetDirectoryName(_cores)!, "logs", $"iniciar-{pid}.log");
-        try
-        {
-            if (!File.Exists(log)) return "";
-            using var fs = new FileStream(log, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            return new StreamReader(fs).ReadToEnd();
-        }
-        catch (IOException) { return ""; }
+        try { var f = new FileInfo(CaminhoDoLog(pid)); return f.Exists ? f.Length : 0; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return 0; }
     }
 
+    /// O que a DLL escreveu desde a última conferência (até 64 KB por vez); o log recomeçado volta do início.
+    private string LogNovo(int pid)
+    {
+        long tamanho = TamanhoDoLog(pid);
+        if (tamanho < _lidoAte) _lidoAte = 0;
+        string novo = LerLog(pid, _lidoAte);
+        _lidoAte = Math.Min(tamanho, _lidoAte + MaxLeitura);
+        return novo;
+    }
+
+    private string LerLog(int pid, long desde)
+    {
+        try
+        {
+            string log = CaminhoDoLog(pid);
+            if (!File.Exists(log)) return "";
+            using var fs = new FileStream(log, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            if (desde >= fs.Length) return "";
+            fs.Seek(desde, SeekOrigin.Begin);
+            var buffer = new byte[(int)Math.Min(MaxLeitura, fs.Length - desde)];
+            int lidos = fs.Read(buffer, 0, buffer.Length);
+            return System.Text.Encoding.UTF8.GetString(buffer, 0, lidos);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return ""; }
+    }
+
+    /// Só os processos desta sessão: com troca rápida de usuário, o Iniciar de outra pessoa também aparece.
     private static int? PidDe(string nome)
     {
         var processos = Process.GetProcessesByName(nome);
-        try { return processos.FirstOrDefault()?.Id; }
+        try
+        {
+            int sessao = Process.GetCurrentProcess().SessionId;
+            return processos.FirstOrDefault(p => p.SessionId == sessao)?.Id;
+        }
         finally { foreach (var p in processos) p.Dispose(); }
     }
 
