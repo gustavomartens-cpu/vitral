@@ -52,6 +52,7 @@ public sealed partial class EstadoNotch
         var agoraComFuso = new DateTimeOffset(agora());
         _agenda.RemoveAll(a => a.Compromisso.Fim <= agoraComFuso);
         if (_agenda.Count == 0) return false;
+        DevolverNotificacaoAFila();
         AvisoAgendaAtual = _agenda[0];
         _agenda.RemoveAt(0);
         AvisoEhDaAgenda = true;

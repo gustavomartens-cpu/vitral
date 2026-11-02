@@ -71,6 +71,25 @@ public sealed class NotificacoesTests
     }
 
     [Fact]
+    public void Nao_cala_chamadas_alarmes_sistema_nem_o_proprio_Vitral()
+    {
+        var cala = RegrasNotificacoes.ParaCalar([
+            ("Microsoft.YourPhone_8wekyb3d8bbwe!App", null), ("Microsoft.WindowsAlarms_8wekyb3d8bbwe!App", null),
+            ("Windows.SystemToast.AutoPlay", null), ("com.squirrel.Teams.Teams", null), ("MSTeams_8wekyb3d8bbwe!MSTeams", null),
+            ("Vitral_de7xjxk7y8pxy!Vitral", null), ("Chrome", null),
+        ]);
+        Assert.Equal(["Chrome"], cala);
+    }
+
+    [Theory]
+    [InlineData(EstadoNotificacoes.Ligado, true, true, true)]
+    [InlineData(EstadoNotificacoes.Ligado, false, true, false)]
+    [InlineData(EstadoNotificacoes.Ligado, true, false, false)]
+    [InlineData(EstadoNotificacoes.SemPermissao, true, true, false)]
+    public void So_cala_com_a_leitura_funcionando_e_o_notch_na_tela(EstadoNotificacoes estado, bool leu, bool notch, bool cala) =>
+        Assert.Equal(cala, RegrasNotificacoes.DeveCalar(estado, leu, notch));
+
+    [Fact]
     public void Restaura_o_que_ficou_ligado()
     {
         Assert.Equal(["A", "B"], RegrasNotificacoes.ParaDevolver(["A", "B"]));

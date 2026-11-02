@@ -12,6 +12,18 @@ internal sealed class WindowsQuieto(ServicoConfig config)
 {
     private const string Raiz = @"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings";
     private readonly object _trava = new();
+    private bool _encerrado;
+
+    /// Na saída: devolve e não cala mais (nada que chegue depois pode deixar o Windows calado).
+    public void Encerrar()
+    {
+        lock (_trava) _encerrado = true;
+        Devolver();
+    }
+
+    /// Na desinstalação, sem o Vitral aberto: devolve pelo config.
+    public static void DevolverDoConfig() =>
+        new WindowsQuieto(new ServicoConfig(System.IO.Path.Combine(Core.Windows.Pastas.Raiz, "config.json"))).Encerrar();
 
     /// Cala todos os apps que já têm configuração de notificação e os <paramref name="novos"/> (o Claude e quem já estava
     /// calado ficam como estão).
@@ -19,6 +31,7 @@ internal sealed class WindowsQuieto(ServicoConfig config)
     {
         lock (_trava)
         {
+            if (_encerrado) return;
             try
             {
                 using var raiz = Registry.CurrentUser.CreateSubKey(Raiz);

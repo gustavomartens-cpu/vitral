@@ -14,9 +14,16 @@ namespace Vitral.App.Notificacoes;
 internal static class PacoteVitral
 {
     public const string ArgumentoReaberto = "--reaberto";
-    private const string Nome = "Vitral", Editor = "CN=Vitral";
+    // O Vitral de desenvolvimento tem um pacote só dele: sem isso, ele e o instalado roubariam a identidade um do outro a
+    // cada abertura (revisão final da 0.15.0). O app.Debug.manifest aponta para o Vitral.Dev.
+#if DEBUG
+    private const string Nome = "Vitral.Dev", Sufixo = "-dev";
+#else
+    private const string Nome = "Vitral", Sufixo = "";
+#endif
+    private const string Editor = "CN=Vitral";
 
-    private static readonly string Pasta = Path.Combine(Pastas.Raiz, "pacote");
+    private static readonly string Pasta = Path.Combine(Pastas.Raiz, "pacote" + Sufixo);
     private static readonly string Registrado = Path.Combine(Pasta, "registrado.txt");
 
     public static bool TemIdentidade
@@ -73,6 +80,20 @@ internal static class PacoteVitral
     }
 
     private static bool Existe() => new PackageManager().FindPackagesForUser("", Nome, Editor).Any();
+
+    /// Na desinstalação: o balão do Windows volta e o pacote sai (ele apontaria para uma pasta apagada).
+    public static void AoDesinstalar()
+    {
+        try { WindowsQuieto.DevolverDoConfig(); }
+        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("PacoteVitral.Desinstalar", e); }
+        try
+        {
+            var gerente = new PackageManager();
+            foreach (var p in gerente.FindPackagesForUser("", Nome, Editor).ToList())
+                gerente.RemovePackageAsync(p.Id.FullName).AsTask().Wait(TimeSpan.FromSeconds(30));
+        }
+        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("PacoteVitral.Desinstalar", e); }
+    }
 
     private static string Manifesto() => $"""
         <?xml version="1.0" encoding="utf-8"?>

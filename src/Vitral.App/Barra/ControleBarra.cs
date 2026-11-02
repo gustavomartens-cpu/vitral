@@ -113,6 +113,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
         _midia = Ajustar(_midia, _vmMidia, "Mídia", () => new IlhaMidia());
         _relogio = AjustarNotch(_relogio, _vmRelogio);
+        _notificacoes?.Sincronizar(); // com o notch na tela (ou sem ele), o balão do Windows calado (ou de volta)
         _status = Ajustar(_status, _vmStatus, "Status", () => new IlhaStatus());
         AtualizarVisibilidadeMidia();
         Posicionar();
@@ -194,6 +195,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
     /// O clique no aviso de atualização (o App liga ao ServicoAtualizacao).
     public Action? Reiniciar { get; set; }
+
+    /// O notch está na tela (o balão do Windows só fica calado com ele).
+    public bool TemNotch => _relogio is not null;
 
     private PainelNotificacoesViewModel? _vmNotificacoes;
     private Notificacoes.ServicoNotificacoes? _notificacoes;
@@ -521,6 +525,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             _status?.Close();
             _midia = _status = null;
             _relogio = null;
+            _notificacoes?.Sincronizar(); // sem o notch, o balão do Windows volta
             DescartarViewModels();
             _fontes?.Dispose();
             _fontes = null;

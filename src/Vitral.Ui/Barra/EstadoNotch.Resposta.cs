@@ -173,6 +173,7 @@ public sealed partial class EstadoNotch
     /// A primeira ficha da fila vai para o notch (e só aceita Enviar depois da EsperaClique).
     private void MostrarResposta()
     {
+        DevolverNotificacaoAFila();
         _mostrouResposta = agora();
         Ir(ModoNotch.Resposta, forcar: true);
     }

@@ -60,6 +60,15 @@ public sealed partial class EstadoNotch
         return true;
     }
 
+    /// Uma ficha ou um aviso da agenda tomou a tela: a notificação que estava nela volta para o começo da fila (senão
+    /// ficava presa, e o próximo aviso desenharia a velha).
+    private void DevolverNotificacaoAFila()
+    {
+        if (AvisoNotificacaoAtual is not { } n) return;
+        _notificacoes.Insert(0, n);
+        AvisoNotificacaoAtual = null;
+    }
+
     /// A notificação saiu do aviso (6 s ou clique): a próxima da fila, um aviso da agenda esperando, ou o fim.
     private void EncerrarNotificacao()
     {

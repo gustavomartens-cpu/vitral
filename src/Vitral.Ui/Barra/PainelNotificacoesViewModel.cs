@@ -27,12 +27,14 @@ public sealed partial class PainelNotificacoesViewModel(Func<DateTimeOffset> ago
     public void Atualizar(EstadoNotificacoes estado, IReadOnlyList<NotificacaoApp> notificacoes)
     {
         var t = agora();
-        TextoEstado = RegrasNotificacoes.Texto(estado);
-        Grupos = estado == EstadoNotificacoes.Ligado
+        var grupos = estado == EstadoNotificacoes.Ligado
             ? RegrasNotificacoes.Agrupar(notificacoes).Select(g => new GrupoPainelNotificacao(g.AppId, g.NomeApp,
                 g.Itens.Select(n => new ItemPainelNotificacao(n.Id, n.AppId, n.Titulo, n.Texto, RegrasNotificacoes.HaQuanto(n.Chegou, t))).ToList())).ToList()
             : [];
-        Vazio = estado == EstadoNotificacoes.Ligado && Grupos.Count == 0;
+        // Estado e vazio antes dos grupos: o painel se refaz no aviso de Grupos e lê os dois.
+        TextoEstado = RegrasNotificacoes.Texto(estado);
+        Vazio = estado == EstadoNotificacoes.Ligado && grupos.Count == 0;
+        Grupos = grupos;
     }
 
     [RelayCommand] private void Limpar(ItemPainelNotificacao item) => PediuLimpar?.Invoke(item.Id);

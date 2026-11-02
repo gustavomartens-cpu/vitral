@@ -15,6 +15,8 @@
     <RootNamespace>Vitral.App</RootNamespace>
     <ApplicationIcon>Recursos\vitral.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Debug: pacote esparso próprio (Vitral.Dev), para não roubar a identidade do Vitral instalado -->
+    <ApplicationManifest Condition="'$(Configuration)' == 'Debug'">app.Debug.manifest</ApplicationManifest>
     <Version>0.14.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- ThemeMode (Fluent) ainda é marcado como experimental no WPF -->

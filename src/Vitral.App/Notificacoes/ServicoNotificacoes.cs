@@ -4,26 +4,31 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Vitral.Core.Notificacoes;
+using Windows.Foundation;
 using Windows.UI.Notifications;
 using Windows.UI.Notifications.Management;
 
 namespace Vitral.App.Notificacoes;
 
 /// As notificações dos outros apps (spec das notificações §3): lidas pelo UserNotificationListener (precisa da identidade
-/// de pacote e da permissão), relidas quando o Windows avisa uma mudança (no máximo uma vez por segundo), sem as do app do
-/// Claude. Publica na thread da interface.
+/// de pacote e da permissão), relidas quando o Windows avisa uma mudança, sem as do app do Claude. A leitura roda fora da
+/// thread da interface e publica nela. O balão do Windows só fica calado com a leitura funcionando e o notch na tela.
 internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) : IDisposable
 {
     private UserNotificationListener? _ouvinte;
+    private TypedEventHandler<UserNotificationListener, UserNotificationChangedEventArgs>? _aoMudar;
     private IReadOnlyList<NotificacaoApp> _atuais = [];
     private readonly Dictionary<string, Windows.ApplicationModel.AppInfo> _apps = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ImageSource?> _icones = new(StringComparer.OrdinalIgnoreCase);
     private readonly DispatcherTimer _espera = new(DispatcherPriority.Background, ui) { Interval = TimeSpan.FromSeconds(1) };
-    private bool _lendo;
+    private bool _lendo, _relerDepois, _avisarDepois, _leuOk, _encerrado;
     private DateTime _ultimaLeitura;
 
     public EstadoNotificacoes Estado { get; private set; } = EstadoNotificacoes.SemIdentidade;
     public IReadOnlyList<NotificacaoApp> Atuais => _atuais;
+
+    /// O notch está na tela (o App liga a barra): sem ele, o balão do Windows não pode ficar calado.
+    public Func<bool> NotchNaTela { get; set; } = () => false;
 
     /// O estado ou a lista mudou.
     public event Action<EstadoNotificacoes, IReadOnlyList<NotificacaoApp>>? Mudou;
@@ -46,14 +51,14 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
             // A primeira mudança relê na hora (o aviso desce junto com a notificação); as que vêm em seguida, dentro de 1 s,
             // esperam e viram uma leitura só.
             _espera.Tick += async (_, _) => { _espera.Stop(); await Ler(avisar: true); };
-            _ouvinte.NotificationChanged += (_, _) => ui.BeginInvoke(async () =>
+            _aoMudar = (_, _) => ui.BeginInvoke(async () =>
             {
-                if (_espera.IsEnabled) return;
+                if (_encerrado || _espera.IsEnabled) return;
                 if (DateTime.UtcNow - _ultimaLeitura >= _espera.Interval) await Ler(avisar: true);
                 else _espera.Start();
             });
+            _ouvinte.NotificationChanged += _aoMudar;
             Estado = EstadoNotificacoes.Ligado;
-            quieto.Calar([]);
             await Ler(avisar: false); // as que já estavam lá não descem no notch
         }
         catch (Exception e) when (e is not OutOfMemoryException)
@@ -63,47 +68,85 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
         }
     }
 
+    /// Lê de novo. Uma mudança que chega no meio de uma leitura não se perde: vira outra leitura logo depois.
     private async Task Ler(bool avisar)
     {
-        if (_ouvinte is null || _lendo) return;
+        if (_ouvinte is null || _encerrado) return;
+        if (_lendo) { _relerDepois = true; _avisarDepois |= avisar; return; }
         _lendo = true;
         _ultimaLeitura = DateTime.UtcNow;
         try
         {
-            var lidas = await _ouvinte.GetNotificationsAsync(NotificationKinds.Toast);
-            var lista = new List<NotificacaoApp>();
-            foreach (var n in lidas)
+            var ouvinte = _ouvinte;
+            var (lista, apps) = await Task.Run(async () =>
             {
-                string app = n.AppInfo?.AppUserModelId ?? "";
-                if (n.AppInfo is { } info) _apps[app] = info;
-                var textos = n.Notification?.Visual?.GetBinding(KnownNotificationBindings.ToastGeneric)?.GetTextElements()
-                    .Select(t => t.Text).Where(t => !string.IsNullOrWhiteSpace(t)).ToList() ?? [];
-                lista.Add(new NotificacaoApp(n.Id, app, n.AppInfo?.DisplayInfo?.DisplayName ?? app,
-                    textos.FirstOrDefault(), textos.Count > 1 ? string.Join(" ", textos.Skip(1)) : null, n.CreationTime));
-            }
+                var lidas = await ouvinte.GetNotificationsAsync(NotificationKinds.Toast);
+                var itens = new List<NotificacaoApp>();
+                var infos = new Dictionary<string, Windows.ApplicationModel.AppInfo>(StringComparer.OrdinalIgnoreCase);
+                foreach (var n in lidas)
+                {
+                    string app = n.AppInfo?.AppUserModelId ?? "";
+                    if (n.AppInfo is { } info) infos[app] = info;
+                    var textos = n.Notification?.Visual?.GetBinding(KnownNotificationBindings.ToastGeneric)?.GetTextElements()
+                        .Select(t => t.Text).Where(t => !string.IsNullOrWhiteSpace(t)).ToList() ?? [];
+                    itens.Add(new NotificacaoApp(n.Id, app, n.AppInfo?.DisplayInfo?.DisplayName ?? app,
+                        textos.FirstOrDefault(), textos.Count > 1 ? string.Join(" ", textos.Skip(1)) : null, n.CreationTime));
+                }
+                return (itens, infos);
+            });
+            if (_encerrado) return;
+            foreach (var (app, info) in apps) _apps[app] = info;
             var filtradas = RegrasNotificacoes.Filtrar(lista);
             var (novas, _) = RegrasNotificacoes.Diferenca(_atuais, filtradas);
             _atuais = filtradas;
-            if (novas.Count > 0) quieto.Calar(novas.Select(n => n.AppId)); // um app novo: a próxima já vem quieta
+            _leuOk = true;
+            Sincronizar(novas.Select(n => n.AppId)); // um app novo: a próxima dele já vem quieta
             Mudou?.Invoke(Estado, _atuais);
             if (avisar && novas.Count > 0) Novas?.Invoke(novas);
         }
-        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("ServicoNotificacoes.Ler", e); }
-        finally { _lendo = false; }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            // Sem conseguir ler (permissão retirada, por exemplo), o Windows volta a mostrar o balão.
+            Barra.LogBarra.Erro("ServicoNotificacoes.Ler", e);
+            _leuOk = false;
+            if (e is UnauthorizedAccessException) Estado = EstadoNotificacoes.SemPermissao;
+            Sincronizar([]);
+            Mudou?.Invoke(Estado, _atuais);
+        }
+        finally
+        {
+            _lendo = false;
+            if (_relerDepois && !_encerrado)
+            {
+                bool avisarDeNovo = _avisarDepois;
+                (_relerDepois, _avisarDepois) = (false, false);
+                _ = ui.BeginInvoke(async () => await Ler(avisarDeNovo));
+            }
+        }
     }
 
+    /// O balão do Windows calado só quando o Vitral de fato mostra as notificações; senão, devolvido. O ControleBarra
+    /// chama quando o notch aparece ou some.
+    public void Sincronizar(IEnumerable<string>? novosApps = null)
+    {
+        if (_encerrado) return;
+        if (RegrasNotificacoes.DeveCalar(Estado, _leuOk, NotchNaTela())) quieto.Calar(novosApps ?? []);
+        else quieto.Devolver();
+    }
+
+    // As limpezas avisam as novas também: uma notificação que chega junto com o × não pode ser engolida.
     public async Task Limpar(uint id)
     {
         try { _ouvinte?.RemoveNotification(id); }
         catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("ServicoNotificacoes.Limpar", e); }
-        await Ler(avisar: false);
+        await Ler(avisar: true);
     }
 
     public async Task LimparApp(string appId)
     {
         foreach (var n in _atuais.Where(n => string.Equals(n.AppId, appId, StringComparison.OrdinalIgnoreCase)).ToList())
             try { _ouvinte?.RemoveNotification(n.Id); } catch (Exception e) when (e is not OutOfMemoryException) { }
-        await Ler(avisar: false);
+        await Ler(avisar: true);
     }
 
     /// Só as que o Vitral mostra: as do app do Claude ficam na central.
@@ -111,12 +154,17 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
     {
         foreach (var n in _atuais.ToList())
             try { _ouvinte?.RemoveNotification(n.Id); } catch (Exception e) when (e is not OutOfMemoryException) { }
-        await Ler(avisar: false);
+        await Ler(avisar: true);
     }
 
     public static void AbrirApp(string appId)
     {
-        try { Process.Start(new ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{appId}") { UseShellExecute = true }); }
+        try
+        {
+            var abrir = new ProcessStartInfo("explorer.exe") { UseShellExecute = false };
+            abrir.ArgumentList.Add($"shell:AppsFolder\\{appId}");
+            Process.Start(abrir);
+        }
         catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("ServicoNotificacoes.AbrirApp", e); }
     }
 
@@ -128,7 +176,7 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
         try
         {
             // Apps sem logo (o PowerShell, alguns programas antigos) ficam sem ícone.
-            if (_apps.TryGetValue(appId, out var info) && info.DisplayInfo?.GetLogo(new Windows.Foundation.Size(32, 32)) is { } logo
+            if (_apps.TryGetValue(appId, out var info) && info.DisplayInfo?.GetLogo(new Size(32, 32)) is { } logo
                 && await logo.OpenReadAsync() is { } aberto)
             {
                 using var fluxo = aberto;
@@ -154,5 +202,12 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
         Mudou?.Invoke(estado, _atuais);
     }
 
-    public void Dispose() => _espera.Stop();
+    /// Na saída: para de ler e de calar (uma notificação que chegue depois do Devolver não cala tudo de novo).
+    public void Dispose()
+    {
+        _encerrado = true;
+        _espera.Stop();
+        try { if (_ouvinte is not null && _aoMudar is not null) _ouvinte.NotificationChanged -= _aoMudar; }
+        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("ServicoNotificacoes.Dispose", e); }
+    }
 }

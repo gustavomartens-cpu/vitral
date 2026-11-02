@@ -38,8 +38,19 @@ public static class RegrasNotificacoes
     /// Windows quieto (spec §4): os apps cujo balão o Vitral desliga. Fica de fora o app do Claude (as notificações dele
     /// não aparecem no Vitral) e quem já estava com o balão desligado (escolha do usuário, que o Vitral não devolve).
     public static IReadOnlyList<string> ParaCalar(IEnumerable<(string AppId, int? ShowBanner)> apps) =>
-        apps.Where(a => a.ShowBanner != 0 && !a.AppId.StartsWith("Claude_", StringComparison.OrdinalIgnoreCase))
-            .Select(a => a.AppId).ToList();
+        apps.Where(a => a.ShowBanner != 0 && !NuncaCalar(a.AppId)).Select(a => a.AppId).ToList();
+
+    // Ficam com o balão do Windows (revisão final da 0.15.0): o que precisa dos botões do balão (chamadas no Celular,
+    // alarmes, Teams), os avisos do próprio Windows, o Claude (fora do Vitral) e o próprio Vitral.
+    private static readonly string[] Excecoes =
+        ["Claude_", "Vitral_", "Vitral.Dev_", "Microsoft.YourPhone_", "Microsoft.WindowsAlarms_", "Windows.SystemToast.", "MSTeams_", "com.squirrel.Teams."];
+
+    private static bool NuncaCalar(string appId) => Excecoes.Any(e => appId.StartsWith(e, StringComparison.OrdinalIgnoreCase));
+
+    /// Cala o Windows só quando o Vitral de fato mostra as notificações: lendo (a primeira leitura deu certo) e com o notch
+    /// na tela. Senão, o usuário ficaria sem balão e sem notch.
+    public static bool DeveCalar(EstadoNotificacoes estado, bool leituraFunciona, bool notchNaTela) =>
+        estado == EstadoNotificacoes.Ligado && leituraFunciona && notchNaTela;
 
     /// O que o Vitral calou e ainda não devolveu (gravado no config): devolve na saída e, depois de uma queda, ao abrir.
     public static IReadOnlyList<string> ParaDevolver(IReadOnlyList<string>? gravados) => gravados ?? [];

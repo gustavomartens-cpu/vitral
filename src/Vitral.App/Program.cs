@@ -21,7 +21,7 @@ public static class Program
         }
 
         // Desinstalar com a doca ligada não pode deixar o usuário sem barra de tarefas.
-        VelopackApp.Build().OnBeforeUninstallFastCallback(_ => { Doca.SaidaDaDoca.AoDesinstalar(); Claude.ServicoGanchosClaude.DesligarAoDesinstalar(); }).Run();
+        VelopackApp.Build().OnBeforeUninstallFastCallback(_ => { Doca.SaidaDaDoca.AoDesinstalar(); Claude.ServicoGanchosClaude.DesligarAoDesinstalar(); Notificacoes.PacoteVitral.AoDesinstalar(); }).Run();
         // O Velopack abre o Vitral com a pasta de trabalho na pasta da instalação, e todo programa aberto pela doca a
         // herda. Um app que fica aberto (o do Claude, por exemplo) prendia essa pasta e a atualização não conseguia
         // trocá-la. A partir daqui o Vitral trabalha na pasta do usuário.

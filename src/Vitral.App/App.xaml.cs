@@ -84,12 +84,13 @@ public partial class App : Application
         _quieto.Devolver();
         ServicoDeNotificacoes = new Vitral.App.Notificacoes.ServicoNotificacoes(Dispatcher, _quieto);
         ServicoDeNotificacoes.Novas += novas => Barra.LogBarra.Info($"Notificações novas: {novas.Count}");
+        ServicoDeNotificacoes.NotchNaTela = () => _barra?.TemNotch == true;
         _barra.Notificacoes = ServicoDeNotificacoes; // o sino, os avisos e o painel do notch
         // Travamento fatal com a doca ligada: a barra do Windows volta antes de o processo sumir.
         // Na thread da interface também devolve os ícones da bandeja (a janela da ManagedShell morre com o processo).
         AppDomain.CurrentDomain.UnhandledException += (_, _) =>
         {
-            _quieto?.Devolver();
+            _quieto?.Encerrar();
             _barraWindows?.Mostrar();
             if (Dispatcher.CheckAccess())
                 try { _bandejaApps?.Desligar(); } catch (Exception) { /* processo caindo: melhor esforço */ }
@@ -205,7 +206,7 @@ public partial class App : Application
         _canalAvisos?.Dispose();
         _bandejaApps?.Dispose(); // devolve os ícones ao Windows
         ServicoDeNotificacoes?.Dispose();
-        _quieto?.Devolver(); // o balão do Windows volta
+        _quieto?.Encerrar(); // o balão do Windows volta, e nada mais o cala
         ServicoDoIniciar?.Dispose(); // o Iniciar volta ao do Windows quando o processo sai
         _observadorIcones?.Dispose();
         _notificador?.Aguardar(TimeSpan.FromSeconds(5));

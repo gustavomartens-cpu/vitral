@@ -72,11 +72,24 @@ public sealed class NotchNotificacoesTests
     }
 
     [Fact]
-    public void Sem_identidade_o_sino_abre_a_central()
+    public void Sem_identidade_o_sino_abre_o_painel_que_explica()
     {
         var e = Criar();
         e.NotificacoesLigadas = false;
-        Assert.Equal(AcaoNotch.AbrirNotificacoes, e.Clicou(ParteNotch.Direita));
+        Assert.Equal(AcaoNotch.AbrirPainelNotificacoes, e.Clicou(ParteNotch.Direita));
+    }
+
+    [Fact]
+    public void Notificacao_interrompida_por_ficha_volta_e_nao_fica_presa()
+    {
+        var e = Criar();
+        e.Notificou(Chrome("Interrompida"));
+        e.Pediu(new PedidoPermissao("p1", "vitral", "Bash", "Claude quer rodar um comando", "ls"));
+        Assert.Null(e.AvisoNotificacaoAtual); // a ficha tomou a tela
+        e.Desistiu("p1");
+        Assert.Equal("Interrompida", e.AvisoNotificacaoAtual!.Titulo); // volta depois da ficha
+        Avancar(6.1, e);
+        Assert.Null(e.AvisoNotificacaoAtual);
     }
 
     [Fact]

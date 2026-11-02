@@ -170,7 +170,7 @@ public sealed class NotchTests
     public void Clique_na_direita_abre_as_notificacoes()
     {
         var e = Criar();
-        Assert.Equal(AcaoNotch.AbrirNotificacoes, e.Clicou(ParteNotch.Direita));
+        Assert.Equal(AcaoNotch.AbrirPainelNotificacoes, e.Clicou(ParteNotch.Direita)); // o painel do Vitral (0.15.0)
     }
 
     [Fact]

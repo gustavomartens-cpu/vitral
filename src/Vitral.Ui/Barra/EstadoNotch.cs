@@ -200,7 +200,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         var acao = parte switch
         {
             ParteNotch.Esquerda => abrir,
-            ParteNotch.Direita => NotificacoesLigadas ? AcaoNotch.AbrirPainelNotificacoes : AcaoNotch.AbrirNotificacoes,
+            ParteNotch.Direita => AcaoNotch.AbrirPainelNotificacoes, // sem identidade ou permissão, o painel explica e leva à central
             _ => Modo == ModoNotch.Aviso ? doAviso : AcaoNotch.AbrirCalendario,
         };
         if (acao == AcaoNotch.AbrirApp)
@@ -226,6 +226,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
     /// O primeiro da fila vai para a ficha (e só aceita clique depois da EsperaClique).
     private void Mostrar()
     {
+        DevolverNotificacaoAFila();
         _mostrou = agora();
         Ir(ModoNotch.Permissao, forcar: true);
     }

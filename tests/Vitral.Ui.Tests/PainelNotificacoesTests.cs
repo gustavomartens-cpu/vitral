@@ -44,6 +44,18 @@ public sealed class PainelNotificacoesTests
     }
 
     [Fact]
+    public void Ao_avisar_Grupos_o_Vazio_ja_vale()
+    {
+        var p = Criar();
+        p.Atualizar(EstadoNotificacoes.Ligado, []);
+        var vistos = new List<bool>();
+        p.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(p.Grupos)) vistos.Add(p.Vazio); };
+        p.Atualizar(EstadoNotificacoes.Ligado, [N(1, "Chrome", 1)]);
+        p.Atualizar(EstadoNotificacoes.Ligado, []);
+        Assert.Equal([false, true], vistos);
+    }
+
+    [Fact]
     public void Vazio_mostra_nenhuma()
     {
         var p = Criar();
