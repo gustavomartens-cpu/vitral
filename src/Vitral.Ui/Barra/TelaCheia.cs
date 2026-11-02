@@ -9,14 +9,16 @@ public static class TelaCheia
 
     /// A tela cheia do monitor principal pela ordem das janelas (de cima para baixo), e não pela janela da frente: clicar
     /// numa janela do outro monitor não tira a tela cheia do app que cobre o principal (Gustavo, 02/11). Vale a primeira
-    /// janela que encosta no monitor principal.
+    /// janela que está mais da metade no monitor principal: uma janela maximizada no vizinho tem a borda invisível
+    /// avançando uns 8 px no principal, e isso não pode contar.
     public static bool NoPrincipal(IEnumerable<(string Classe, Retangulo Janela)> deCimaParaBaixo, Retangulo monitorPrincipal)
     {
         foreach (var (classe, janela) in deCimaParaBaixo)
         {
-            bool encosta = janela.X < monitorPrincipal.X + monitorPrincipal.Largura && janela.X + janela.Largura > monitorPrincipal.X
-                && janela.Y < monitorPrincipal.Y + monitorPrincipal.Altura && janela.Y + janela.Altura > monitorPrincipal.Y;
-            if (encosta) return EhDeVerdade(classe, janela, monitorPrincipal);
+            double largura = Math.Min(janela.X + janela.Largura, monitorPrincipal.X + monitorPrincipal.Largura) - Math.Max(janela.X, monitorPrincipal.X);
+            double altura = Math.Min(janela.Y + janela.Altura, monitorPrincipal.Y + monitorPrincipal.Altura) - Math.Max(janela.Y, monitorPrincipal.Y);
+            double dentro = Math.Max(0, largura) * Math.Max(0, altura);
+            if (dentro > 0 && dentro * 2 >= janela.Largura * janela.Altura) return EhDeVerdade(classe, janela, monitorPrincipal);
         }
         return false;
     }

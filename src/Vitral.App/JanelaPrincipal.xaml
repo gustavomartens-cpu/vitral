@@ -410,7 +410,8 @@
                 <!-- Aparência da doca, do notch e das ilhas (spec da aparência §5.4) -->
                 <TabItem Header="Aparência" Style="{StaticResource AbaVitral}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
-                        <Grid DataContext="{Binding EditorAparencia}"
+                        <!-- Largura limitada: maximizada, a aba esticava as miniaturas e a prévia na tela toda (02/11) -->
+                        <Grid DataContext="{Binding EditorAparencia}" MaxWidth="1040" HorizontalAlignment="Left"
                               IsEnabled="{Binding DataContext.Selecionado, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource TemValor}}">
                             <Grid.Style>
                                 <Style TargetType="Grid">
