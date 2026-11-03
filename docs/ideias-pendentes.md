@@ -105,4 +105,6 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   borda e os cantos da doca, por um componente dentro do Iniciar, com reserva pela cor de destaque do Windows (0.14.0).
   Notificações dos outros apps no notch e num painel no sino, com o balão do Windows calado (0.15.0), tela cheia que
   não cai ao clicar no outro monitor e balão do app do Claude calado (0.15.1), borda invisível da janela vizinha sem
-  derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2).
+  derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2). Painel de controles na barra do topo
+  (Bluetooth e aparelhos, modo avião, não perturbe que também cala o notch, luz noturna, brilho por tela) e microfone
+  no painel de volume (0.16.0).
