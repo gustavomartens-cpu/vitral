@@ -10,6 +10,7 @@ internal static class CoreAudio
     public const int Saida = 0;              // eRender
     public const int Entrada = 1;            // eCapture
     public const int Multimidia = 1;         // eMultimedia
+    public const int Comunicacoes = 2;       // eCommunications
     public const int DispositivoAtivo = 1;   // DEVICE_STATE_ACTIVE
     public const int SomenteLeitura = 0;     // STGM_READ
     public const int ClsctxAll = 23;

@@ -29,16 +29,24 @@ public sealed partial class PainelControlesViewModel(IFonteControles fonte, Func
     /// O "Não perturbe" lido ou mudado pelo painel: o notch para (ou volta) de descer com as notificações dos apps.
     public event Action<bool>? MudouNaoPerturbe;
 
+    private int _geracao;
+
+    /// Relê o estado. Uma leitura que termina depois de outra mais nova é descartada (a abertura do painel e a releitura
+    /// de um clique podem rodar juntas, e a leitura é lenta).
     public async Task Abrir()
     {
+        int minha = ++_geracao;
         var e = await fonte.Ler();
+        if (minha != _geracao) return;
+        foreach (var id in _brilhoPendente.Keys.Except(e.Telas.Select(t => t.Id)).ToList()) _brilhoPendente.Remove(id); // telas que sumiram
         Bluetooth = e.Bluetooth;
         Aviao = e.Aviao;
         NaoPerturbe = e.NaoPerturbe;
         if (e.NaoPerturbe is { } np) MudouNaoPerturbe?.Invoke(np); // pode ter mudado fora do Vitral (Win+A)
         LuzNoturna = e.LuzNoturna;
         TextoLuzNoturna = e.LuzNoturna is null ? TextoLuzDesconhecida : null;
-        Trocar(Telas, e.Telas);
+        // As mesmas telas: os deslizantes ficam (recriar no meio de um arrasto solta o deslizante da mão do usuário).
+        if (!Telas.Select(t => (t.Id, t.Nome)).SequenceEqual(e.Telas.Select(t => (t.Id, t.Nome)))) Trocar(Telas, e.Telas);
         Trocar(Aparelhos, e.Aparelhos);
         AvisoTeclado = RegrasControles.AvisarTeclado(e.Aparelhos);
     }
@@ -68,7 +76,7 @@ public sealed partial class PainelControlesViewModel(IFonteControles fonte, Func
     private async Task AlternarNaoPerturbe()
     {
         if (NaoPerturbe is not { } ligado) return;
-        if (fonte.NaoPerturbe(!ligado)) MudouNaoPerturbe?.Invoke(!ligado);
+        if (await fonte.NaoPerturbe(!ligado)) MudouNaoPerturbe?.Invoke(!ligado);
         await Abrir();
     }
 
@@ -76,7 +84,7 @@ public sealed partial class PainelControlesViewModel(IFonteControles fonte, Func
     private async Task AlternarLuzNoturna()
     {
         if (LuzNoturna is not { } ligada) return;
-        fonte.LuzNoturna(!ligada);
+        await fonte.LuzNoturna(!ligada);
         await Abrir();
     }
 
@@ -109,6 +117,15 @@ public sealed partial class PainelControlesViewModel(IFonteControles fonte, Func
         var t = agora();
         foreach (var (tela, valor) in _brilhoPendente.ToList())
             if (!_ultimaEscrita.TryGetValue(tela, out var ultima) || t - ultima >= IntervaloBrilho) Escrever(tela, valor, t);
+    }
+
+    /// O painel fechou: o último brilho que esperava os 100 ms vai na hora (senão se perderia), e os deslizantes saem,
+    /// para a próxima abertura mostrar o brilho mudado fora do Vitral (teclas Fn, Win+A).
+    public void Descarregar()
+    {
+        var t = agora();
+        foreach (var (tela, valor) in _brilhoPendente.ToList()) Escrever(tela, valor, t);
+        Telas.Clear();
     }
 
     private void Escrever(string telaId, int valor, DateTime t)

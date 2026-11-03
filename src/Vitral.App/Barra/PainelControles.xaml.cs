@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using Microsoft.Win32;
 using Vitral.Ui.Barra;
 
 namespace Vitral.App.Barra;
@@ -14,14 +15,30 @@ public partial class PainelControles : UserControl
     public PainelControles()
     {
         InitializeComponent();
-        _tique.Tick += (_, _) => (DataContext as PainelControlesViewModel)?.Tique();
-        IsVisibleChanged += (_, _) => { if (IsVisible) _tique.Start(); else _tique.Stop(); };
+        _tique.Tick += (_, _) => Vm?.Tique();
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible)
+            {
+                _tique.Start();
+                SystemEvents.DisplaySettingsChanged += AoMudarTelas;
+                return;
+            }
+            _tique.Stop();
+            SystemEvents.DisplaySettingsChanged -= AoMudarTelas; // evento estático: só enquanto o painel está aberto
+            Vm?.Descarregar(); // o último brilho arrastado não se perde ao fechar
+        };
     }
+
+    private PainelControlesViewModel? Vm => DataContext as PainelControlesViewModel;
+
+    /// Monitor ligado ou desligado com o painel aberto: os deslizantes acompanham (o aviso chega em outra thread).
+    private void AoMudarTelas(object? s, EventArgs e) => Dispatcher.BeginInvoke(() => _ = Vm?.Abrir());
 
     private void Brilho_Mudou(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         // O valor inicial vem do binding: só o mouse ou o teclado do usuário mexem no brilho.
         if (sender is not Slider { DataContext: TelaBrilho tela } s || !(s.IsMouseOver || s.IsKeyboardFocusWithin)) return;
-        (DataContext as PainelControlesViewModel)?.MudarBrilho(tela.Id, (int)Math.Round(e.NewValue));
+        Vm?.MudarBrilho(tela.Id, (int)Math.Round(e.NewValue));
     }
 }

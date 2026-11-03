@@ -10,11 +10,13 @@ internal sealed class ControlesFalsos : IFonteControles
         [new TelaBrilho("notebook", "Tela do notebook", 40), new TelaBrilho("externo", "Monitor externo", 60)],
         [new AparelhoBluetooth("1", "JBL", TipoAparelho.Audio, false, true), new AparelhoBluetooth("2", "BT5.0 KB", TipoAparelho.Teclado, true, false)]);
     public List<string> Chamadas { get; } = [];
-    public Task<EstadoControles> Ler() { Chamadas.Add("ler"); return Task.FromResult(Estado); }
+    /// Nulo: devolve o Estado na hora. Preenchido: a leitura espera a tarefa (para testar leituras sobrepostas).
+    public Func<Task<EstadoControles>>? LerCom { get; set; }
+    public Task<EstadoControles> Ler() { Chamadas.Add("ler"); return LerCom?.Invoke() ?? Task.FromResult(Estado); }
     public Task<bool> Bluetooth(bool ligar) { Chamadas.Add($"bluetooth {ligar}"); Estado = Estado with { Bluetooth = ligar }; return Task.FromResult(true); }
     public Task<bool> Aviao(bool ligar) { Chamadas.Add($"aviao {ligar}"); Estado = Estado with { Aviao = ligar }; return Task.FromResult(true); }
-    public bool NaoPerturbe(bool ligar) { Chamadas.Add($"naoperturbe {ligar}"); Estado = Estado with { NaoPerturbe = ligar }; return true; }
-    public bool LuzNoturna(bool ligar) { Chamadas.Add($"luz {ligar}"); Estado = Estado with { LuzNoturna = ligar }; return true; }
+    public Task<bool> NaoPerturbe(bool ligar) { Chamadas.Add($"naoperturbe {ligar}"); Estado = Estado with { NaoPerturbe = ligar }; return Task.FromResult(true); }
+    public Task<bool> LuzNoturna(bool ligar) { Chamadas.Add($"luz {ligar}"); Estado = Estado with { LuzNoturna = ligar }; return Task.FromResult(true); }
     public void Brilho(string telaId, int valor) => Chamadas.Add($"brilho {telaId} {valor}");
     public Task<bool> Aparelho(AparelhoBluetooth a) { Chamadas.Add($"aparelho {a.Nome}"); return Task.FromResult(true); }
 }
@@ -101,6 +103,89 @@ public sealed class PainelControlesTests
     }
 
     [Fact]
+    public async Task Releitura_descarta_o_brilho_pendente_da_tela_que_sumiu()
+    {
+        // O pendente era de uma tela que não está mais lá (sobras dos controles).
+        var p = Criar();
+        await p.Abrir();
+        p.MudarBrilho("externo", 50);
+        _agora = _agora.AddMilliseconds(30);
+        p.MudarBrilho("externo", 70);
+        _fonte.Estado = _fonte.Estado with { Telas = [new TelaBrilho("notebook", "Tela do notebook", 40)] };
+        await p.Abrir();
+        _agora = _agora.AddMilliseconds(200);
+        p.Tique();
+        Assert.Equal(["brilho externo 50"], _fonte.Chamadas.Where(c => c.StartsWith("brilho")));
+    }
+
+    [Fact]
+    public async Task Releitura_guarda_o_brilho_pendente_da_tela_que_continua()
+    {
+        // A leitura da abertura termina logo depois de o usuário soltar o deslizante: o último valor não se perde.
+        var p = Criar();
+        await p.Abrir();
+        p.MudarBrilho("externo", 50);
+        _agora = _agora.AddMilliseconds(30);
+        p.MudarBrilho("externo", 70);
+        await p.Abrir();
+        _agora = _agora.AddMilliseconds(200);
+        p.Tique();
+        Assert.Equal(["brilho externo 50", "brilho externo 70"], _fonte.Chamadas.Where(c => c.StartsWith("brilho")));
+    }
+
+    [Fact]
+    public async Task Brilho_mudado_fora_aparece_na_proxima_abertura()
+    {
+        // Mudou pelas teclas Fn com o painel fechado: ao abrir, o deslizante mostra o valor novo (revisão das sobras).
+        var p = Criar();
+        await p.Abrir();
+        p.Descarregar(); // o painel fechou
+        _fonte.Estado = _fonte.Estado with { Telas = [new TelaBrilho("notebook", "Tela do notebook", 90), new TelaBrilho("externo", "Monitor externo", 60)] };
+        await p.Abrir();
+        Assert.Equal(90, p.Telas[0].Valor);
+    }
+
+    [Fact]
+    public async Task Fechar_grava_o_ultimo_brilho_na_hora()
+    {
+        var p = Criar();
+        await p.Abrir();
+        p.MudarBrilho("notebook", 50);
+        _agora = _agora.AddMilliseconds(30);
+        p.MudarBrilho("notebook", 80);
+        p.Descarregar();
+        Assert.Equal(["brilho notebook 50", "brilho notebook 80"], _fonte.Chamadas.Where(c => c.StartsWith("brilho")));
+    }
+
+    [Fact]
+    public async Task Leitura_antiga_que_termina_depois_e_descartada()
+    {
+        var p = Criar();
+        var lenta = new TaskCompletionSource<EstadoControles>();
+        _fonte.LerCom = () => lenta.Task;
+        var primeira = p.Abrir(); // a abertura do painel, lenta
+        _fonte.LerCom = null;
+        _fonte.Estado = _fonte.Estado with { Bluetooth = false };
+        await p.Abrir(); // a releitura depois de um clique
+        lenta.SetResult(_fonte.Estado with { Bluetooth = true });
+        await primeira;
+        Assert.False(p.Bluetooth);
+    }
+
+    [Fact]
+    public async Task Telas_iguais_nao_recriam_os_deslizantes()
+    {
+        // Recriar no meio de um arrasto solta o deslizante da mão do usuário.
+        var p = Criar();
+        await p.Abrir();
+        int mudancas = 0;
+        p.Telas.CollectionChanged += (_, _) => mudancas++;
+        _fonte.Estado = _fonte.Estado with { Bluetooth = false };
+        await p.Abrir();
+        Assert.Equal(0, mudancas);
+    }
+
+    [Fact]
     public async Task Tela_que_sumiu_sai_da_lista()
     {
         var p = Criar();
@@ -159,6 +244,16 @@ public sealed class PainelControlesTests
         Assert.Equal(["mic-usb"], p.Entradas.Where(e => !e.Padrao).Select(e => e.Id));
         p.EscolherEntradaCommand.Execute(p.Entradas.First(e => !e.Padrao));
         Assert.Equal(["mic-usb"], disp.EntradasTornadas);
+        Assert.True(p.MostrarEntradas);
+    }
+
+    [Fact]
+    public void Lista_de_microfones_some_sem_poder_trocar()
+    {
+        // Sem a troca do Windows, a lista só confundiria: o clique não faria nada (sobras dos controles).
+        var p = new PainelVolumeViewModel(new VolumeFalso(), new DispositivosFalsos { PodeTrocar = false }, new MicrofoneFalso());
+        Assert.True(p.MostrarMicrofone); // o mudo continua
+        Assert.False(p.MostrarEntradas);
     }
 }
 

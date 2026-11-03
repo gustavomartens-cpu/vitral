@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Vitral.Core.Controles;
 using Vitral.Ui.Barra;
 
 namespace Vitral.App.Controles;
@@ -22,11 +23,12 @@ internal static partial class Brilho
         }
         catch (Exception e) when (e is COMException or InvalidCastException or Microsoft.CSharp.RuntimeBinder.RuntimeBinderException) { }
         int n = 0;
-        PorMonitorFisico((nome, h) =>
+        PorMonitorFisico((saida, indice, nome, h) =>
         {
             n++;
             if (GetMonitorBrightness(h, out _, out uint atual, out uint max) && max > 0)
-                telas.Add(new TelaBrilho($"ddc{n}", string.IsNullOrWhiteSpace(nome) || nome == "Generic PnP Monitor" ? $"Monitor {n}" : nome,
+                telas.Add(new TelaBrilho(RegrasControles.IdTelaExterna(saida, indice),
+                    string.IsNullOrWhiteSpace(nome) || nome == "Generic PnP Monitor" ? $"Monitor {n}" : nome,
                     (int)Math.Round(atual * 100.0 / max)));
         });
         return telas;
@@ -42,10 +44,9 @@ internal static partial class Brilho
                     m.WmiSetBrightness(0, (byte)valor);
                 return;
             }
-            int n = 0;
-            PorMonitorFisico((_, h) =>
+            PorMonitorFisico((saida, indice, _, h) =>
             {
-                if ($"ddc{++n}" != telaId || !GetMonitorBrightness(h, out uint min, out uint _, out uint max)) return;
+                if (RegrasControles.IdTelaExterna(saida, indice) != telaId || !GetMonitorBrightness(h, out uint min, out uint _, out uint max)) return;
                 SetMonitorBrightness(h, (uint)(min + (max - min) * valor / 100.0));
             });
         }
@@ -72,14 +73,28 @@ internal static partial class Brilho
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct Fisico { public IntPtr H; [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] public string Nome; }
 
-    /// Cada monitor físico, na ordem do Windows (o id "ddcN" segue essa ordem).
-    private static void PorMonitorFisico(Action<string, IntPtr> fazer) =>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct InfoMonitor
+    {
+        public int Tamanho;
+        public int L1, T1, R1, B1, L2, T2, R2, B2;
+        public uint Flags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)] public string Saida;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern bool GetMonitorInfoW(IntPtr monitor, ref InfoMonitor info);
+
+    /// Cada monitor físico com a saída de vídeo do Windows ("\\.\DISPLAY2") e a posição dentro dela: o id da tela não
+    /// muda quando outro monitor é desligado.
+    private static void PorMonitorFisico(Action<string, int, string, IntPtr> fazer) =>
         EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (m, _, _, _) =>
         {
+            var info = new InfoMonitor { Tamanho = Marshal.SizeOf<InfoMonitor>() };
+            if (!GetMonitorInfoW(m, ref info)) return true;
             if (!GetNumberOfPhysicalMonitorsFromHMONITOR(m, out uint n) || n == 0) return true;
             var f = new Fisico[n];
             if (!GetPhysicalMonitorsFromHMONITOR(m, n, f)) return true;
-            try { foreach (var x in f) fazer(x.Nome, x.H); }
+            try { for (int i = 0; i < f.Length; i++) fazer(info.Saida, i, f[i].Nome, f[i].H); }
             finally { DestroyPhysicalMonitors(n, f); }
             return true;
         }, IntPtr.Zero);

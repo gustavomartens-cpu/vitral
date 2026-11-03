@@ -7,14 +7,7 @@ public static class RegrasControles
     /// nome.
     public static TipoAparelho TipoPelaClasse(int classeMaior, int classeMenor, bool le, string nome)
     {
-        if (le)
-        {
-            if (Contem(nome, "keyboard", "teclado") || nome.Split(' ', '-', '_').Any(p => p.Equals("KB", StringComparison.OrdinalIgnoreCase)))
-                return TipoAparelho.Teclado;
-            if (Contem(nome, "mouse")) return TipoAparelho.Mouse;
-            if (Contem(nome, "controller", "gamepad", "controle")) return TipoAparelho.Controle;
-            return TipoAparelho.Outro;
-        }
+        if (le) return PeloNome(nome);
         return classeMaior switch
         {
             4 => TipoAparelho.Audio,
@@ -22,9 +15,35 @@ public static class RegrasControles
             5 when (classeMenor & 0x10) != 0 => TipoAparelho.Teclado,
             5 when (classeMenor & 0x20) != 0 => TipoAparelho.Mouse,
             5 when (classeMenor & 0x0F) is 1 or 2 => TipoAparelho.Controle, // joystick, gamepad
-            _ => TipoAparelho.Outro,
+            _ => PeloNome(nome), // classe sem categoria (o 8BitDo): o nome ainda pode dizer
         };
     }
+
+    private static TipoAparelho PeloNome(string nome)
+    {
+        if (Contem(nome, "keyboard", "teclado") || nome.Split(' ', '-', '_').Any(p => p.Equals("KB", StringComparison.OrdinalIgnoreCase)))
+            return TipoAparelho.Teclado;
+        if (Contem(nome, "mouse")) return TipoAparelho.Mouse;
+        if (Contem(nome, "controller", "gamepad", "controle", "8bitdo", "xbox")) return TipoAparelho.Controle;
+        return TipoAparelho.Outro;
+    }
+
+    /// A lista do painel: o mesmo aparelho visto duas vezes (clássico e LE, ou o LE repetido) vira um, pelo endereço
+    /// Bluetooth; aparelhos diferentes com o mesmo nome continuam separados. O primeiro da lista (o clássico, que vem
+    /// antes) dá o id, o nome e o tipo, se conhecido; conectado e áudio valem se qualquer um dos lados tiver. Conectados
+    /// primeiro.
+    public static IReadOnlyList<AparelhoBluetooth> Juntar(IEnumerable<(ulong Endereco, AparelhoBluetooth Aparelho)> aparelhos) =>
+        aparelhos.GroupBy(a => a.Endereco).Select(g =>
+            {
+                var lados = g.Select(a => a.Aparelho).ToList();
+                var tipo = lados.Select(a => a.Tipo).FirstOrDefault(t => t != TipoAparelho.Outro, TipoAparelho.Outro);
+                return lados[0] with { Tipo = tipo, Conectado = lados.Any(a => a.Conectado), TemAudio = lados.Any(a => a.TemAudio) };
+            })
+            .OrderByDescending(a => a.Conectado).ThenBy(a => a.Nome, StringComparer.CurrentCultureIgnoreCase).ThenBy(a => a.Id).ToList();
+
+    /// O id de um monitor externo: a saída de vídeo do Windows ("\\.\DISPLAY2") e a posição do monitor dentro dela. Não
+    /// muda quando outro monitor é desligado (a posição geral na lista mudava).
+    public static string IdTelaExterna(string saida, int indice) => $"ddc:{saida}:{indice}";
 
     private static bool Contem(string nome, params string[] partes) =>
         partes.Any(p => nome.Contains(p, StringComparison.OrdinalIgnoreCase));

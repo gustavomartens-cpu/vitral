@@ -21,7 +21,7 @@ public sealed class ControlesTests
     [InlineData(0, 0, true, "BT5.0 KB", TipoAparelho.Teclado)]
     [InlineData(0, 0, true, "MX Master Mouse", TipoAparelho.Mouse)]
     [InlineData(0, 0, true, "Xbox Wireless Controller", TipoAparelho.Controle)]
-    [InlineData(0, 0, true, "8BitDo Ultimate 2C Wireless", TipoAparelho.Outro)]
+    [InlineData(0, 0, true, "8BitDo Ultimate 2C Wireless", TipoAparelho.Controle)] // pelo nome (sobras dos controles)
     public void Tipo_pela_classe(int maior, int menor, bool le, string nome, TipoAparelho tipo) =>
         Assert.Equal(tipo, RegrasControles.TipoPelaClasse(maior, menor, le, nome));
 
