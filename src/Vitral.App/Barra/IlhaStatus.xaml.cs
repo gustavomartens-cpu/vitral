@@ -21,6 +21,8 @@ public partial class IlhaStatus : UserControl, IPedePainel
 
     private void Volume_Clique(object sender, MouseButtonEventArgs e) => Pediu?.Invoke(Painel.Volume);
 
+    private void Controles_Clique(object sender, MouseButtonEventArgs e) => Pediu?.Invoke(Painel.Controles);
+
     private void Rede_Clique(object sender, MouseButtonEventArgs e) => Pediu?.Invoke(Painel.Wifi);
 
     private void Bateria_Clique(object sender, MouseButtonEventArgs e) => Pediu?.Invoke(Painel.Bateria);

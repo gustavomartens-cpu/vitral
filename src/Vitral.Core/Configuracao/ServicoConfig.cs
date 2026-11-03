@@ -13,6 +13,20 @@ public sealed class ServicoConfig(string arquivo)
 
     public ConfigApp Ler()
     {
+        lock (Trava) return LerSemTrava();
+    }
+
+    /// Lê, muda e grava de uma vez, sem outra thread no meio (o modo avião grava fora da thread da interface).
+    public void Atualizar(Func<ConfigApp, ConfigApp> mudar)
+    {
+        lock (Trava) GravarSemTrava(mudar(LerSemTrava()));
+    }
+
+    /// Uma trava para todas as instâncias: o app tem um config.json só, aberto por vários serviços.
+    private static readonly object Trava = new();
+
+    private ConfigApp LerSemTrava()
+    {
         try
         {
             return File.Exists(arquivo)
@@ -27,6 +41,11 @@ public sealed class ServicoConfig(string arquivo)
 
     /// Grava num temporário e troca, para uma queda no meio não deixar o arquivo pela metade.
     public void Gravar(ConfigApp c)
+    {
+        lock (Trava) GravarSemTrava(c);
+    }
+
+    private void GravarSemTrava(ConfigApp c)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(arquivo))!);
         string tmp = arquivo + ".tmp";

@@ -31,6 +31,10 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     public Agenda.ServicoAgendaApp? Agenda { get; set; }
     private PainelBateriaViewModel? _vmBateria;
     private PainelWifiViewModel? _vmWifi;
+    private PainelControlesViewModel? _vmControles;
+
+    /// Os controles do Windows (spec dos controles): o painel que desce do ícone da ilha de status.
+    public IFonteControles? Controles { get; set; }
     private readonly List<IDisposable> _vmsPaineis = [];
     private bool _coordenadorLigado;
     private IlhaStatus? _conteudoStatus;
@@ -45,6 +49,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     {
         public FonteMidiaWindows Midia { get; } = new(Application.Current.Dispatcher);
         public FonteVolumeWindows Volume { get; } = new(Application.Current.Dispatcher);
+        public FonteVolumeWindows Microfone { get; } = new(Application.Current.Dispatcher, CoreAudio.Entrada);
         public FonteRedeWindows Rede { get; } = new(Application.Current.Dispatcher);
         public FonteBateriaWindows Bateria { get; } = new(Application.Current.Dispatcher);
         public FonteDispositivosAudioWindows Dispositivos { get; } = new(Application.Current.Dispatcher);
@@ -57,6 +62,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         {
             Midia.Dispose();
             Volume.Dispose();
+            Microfone.Dispose();
             Rede.Dispose();
             Bateria.Dispose();
             Dispositivos.Dispose();
@@ -152,6 +158,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         {
             notch = new JanelaNotch(new IlhaRelogio());
             notch.Pediu += p => _coordenador.Alternar(p, DateTime.Now);
+            notch.NaoPerturbe = Vitral.App.Controles.NaoPerturbe.Ler() == true; // ligado no Windows antes de abrir o Vitral
             notch.PediuReiniciar += () => Reiniciar?.Invoke();
             notch.CalendarioNoDia += dia => _vmCalendario?.AbrirDia(dia); // o aviso da agenda abre o calendário no dia
             notch.LarguraNormalMudou += Posicionar;
@@ -327,6 +334,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             if (painel == Painel.Calendario) { _vmCalendario?.Reabrir(); if (Agenda is not null) _ = Agenda.AtualizarAgora(); }
             if (painel == Painel.Bateria) _vmBateria?.Abrir();
             if (painel == Painel.Wifi) _ = _vmWifi?.AbrirAsync();
+            if (painel == Painel.Controles) _ = _vmControles?.Abrir();
             if (painel == Painel.Notificacoes && Notificacoes is not null) _vmNotificacoes?.Atualizar(Notificacoes.Estado, Notificacoes.Atuais); // o "há quanto tempo" anda
             return existente;
         }
@@ -339,7 +347,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
                 nova = new JanelaPainel("Calendário", 280) { Conteudo = new PainelCalendario(), DataContext = _vmCalendario };
                 break;
             case Painel.Volume when _fontes is not null:
-                nova = new JanelaPainel("Volume", 280) { Conteudo = new PainelVolume(), DataContext = Guardar(new PainelVolumeViewModel(_fontes.Volume, _fontes.Dispositivos)) };
+                nova = new JanelaPainel("Volume", 280) { Conteudo = new PainelVolume(), DataContext = Guardar(new PainelVolumeViewModel(_fontes.Volume, _fontes.Dispositivos, _fontes.Microfone)) };
                 break;
             case Painel.Bateria when _fontes is not null:
                 _vmBateria = Guardar(new PainelBateriaViewModel(_fontes.Bateria, _fontes.ModoEnergia));
@@ -349,6 +357,12 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
                 _vmWifi = Guardar(new PainelWifiViewModel(_fontes.Wifi));
                 nova = new JanelaPainel("Wi-Fi", 280) { Conteudo = new PainelWifi(), DataContext = _vmWifi };
                 _ = _vmWifi.AbrirAsync();
+                break;
+            case Painel.Controles when Controles is not null:
+                _vmControles = new PainelControlesViewModel(Controles, () => DateTime.Now);
+                _vmControles.MudouNaoPerturbe += ligado => { if (_relogio is not null) _relogio.NaoPerturbe = ligado; };
+                nova = new JanelaPainel("Controles", 300) { Conteudo = new PainelControles(), DataContext = _vmControles };
+                _ = _vmControles.Abrir();
                 break;
             case Painel.Pendencias when _relogio is not null:
                 var lista = new PainelPendencias(_relogio.Pendencias);
@@ -424,6 +438,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         _vmCalendario = null;
         _vmBateria = null;
         _vmWifi = null;
+        _vmControles = null;
         foreach (var vm in _vmsPaineis) vm.Dispose();
         _vmsPaineis.Clear();
     }

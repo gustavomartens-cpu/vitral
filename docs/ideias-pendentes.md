@@ -9,11 +9,33 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
   caminho das cores é regravado sem trava numa reconexão; os logs por processo nunca são apagados; uma cópia
   interrompida da DLL não é refeita; falta teste do retrato original sem a seção "iniciar"; a pasta dos logs aceita
   escrita de outros apps isolados (só mudaria a linha de estado).
+- **Sobras dos controles** (revisão final do painel de controles):
+  - **Brilho:**
+    - os monitores externos são identificados pela ordem ("ddcN"); com o painel aberto e um monitor desligado, o
+      controle dele pode mexer no outro;
+    - o valor pendente não é limpo na releitura;
+    - o painel não relê quando as telas mudam;
+    - o último valor se perde se o painel fechar antes de 100 ms.
+  - **Não perturbe e luz noturna:** rodam na thread da interface, e o objeto COM do Não perturbe não é liberado.
+  - **Releituras:** duas rodando juntas podem se sobrepor (falta um contador de geração), e a releitura recria os
+    controles de brilho no meio de um arrasto.
+  - **Bluetooth:**
+    - duas caixas iguais com o mesmo nome viram uma só (deduplicar pelo endereço);
+    - `FonesBluetooth.Filtros()` não libera os objetos COM;
+    - o controle 8BitDo aparece com o ícone genérico.
+  - **Microfone:** a lista aparece mesmo quando o Windows não deixa trocar o padrão, e o mudo e a troca usam só o papel
+    multimídia (Teams e Zoom usam o de comunicações).
+  - **Fones:** a prova de conectar um fone (QCY ou JBL) espera o Gustavo ligar um.
 - **Iniciar, próximas etapas** (spec do Iniciar §7): central de notificações e configurações rápidas, busca, textos e
   ícones do Iniciar com as cores da doca, assinatura digital da DLL.
 - **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir
   o dia inteiro do Outlook na tela.
 - **Escolher agendas da Microsoft** (depois do cadastro no Azure).
+- **Bug: app em tela cheia perde a tela cheia ao clicar no outro monitor** (Gustavo, 02/11/2026): com um app
+  cobrindo o monitor principal, clicar numa janela do outro monitor faz o notch, a doca e as ilhas voltarem por cima do
+  app, e é preciso desmaximizar e maximizar de novo. Causa provável: a conferência da tela cheia (0.13.6, `ReservaFaixa`
+  / `VigiaTelaCheia`) olha a janela da frente (`GetForegroundWindow`), que passa a ser a do outro monitor; o certo é
+  olhar a janela mais acima na ordem Z dentro do monitor principal.
 - **Completar os painéis da barra do topo** (escolhido em 01/11/2026, depois das notificações): o que falta do Win+A
   (Bluetooth, modo avião, brilho, não perturbe...) nos painéis das ilhas; o Win+A do Windows fica como está.
 - **Sobras das notificações** (revisão final da 0.15.0): ícone com falha passageira fica sem ícone até fechar; clique no
@@ -83,4 +105,6 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   borda e os cantos da doca, por um componente dentro do Iniciar, com reserva pela cor de destaque do Windows (0.14.0).
   Notificações dos outros apps no notch e num painel no sino, com o balão do Windows calado (0.15.0), tela cheia que
   não cai ao clicar no outro monitor e balão do app do Claude calado (0.15.1), borda invisível da janela vizinha sem
-  derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2).
+  derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2). Painel de controles na barra do topo
+  (Bluetooth e aparelhos, modo avião, não perturbe que também cala o notch, luz noturna, brilho por tela) e microfone
+  no painel de volume (0.16.0).

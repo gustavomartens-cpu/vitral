@@ -40,8 +40,13 @@ public sealed partial class EstadoNotch
         set { if (_contador == value) return; _contador = value; Mudou?.Invoke(); }
     }
 
+    /// "Não perturbe" ligado pelo painel de controles: as notificações dos apps não descem (ficam no painel do sino); os
+    /// avisos do Claude e da agenda continuam (spec dos controles §4.3).
+    public bool NaoPerturbe { get; set; }
+
     public void Notificou(AvisoNotificacao aviso)
     {
+        if (NaoPerturbe) return;
         _notificacoes.Add(aviso);
         if (FichaOcupada || Modo == ModoNotch.Aviso) { Mudou?.Invoke(); return; } // espera a vez
         MostrarNotificacao();

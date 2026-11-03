@@ -50,5 +50,45 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </StackPanel>
+
+        <!-- Microfone (spec dos controles §2): mudo e o microfone padrão -->
+        <StackPanel Visibility="{Binding MostrarMicrofone, Converter={StaticResource BoolParaVisivel}}" Margin="0,12,0,0">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Command="{Binding AlternarMicrofoneCommand}" Style="{StaticResource LinhaPainel}" HorizontalContentAlignment="Center">
+                    <TextBlock>
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="Mudo" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextoSecundario}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MicrofoneMudo}" Value="True">
+                                        <Setter Property="Text" Value="Mudo ●" />
+                                        <Setter Property="Foreground" Value="{DynamicResource Ambar}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Button>
+                <TextBlock Text="MICROFONE" Style="{StaticResource TituloPainel}" VerticalAlignment="Center" Margin="0" />
+            </DockPanel>
+            <ItemsControl ItemsSource="{Binding Entradas}" Focusable="False" Margin="0,4,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource LinhaPainel}" Margin="0,1"
+                                Command="{Binding DataContext.EscolherEntradaCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                            <DockPanel>
+                                <TextBlock x:Name="Marca" DockPanel.Dock="Right" Text="●" Foreground="{DynamicResource Ambar}" Visibility="Collapsed" />
+                                <TextBlock Text="&#xE720;" FontFamily="{StaticResource FonteIcones}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBlock Text="{Binding Nome}" TextTrimming="CharacterEllipsis" />
+                            </DockPanel>
+                        </Button>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Padrao}" Value="True"><Setter TargetName="Marca" Property="Visibility" Value="Visible" /></DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
     </StackPanel>
 </UserControl>

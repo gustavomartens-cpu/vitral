@@ -16,13 +16,23 @@ public sealed partial class PainelVolumeViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private bool _mudo;
     [ObservableProperty] private bool _disponivel;
     [ObservableProperty] private bool _mostrarSaidas;
+    [ObservableProperty] private bool _microfoneMudo;
+    [ObservableProperty] private bool _mostrarMicrofone;
 
     public ObservableCollection<DispositivoAudio> Saidas { get; } = [];
 
-    public PainelVolumeViewModel(IFonteVolume volume, IFonteDispositivosAudio dispositivos)
+    /// Os microfones (spec dos controles §4.5).
+    public ObservableCollection<DispositivoAudio> Entradas { get; } = [];
+
+    private readonly IFonteMicrofone? _microfone;
+
+    public PainelVolumeViewModel(IFonteVolume volume, IFonteDispositivosAudio dispositivos, IFonteMicrofone? microfone = null)
     {
         _fonteVolume = volume;
         _fonteDispositivos = dispositivos;
+        _microfone = microfone;
+        if (_microfone is not null) _microfone.Mudou += LerMicrofone;
+        LerMicrofone();
         _fonteVolume.Mudou += LerVolume;
         _fonteDispositivos.Mudou += LerSaidas;
         LerVolume();
@@ -65,11 +75,30 @@ public sealed partial class PainelVolumeViewModel : ObservableObject, IDisposabl
         Saidas.Clear();
         foreach (var s in _fonteDispositivos.Saidas) Saidas.Add(s);
         MostrarSaidas = _fonteDispositivos.PodeTrocar && Saidas.Count > 0;
+        Entradas.Clear();
+        foreach (var e in _fonteDispositivos.Entradas) Entradas.Add(e);
+    }
+
+    private void LerMicrofone()
+    {
+        MostrarMicrofone = _microfone?.Mudo is not null;
+        MicrofoneMudo = _microfone?.Mudo ?? false;
+    }
+
+    [RelayCommand]
+    private void AlternarMicrofone() => _microfone?.AlternarMudo();
+
+    [RelayCommand]
+    private void EscolherEntrada(DispositivoAudio? entrada)
+    {
+        if (entrada is null || entrada.Padrao || !_fonteDispositivos.PodeTrocar) return;
+        _fonteDispositivos.TornarEntradaPadrao(entrada.Id);
     }
 
     public void Dispose()
     {
         _fonteVolume.Mudou -= LerVolume;
         _fonteDispositivos.Mudou -= LerSaidas;
+        if (_microfone is not null) _microfone.Mudou -= LerMicrofone;
     }
 }

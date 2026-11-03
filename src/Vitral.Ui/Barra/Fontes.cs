@@ -71,6 +71,37 @@ public interface IFonteDispositivosAudio
     bool PodeTrocar { get; }
     event Action? Mudou;
     void TornarPadrao(string id);
+
+    /// Os microfones ativos (spec dos controles §4.5); a troca usa a mesma interface das saídas.
+    IReadOnlyList<DispositivoAudio> Entradas { get; }
+    void TornarEntradaPadrao(string id);
+}
+
+/// O mudo do microfone padrão (spec dos controles §4.5); Mudo nulo = sem microfone.
+public interface IFonteMicrofone
+{
+    bool? Mudo { get; }
+    event Action? Mudou;
+    void AlternarMudo();
+}
+
+/// Uma tela com controle de brilho: a do notebook (WMI) ou um monitor com DDC/CI (spec dos controles §3).
+public sealed record TelaBrilho(string Id, string Nome, int Valor);
+
+/// O estado dos controles quando o painel abre; nulo = indisponível (o interruptor fica apagado).
+public sealed record EstadoControles(bool? Bluetooth, bool Aviao, bool? NaoPerturbe, bool? LuzNoturna,
+    IReadOnlyList<TelaBrilho> Telas, IReadOnlyList<Core.Controles.AparelhoBluetooth> Aparelhos);
+
+/// Os controles do Windows (spec dos controles §4); cada falha devolve false, nunca exceção.
+public interface IFonteControles
+{
+    Task<EstadoControles> Ler();
+    Task<bool> Bluetooth(bool ligar);
+    Task<bool> Aviao(bool ligar);
+    bool NaoPerturbe(bool ligar);
+    bool LuzNoturna(bool ligar);
+    void Brilho(string telaId, int valor);
+    Task<bool> Aparelho(Core.Controles.AparelhoBluetooth aparelho);
 }
 
 public enum ModoEnergia { Economia, Equilibrado, Desempenho }
