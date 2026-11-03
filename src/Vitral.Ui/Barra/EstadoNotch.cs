@@ -194,7 +194,8 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
             : Pendencias.Quantas > 0 ? AcaoNotch.AbrirPendencias
             : Aviso?.Tipo == TipoAviso.Atualizacao && Pendente ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         // O clique no próprio aviso segue o aviso (a ordem das pendências vale só para a lateral).
-        var doAviso = AvisoNotificacaoAtual is not null ? AcaoNotch.AbrirApp
+        var doAviso = AvisoNotificacaoAtual is { Quantas: > 1 } ? AcaoNotch.AbrirPainelNotificacoes // a rajada não é de um app só
+            : AvisoNotificacaoAtual is not null ? AcaoNotch.AbrirApp
             : AvisoEhDaAgenda ? AcaoNotch.AbrirCalendario
             : Aviso?.Tipo == TipoAviso.Atualizacao ? AcaoNotch.Reiniciar : AcaoNotch.AbrirClaude;
         var acao = parte switch
@@ -206,6 +207,11 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         if (acao == AcaoNotch.AbrirApp)
         {
             AppPedido = AvisoNotificacaoAtual!.AppId;
+            EncerrarNotificacao();
+            return acao;
+        }
+        if (parte == ParteNotch.Meio && acao == AcaoNotch.AbrirPainelNotificacoes) // a rajada clicada sai, como a de um app
+        {
             EncerrarNotificacao();
             return acao;
         }

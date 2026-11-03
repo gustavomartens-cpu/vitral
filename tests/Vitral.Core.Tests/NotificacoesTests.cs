@@ -98,6 +98,14 @@ public sealed class NotificacoesTests
     }
 
     [Fact]
+    public void Devolve_tambem_os_marcados_no_registro()
+    {
+        // Uma versão antiga regravou o config sem a lista: a marca no registro ainda acha o que foi calado.
+        Assert.Equal(["A", "B", "C"], RegrasNotificacoes.ParaDevolver(["A", "B"], ["b", "C"]));
+        Assert.Equal(["C"], RegrasNotificacoes.ParaDevolver(null, ["C"]));
+    }
+
+    [Fact]
     public void Muitas_e_sem_icone()
     {
         var muitas = Enumerable.Range(1, 150).Select(i => N((uint)i, $"App{i % 20}", i)).ToList();

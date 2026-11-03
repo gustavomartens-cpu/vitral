@@ -439,6 +439,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         _vmBateria = null;
         _vmWifi = null;
         _vmControles = null;
+        _vmNotificacoes = null; // o painel novo é ligado de novo ao abrir; o velho não recebe mais as leituras
         foreach (var vm in _vmsPaineis) vm.Dispose();
         _vmsPaineis.Clear();
     }

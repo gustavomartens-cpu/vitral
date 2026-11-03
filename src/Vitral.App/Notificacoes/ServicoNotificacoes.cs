@@ -173,6 +173,7 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
     {
         if (_icones.TryGetValue(appId, out var pronto)) return pronto;
         ImageSource? icone = null;
+        bool falhou = false;
         try
         {
             // Apps sem logo (o PowerShell, alguns programas antigos) ficam sem ícone.
@@ -192,8 +193,14 @@ internal sealed class ServicoNotificacoes(Dispatcher ui, WindowsQuieto quieto) :
                 icone = imagem;
             }
         }
-        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("ServicoNotificacoes.Icone", e); }
-        return _icones[appId] = icone;
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            Barra.LogBarra.Erro("ServicoNotificacoes.Icone", e);
+            falhou = true;
+        }
+        // Uma falha passageira não fica guardada: a próxima notificação do app tenta de novo. "Sem logo" fica.
+        if (!falhou) _icones[appId] = icone;
+        return icone;
     }
 
     private void Publicar(EstadoNotificacoes estado)

@@ -341,8 +341,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             // Notificação de outro app (spec das notificações §5): ícone e nome do app, título e texto.
             _iconeNotificacao.Source = null;
             if (IconeDoApp is { } icone) _ = PreencherIcone(icone, notificacao.AppId);
-            _titulo.Text = notificacao.Quantas > 1 ? notificacao.Titulo ?? "" : $"{notificacao.NomeApp} · {notificacao.Titulo}";
-            _detalhe.Text = notificacao.Quantas > 1 ? "abra o painel no sino" : notificacao.Texto ?? "";
+            _titulo.Text = notificacao.Linha;
+            _detalhe.Text = notificacao.Detalhe;
             _abrir.Text = "abrir ›";
             _abrir.Visibility = Visibility.Visible;
             _entrar!.Visibility = Visibility.Collapsed;

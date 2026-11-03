@@ -56,6 +56,11 @@ public static class RegrasNotificacoes
     /// O que o Vitral calou e ainda não devolveu (gravado no config): devolve na saída e, depois de uma queda, ao abrir.
     public static IReadOnlyList<string> ParaDevolver(IReadOnlyList<string>? gravados) => gravados ?? [];
 
+    /// O gravado no config e o marcado no registro do Windows: uma versão antiga do Vitral que regrave o config sem a lista
+    /// não faz o balão ficar calado para sempre.
+    public static IReadOnlyList<string> ParaDevolver(IReadOnlyList<string>? gravados, IEnumerable<string> marcados) =>
+        ParaDevolver(gravados).Concat(marcados).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
     public static string HaQuanto(DateTimeOffset chegou, DateTimeOffset agora)
     {
         var passou = agora - chegou;
