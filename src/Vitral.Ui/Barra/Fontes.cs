@@ -98,8 +98,8 @@ public interface IFonteControles
     Task<EstadoControles> Ler();
     Task<bool> Bluetooth(bool ligar);
     Task<bool> Aviao(bool ligar);
-    bool NaoPerturbe(bool ligar);
-    bool LuzNoturna(bool ligar);
+    Task<bool> NaoPerturbe(bool ligar);
+    Task<bool> LuzNoturna(bool ligar);
     void Brilho(string telaId, int valor);
     Task<bool> Aparelho(Core.Controles.AparelhoBluetooth aparelho);
 }

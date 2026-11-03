@@ -18,6 +18,7 @@ public sealed partial class PainelVolumeViewModel : ObservableObject, IDisposabl
     [ObservableProperty] private bool _mostrarSaidas;
     [ObservableProperty] private bool _microfoneMudo;
     [ObservableProperty] private bool _mostrarMicrofone;
+    [ObservableProperty] private bool _mostrarEntradas;
 
     public ObservableCollection<DispositivoAudio> Saidas { get; } = [];
 
@@ -77,6 +78,7 @@ public sealed partial class PainelVolumeViewModel : ObservableObject, IDisposabl
         MostrarSaidas = _fonteDispositivos.PodeTrocar && Saidas.Count > 0;
         Entradas.Clear();
         foreach (var e in _fonteDispositivos.Entradas) Entradas.Add(e);
+        MostrarEntradas = _fonteDispositivos.PodeTrocar && Entradas.Count > 0; // sem a troca, o clique não faria nada
     }
 
     private void LerMicrofone()

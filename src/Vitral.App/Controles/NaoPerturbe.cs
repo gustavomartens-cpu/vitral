@@ -29,9 +29,10 @@ internal static class NaoPerturbe
     /// notch, e uma falha aqui não pode impedir a barra de nascer.
     public static bool? Ler()
     {
+        IQuietHoursSettings? q = null;
         try
         {
-            if (Criar() is not { } q || q.get_UserSelectedProfile(out string? perfil) != 0 || perfil is null) return null;
+            if ((q = Criar()) is null || q.get_UserSelectedProfile(out string? perfil) != 0 || perfil is null) return null;
             return !perfil.EndsWith("Unrestricted", StringComparison.OrdinalIgnoreCase);
         }
         catch (Exception e) when (e is not OutOfMemoryException)
@@ -39,7 +40,18 @@ internal static class NaoPerturbe
             Barra.LogBarra.Erro("NaoPerturbe.Ler", e);
             return null;
         }
+        finally { Soltar(q); }
     }
 
-    public static bool Definir(bool ligar) => Criar() is { } q && q.put_UserSelectedProfile(ligar ? Ligado : Desligado) == 0;
+    public static bool Definir(bool ligar)
+    {
+        var q = Criar();
+        try { return q is not null && q.put_UserSelectedProfile(ligar ? Ligado : Desligado) == 0; }
+        finally { Soltar(q); }
+    }
+
+    private static void Soltar(IQuietHoursSettings? q)
+    {
+        if (q is not null) Marshal.ReleaseComObject(q);
+    }
 }

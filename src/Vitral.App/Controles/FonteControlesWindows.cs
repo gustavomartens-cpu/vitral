@@ -49,9 +49,9 @@ internal sealed class FonteControlesWindows(ServicoConfig config) : IFonteContro
         return todos;
     });
 
-    public bool NaoPerturbe(bool ligar) => Seguro(() => Controles.NaoPerturbe.Definir(ligar));
+    public Task<bool> NaoPerturbe(bool ligar) => Rodar("Controles.NaoPerturbe", () => Task.FromResult(Controles.NaoPerturbe.Definir(ligar)));
 
-    public bool LuzNoturna(bool ligar) => Seguro(() => Controles.LuzNoturna.Definir(ligar));
+    public Task<bool> LuzNoturna(bool ligar) => Rodar("Controles.LuzNoturna", () => Task.FromResult(Controles.LuzNoturna.Definir(ligar)));
 
     /// Um de cada vez por tela, só o último valor (o DDC/CI é lento e escritas sobrepostas chegam fora de ordem).
     private readonly FilaUltimoValor<string, int> _brilho =
@@ -88,7 +88,7 @@ internal sealed class FonteControlesWindows(ServicoConfig config) : IFonteContro
 
     private static async Task<IReadOnlyList<AparelhoBluetooth>> Aparelhos()
     {
-        var lista = new List<AparelhoBluetooth>();
+        var lista = new List<(ulong, AparelhoBluetooth)>();
         try
         {
             var filtros = FonesBluetooth.Filtros();
@@ -97,32 +97,25 @@ internal sealed class FonteControlesWindows(ServicoConfig config) : IFonteContro
                 if (await BluetoothDevice.FromIdAsync(d.Id) is not { } bt) continue;
                 uint classe = bt.ClassOfDevice?.RawValue ?? 0;
                 var tipo = RegrasControles.TipoPelaClasse((int)((classe >> 8) & 0x1F), (int)((classe >> 2) & 0x3F), le: false, d.Name);
-                lista.Add(new AparelhoBluetooth(d.Id, d.Name, tipo, bt.ConnectionStatus == BluetoothConnectionStatus.Connected,
-                    FonesBluetooth.FiltroDe(bt.BluetoothAddress, filtros) is not null));
+                lista.Add((bt.BluetoothAddress, new AparelhoBluetooth(d.Id, d.Name, tipo, bt.ConnectionStatus == BluetoothConnectionStatus.Connected,
+                    FonesBluetooth.FiltroDe(bt.BluetoothAddress, filtros) is not null)));
             }
+            // O LE vem depois: com o mesmo endereço de um clássico (o celular), o Juntar fica com o clássico, que tem o
+            // áudio, se nenhum dos dois estiver conectado.
             foreach (var d in await DeviceInformation.FindAllAsync(BluetoothLEDevice.GetDeviceSelectorFromPairingState(true)))
             {
-                if (lista.Any(a => a.Nome == d.Name)) continue; // o mesmo aparelho pelos dois lados (o celular)
                 if (await BluetoothLEDevice.FromIdAsync(d.Id) is not { } le) continue;
-                lista.Add(new AparelhoBluetooth(d.Id, d.Name, RegrasControles.TipoPelaClasse(0, 0, le: true, d.Name),
-                    le.ConnectionStatus == BluetoothConnectionStatus.Connected, TemAudio: false));
+                lista.Add((le.BluetoothAddress, new AparelhoBluetooth(d.Id, d.Name, RegrasControles.TipoPelaClasse(0, 0, le: true, d.Name),
+                    le.ConnectionStatus == BluetoothConnectionStatus.Connected, TemAudio: false)));
             }
         }
         catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("Controles.Aparelhos", e); }
-        // O mesmo aparelho LE aparece duas vezes às vezes (o teclado): fica um, o conectado se houver.
-        return lista.GroupBy(a => (a.Nome, a.Tipo)).Select(g => g.OrderByDescending(a => a.Conectado).First())
-            .OrderByDescending(a => a.Conectado).ThenBy(a => a.Nome).ToList();
+        return RegrasControles.Juntar(lista);
     }
 
     private static T? Seguro<T>(Func<T> ler)
     {
         try { return ler(); }
         catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("Controles", e); return default; }
-    }
-
-    private static bool Seguro(Func<bool> fazer)
-    {
-        try { return fazer(); }
-        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("Controles", e); return false; }
     }
 }

@@ -72,7 +72,8 @@
                 </Button>
                 <TextBlock Text="MICROFONE" Style="{StaticResource TituloPainel}" VerticalAlignment="Center" Margin="0" />
             </DockPanel>
-            <ItemsControl ItemsSource="{Binding Entradas}" Focusable="False" Margin="0,4,0,0">
+            <ItemsControl ItemsSource="{Binding Entradas}" Focusable="False" Margin="0,4,0,0"
+                          Visibility="{Binding MostrarEntradas, Converter={StaticResource BoolParaVisivel}}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Button Style="{StaticResource LinhaPainel}" Margin="0,1"

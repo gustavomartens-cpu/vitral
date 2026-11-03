@@ -71,13 +71,25 @@ internal static class FonesBluetooth
     {
         var lista = new List<string>();
         var e = Enumerador();
-        if (e.EnumAudioEndpoints(2 /* eAll */, 0xF /* todos os estados */, out var col) != 0) return lista;
-        col.GetCount(out uint n);
-        for (uint i = 0; i < n; i++)
+        try
         {
-            if (col.Item(i, out var d) != 0) continue;
-            if (Filtro(d) is { } filtro && filtro.Contains("BTHENUM", StringComparison.OrdinalIgnoreCase)) lista.Add(filtro);
+            if (e.EnumAudioEndpoints(2 /* eAll */, 0xF /* todos os estados */, out var col) != 0) return lista;
+            try
+            {
+                col.GetCount(out uint n);
+                for (uint i = 0; i < n; i++)
+                {
+                    if (col.Item(i, out var d) != 0) continue;
+                    try
+                    {
+                        if (Filtro(d) is { } filtro && filtro.Contains("BTHENUM", StringComparison.OrdinalIgnoreCase)) lista.Add(filtro);
+                    }
+                    finally { Marshal.ReleaseComObject(d); }
+                }
+            }
+            finally { Marshal.ReleaseComObject(col); }
         }
+        finally { Marshal.ReleaseComObject(e); }
         return lista;
     }
 
@@ -90,8 +102,13 @@ internal static class FonesBluetooth
         var iid = typeof(IDeviceTopology).GUID;
         if (d.Activate(ref iid, 1 /* CLSCTX_INPROC_SERVER */, IntPtr.Zero, out var obj) != 0) return null;
         var topo = (IDeviceTopology)obj;
-        if (topo.GetConnector(0, out var c) != 0) return null;
-        return c.GetDeviceIdConnectedTo(out var filtro) == 0 ? filtro : null;
+        try
+        {
+            if (topo.GetConnector(0, out var c) != 0) return null;
+            try { return c.GetDeviceIdConnectedTo(out var filtro) == 0 ? filtro : null; }
+            finally { Marshal.ReleaseComObject(c); }
+        }
+        finally { Marshal.ReleaseComObject(topo); }
     }
 
     /// Pede ao Windows para conectar (true) ou desconectar o aparelho do filtro KS.

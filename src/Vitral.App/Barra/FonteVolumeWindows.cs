@@ -111,8 +111,37 @@ internal sealed class FonteVolumeWindows : IFonteVolume, IFonteMicrofone, IDispo
             if (_endpoint is null || Mudo is not { } mudo) return;
             var contexto = Guid.Empty;
             Marshal.ThrowExceptionForHR(_endpoint.SetMute(!mudo, ref contexto));
+            if (_fluxo == CoreAudio.Entrada) MudoNasComunicacoes(!mudo);
         }
         catch (Exception e) { LogBarra.Erro("Volume.Mudo", e); }
+    }
+
+    /// Teams e Zoom usam o microfone padrão de comunicações: quando ele é outro, o mudo vale para ele também.
+    private void MudoNasComunicacoes(bool mudo)
+    {
+        if (_enumerador is null) return;
+        if (_enumerador.GetDefaultAudioEndpoint(_fluxo, Multimidia, out var padrao) != 0) return;
+        try
+        {
+            if (_enumerador.GetDefaultAudioEndpoint(_fluxo, CoreAudio.Comunicacoes, out var comunicacoes) != 0) return;
+            try
+            {
+                padrao.GetId(out string idPadrao);
+                comunicacoes.GetId(out string idComunicacoes);
+                if (idPadrao == idComunicacoes) return;
+                var iid = typeof(IAudioEndpointVolume).GUID;
+                Marshal.ThrowExceptionForHR(comunicacoes.Activate(ref iid, CoreAudio.ClsctxAll, IntPtr.Zero, out object obj));
+                var volume = (IAudioEndpointVolume)obj;
+                try
+                {
+                    var contexto = Guid.Empty;
+                    Marshal.ThrowExceptionForHR(volume.SetMute(mudo, ref contexto));
+                }
+                finally { Marshal.ReleaseComObject(volume); }
+            }
+            finally { Marshal.ReleaseComObject(comunicacoes); }
+        }
+        finally { Marshal.ReleaseComObject(padrao); }
     }
 
     public void Dispose()
