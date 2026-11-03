@@ -26,7 +26,7 @@ public sealed partial class PainelControlesViewModel(IFonteControles fonte, Func
     public ObservableCollection<TelaBrilho> Telas { get; } = [];
     public ObservableCollection<AparelhoBluetooth> Aparelhos { get; } = [];
 
-    /// O "Não perturbe" mudou pelo painel: o notch para (ou volta) de descer com as notificações dos apps.
+    /// O "Não perturbe" lido ou mudado pelo painel: o notch para (ou volta) de descer com as notificações dos apps.
     public event Action<bool>? MudouNaoPerturbe;
 
     public async Task Abrir()
@@ -35,6 +35,7 @@ public sealed partial class PainelControlesViewModel(IFonteControles fonte, Func
         Bluetooth = e.Bluetooth;
         Aviao = e.Aviao;
         NaoPerturbe = e.NaoPerturbe;
+        if (e.NaoPerturbe is { } np) MudouNaoPerturbe?.Invoke(np); // pode ter mudado fora do Vitral (Win+A)
         LuzNoturna = e.LuzNoturna;
         TextoLuzNoturna = e.LuzNoturna is null ? TextoLuzDesconhecida : null;
         Trocar(Telas, e.Telas);

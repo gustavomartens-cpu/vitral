@@ -25,11 +25,20 @@ internal static class NaoPerturbe
         catch (COMException) { return null; }
     }
 
-    /// Nulo quando o Windows não tem o serviço (versão diferente).
+    /// Nulo quando o Windows não tem o serviço (versão diferente) ou recusa a leitura. Nunca lança: é lido ao criar o
+    /// notch, e uma falha aqui não pode impedir a barra de nascer.
     public static bool? Ler()
     {
-        if (Criar() is not { } q || q.get_UserSelectedProfile(out string perfil) != 0) return null;
-        return !perfil.EndsWith("Unrestricted", StringComparison.OrdinalIgnoreCase);
+        try
+        {
+            if (Criar() is not { } q || q.get_UserSelectedProfile(out string? perfil) != 0 || perfil is null) return null;
+            return !perfil.EndsWith("Unrestricted", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            Barra.LogBarra.Erro("NaoPerturbe.Ler", e);
+            return null;
+        }
     }
 
     public static bool Definir(bool ligar) => Criar() is { } q && q.put_UserSelectedProfile(ligar ? Ligado : Desligado) == 0;

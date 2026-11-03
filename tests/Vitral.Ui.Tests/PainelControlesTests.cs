@@ -111,6 +111,21 @@ public sealed class PainelControlesTests
     }
 
     [Fact]
+    public async Task Nao_perturbe_mudado_fora_avisa_ao_reler()
+    {
+        // Ligado pelo Win+A: a releitura do painel leva o estado ao notch (revisão dos controles, I2).
+        var p = Criar();
+        bool? avisado = null;
+        p.MudouNaoPerturbe += v => avisado = v;
+        _fonte.Estado = _fonte.Estado with { NaoPerturbe = true };
+        await p.Abrir();
+        Assert.True(avisado);
+        _fonte.Estado = _fonte.Estado with { NaoPerturbe = null };
+        await p.Abrir();
+        Assert.True(avisado); // ilegível não mexe no notch
+    }
+
+    [Fact]
     public async Task Nao_perturbe_avisa()
     {
         var p = Criar();

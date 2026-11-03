@@ -21,6 +21,16 @@ public sealed class ConfigTests : IDisposable
     }
 
     [Fact]
+    public void Atualizar_de_varias_threads_nao_perde_nada()
+    {
+        // O modo avião grava o config fora da thread da interface (revisão dos controles, I4).
+        var servico = new ServicoConfig(Arquivo);
+        Parallel.For(0, 40, i => new ServicoConfig(Arquivo).Atualizar(c =>
+            c with { RadiosAntesDoAviao = new Dictionary<string, bool>(c.RadiosAntesDoAviao ?? new Dictionary<string, bool>()) { [$"r{i}"] = true } }));
+        Assert.Equal(40, servico.Ler().RadiosAntesDoAviao!.Count);
+    }
+
+    [Fact]
     public void Gravar_e_ler_preserva_tudo()
     {
         var servico = new ServicoConfig(Arquivo);
@@ -76,3 +86,4 @@ public sealed class ConfigTests : IDisposable
         Assert.Null(new ServicoRetratos(new RegistroEmMemoria(), _pasta).Carregar("nao-existe.json"));
     }
 }
+

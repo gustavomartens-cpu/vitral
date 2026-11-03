@@ -14,50 +14,66 @@ internal sealed class FonteControlesWindows(ServicoConfig config) : IFonteContro
 {
     public Task<EstadoControles> Ler() => Task.Run(async () =>
     {
+        // Radios, Seguro e Aparelhos já seguram as próprias falhas; o config tem a trava dele.
         var radios = await Radios();
         bool? bluetooth = radios.FirstOrDefault(r => r.Kind == RadioKind.Bluetooth) is { } bt ? bt.State == RadioState.On : null;
         return new EstadoControles(bluetooth, config.Ler().RadiosAntesDoAviao is not null, Seguro(Controles.NaoPerturbe.Ler),
             Seguro(Controles.LuzNoturna.Ler), Seguro(Controles.Brilho.Ler) ?? [], await Aparelhos());
     });
 
-    public Task<bool> Bluetooth(bool ligar) => Task.Run(async () =>
+    public Task<bool> Bluetooth(bool ligar) => Rodar("Controles.Bluetooth", async () =>
     {
         var bt = (await Radios()).FirstOrDefault(r => r.Kind == RadioKind.Bluetooth);
         return bt is not null && await bt.SetStateAsync(ligar ? RadioState.On : RadioState.Off) == RadioAccessStatus.Allowed;
     });
 
-    /// Ligado: guarda o estado de cada rádio no config e desliga todos. Desligado: religa os que estavam ligados antes.
-    public Task<bool> Aviao(bool ligar) => Task.Run(async () =>
+    /// Ligado: guarda o estado de cada rádio no config e desliga todos. Desligado: religa os que estavam ligados antes;
+    /// a lista só sai do config quando todos voltaram (senão o próximo clique tenta de novo).
+    public Task<bool> Aviao(bool ligar) => Rodar("Controles.Aviao", async () =>
     {
         var radios = await Radios();
+        if (radios.Count == 0) return false; // sem acesso aos rádios: não finge que ligou
         var agora = radios.GroupBy(r => r.Kind.ToString()).ToDictionary(g => g.Key, g => g.Any(r => r.State == RadioState.On));
         if (ligar)
         {
-            config.Gravar(config.Ler() with { RadiosAntesDoAviao = RegrasControles.Aviao(agora) });
+            config.Atualizar(c => c with { RadiosAntesDoAviao = RegrasControles.Aviao(agora) });
             foreach (var r in radios) await r.SetStateAsync(RadioState.Off);
             return true;
         }
         if (config.Ler().RadiosAntesDoAviao is not { } guardado) return true;
         var religar = RegrasControles.DevolverAviao(guardado, agora);
-        foreach (var r in radios.Where(r => religar.Contains(r.Kind.ToString()))) await r.SetStateAsync(RadioState.On);
-        config.Gravar(config.Ler() with { RadiosAntesDoAviao = null });
-        return true;
+        bool todos = true;
+        foreach (var r in radios.Where(r => religar.Contains(r.Kind.ToString())))
+            todos &= await r.SetStateAsync(RadioState.On) == RadioAccessStatus.Allowed;
+        if (todos) config.Atualizar(c => c with { RadiosAntesDoAviao = null });
+        return todos;
     });
 
     public bool NaoPerturbe(bool ligar) => Seguro(() => Controles.NaoPerturbe.Definir(ligar));
 
     public bool LuzNoturna(bool ligar) => Seguro(() => Controles.LuzNoturna.Definir(ligar));
 
-    public void Brilho(string telaId, int valor) => Task.Run(() => Controles.Brilho.Definir(telaId, valor));
+    /// Um de cada vez por tela, só o último valor (o DDC/CI é lento e escritas sobrepostas chegam fora de ordem).
+    private readonly FilaUltimoValor<string, int> _brilho =
+        new(Controles.Brilho.Definir, e => Barra.LogBarra.Erro("Controles.Brilho", e));
+
+    public void Brilho(string telaId, int valor) => _brilho.Pedir(telaId, valor);
 
     /// Fone ou caixa: conecta ou desconecta pelo áudio; os outros abrem a tela de Bluetooth do Windows.
-    public Task<bool> Aparelho(AparelhoBluetooth a) => Task.Run(async () =>
+    public Task<bool> Aparelho(AparelhoBluetooth a) => Rodar("Controles.Aparelho", async () =>
     {
         if (a.TemAudio && await BluetoothDevice.FromIdAsync(a.Id) is { } bt
             && FonesBluetooth.FiltroDe(bt.BluetoothAddress, FonesBluetooth.Filtros()) is { } filtro)
             return FonesBluetooth.Pedir(filtro, conectar: !a.Conectado) == 0;
         Process.Start(new ProcessStartInfo("ms-settings:bluetooth") { UseShellExecute = true });
         return true;
+    });
+
+    /// Fora da thread da interface; qualquer falha vira false com log (o painel nunca recebe uma exceção).
+    private static Task<bool> Rodar(string onde, Func<Task<bool>> fazer) => Task.Run(async () =>
+    {
+        try { return await fazer(); }
+        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro(onde, e); return false; }
     });
 
     private static async Task<IReadOnlyList<Radio>> Radios()
