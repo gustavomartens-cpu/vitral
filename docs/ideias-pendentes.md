@@ -105,4 +105,4 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   não cai ao clicar no outro monitor e balão do app do Claude calado (0.15.1), borda invisível da janela vizinha sem
   derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2). Painel de controles na barra do topo
   (Bluetooth e aparelhos, modo avião, não perturbe que também cala o notch, luz noturna, brilho por tela) e microfone
-  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1).
+  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2).
