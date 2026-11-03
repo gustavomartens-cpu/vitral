@@ -79,6 +79,11 @@ internal sealed class FonteDispositivosAudioWindows : IFonteDispositivosAudio, I
         finally { Marshal.ReleaseComObject(propriedades); }
     }
 
+    /// Os microfones: a Task 4 do plano dos controles lê pelo fluxo de entrada.
+    public IReadOnlyList<DispositivoAudio> Entradas { get; private set; } = [];
+
+    public void TornarEntradaPadrao(string id) { }
+
     public void TornarPadrao(string id)
     {
         try

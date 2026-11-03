@@ -59,6 +59,9 @@ internal sealed class DispositivosFalsos : IFonteDispositivosAudio
     public event Action? Mudou;
     public List<string> Tornados { get; } = [];
     public void TornarPadrao(string id) => Tornados.Add(id);
+    public IReadOnlyList<DispositivoAudio> Entradas { get; set; } = [new("mic-note", "Microfone do notebook", true), new("mic-usb", "Microfone USB", false)];
+    public List<string> EntradasTornadas { get; } = [];
+    public void TornarEntradaPadrao(string id) => EntradasTornadas.Add(id);
     public void Disparar() => Mudou?.Invoke();
 }
 
