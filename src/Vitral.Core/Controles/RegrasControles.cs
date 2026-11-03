@@ -29,9 +29,16 @@ public static class RegrasControles
     }
 
     /// A lista do painel: o mesmo aparelho visto duas vezes (clássico e LE, ou o LE repetido) vira um, pelo endereço
-    /// Bluetooth (o conectado se houver); aparelhos diferentes com o mesmo nome continuam separados. Conectados primeiro.
+    /// Bluetooth; aparelhos diferentes com o mesmo nome continuam separados. O primeiro da lista (o clássico, que vem
+    /// antes) dá o id, o nome e o tipo, se conhecido; conectado e áudio valem se qualquer um dos lados tiver. Conectados
+    /// primeiro.
     public static IReadOnlyList<AparelhoBluetooth> Juntar(IEnumerable<(ulong Endereco, AparelhoBluetooth Aparelho)> aparelhos) =>
-        aparelhos.GroupBy(a => a.Endereco).Select(g => g.Select(a => a.Aparelho).OrderByDescending(a => a.Conectado).First())
+        aparelhos.GroupBy(a => a.Endereco).Select(g =>
+            {
+                var lados = g.Select(a => a.Aparelho).ToList();
+                var tipo = lados.Select(a => a.Tipo).FirstOrDefault(t => t != TipoAparelho.Outro, TipoAparelho.Outro);
+                return lados[0] with { Tipo = tipo, Conectado = lados.Any(a => a.Conectado), TemAudio = lados.Any(a => a.TemAudio) };
+            })
             .OrderByDescending(a => a.Conectado).ThenBy(a => a.Nome, StringComparer.CurrentCultureIgnoreCase).ThenBy(a => a.Id).ToList();
 
     /// O id de um monitor externo: a saída de vídeo do Windows ("\\.\DISPLAY2") e a posição do monitor dentro dela. Não

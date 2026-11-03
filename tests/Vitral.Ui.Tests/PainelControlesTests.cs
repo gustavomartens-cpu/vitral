@@ -103,9 +103,25 @@ public sealed class PainelControlesTests
     }
 
     [Fact]
-    public async Task Releitura_descarta_o_brilho_pendente()
+    public async Task Releitura_descarta_o_brilho_pendente_da_tela_que_sumiu()
     {
-        // O pendente era de uma tela que pode ter sumido ou mudado de lugar (sobras dos controles).
+        // O pendente era de uma tela que não está mais lá (sobras dos controles).
+        var p = Criar();
+        await p.Abrir();
+        p.MudarBrilho("externo", 50);
+        _agora = _agora.AddMilliseconds(30);
+        p.MudarBrilho("externo", 70);
+        _fonte.Estado = _fonte.Estado with { Telas = [new TelaBrilho("notebook", "Tela do notebook", 40)] };
+        await p.Abrir();
+        _agora = _agora.AddMilliseconds(200);
+        p.Tique();
+        Assert.Equal(["brilho externo 50"], _fonte.Chamadas.Where(c => c.StartsWith("brilho")));
+    }
+
+    [Fact]
+    public async Task Releitura_guarda_o_brilho_pendente_da_tela_que_continua()
+    {
+        // A leitura da abertura termina logo depois de o usuário soltar o deslizante: o último valor não se perde.
         var p = Criar();
         await p.Abrir();
         p.MudarBrilho("externo", 50);
@@ -114,7 +130,19 @@ public sealed class PainelControlesTests
         await p.Abrir();
         _agora = _agora.AddMilliseconds(200);
         p.Tique();
-        Assert.Equal(["brilho externo 50"], _fonte.Chamadas.Where(c => c.StartsWith("brilho")));
+        Assert.Equal(["brilho externo 50", "brilho externo 70"], _fonte.Chamadas.Where(c => c.StartsWith("brilho")));
+    }
+
+    [Fact]
+    public async Task Brilho_mudado_fora_aparece_na_proxima_abertura()
+    {
+        // Mudou pelas teclas Fn com o painel fechado: ao abrir, o deslizante mostra o valor novo (revisão das sobras).
+        var p = Criar();
+        await p.Abrir();
+        p.Descarregar(); // o painel fechou
+        _fonte.Estado = _fonte.Estado with { Telas = [new TelaBrilho("notebook", "Tela do notebook", 90), new TelaBrilho("externo", "Monitor externo", 60)] };
+        await p.Abrir();
+        Assert.Equal(90, p.Telas[0].Valor);
     }
 
     [Fact]

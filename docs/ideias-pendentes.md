@@ -10,6 +10,22 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
   interrompida da DLL não é refeita; falta teste do retrato original sem a seção "iniciar"; a pasta dos logs aceita
   escrita de outros apps isolados (só mudaria a linha de estado).
 - **Fones:** a prova de conectar um fone (QCY ou JBL) pelo painel de controles espera o Gustavo ligar um.
+- **Sobras dos controles, segunda rodada** (revisão das sobras):
+  - **Clique no meio de uma leitura:** uma leitura antiga que termina durante o clique faz o botão voltar ao estado
+    anterior por 1 a 2 s (avançar a geração no início de cada comando).
+  - **Nome das telas:** "Monitor N" segue a ordem geral, e a tela vertical aparece como "Monitor 2". Usar o número da
+    saída de vídeo ou o nome real do monitor.
+  - **Bluetooth:**
+    - um aparelho com o LE conectado e o áudio clássico não conectado aparece "conectado", e o clique tenta
+      desconectar o áudio;
+    - se o endereço LE for diferente do clássico, o mesmo aparelho aparece duas vezes (juntar por nome e tipo como
+      último recurso; conferir no aparelho).
+  - **Microfone:** o mudo feito pelo botão do headset de comunicações não aparece no painel até o próximo clique.
+  - **Memória:** ainda falta liberar o COM no `FonesBluetooth.Pedir` e no `NaoPerturbe.Criar`, e chamar o `Dispose` dos
+    aparelhos Bluetooth.
+- **Brilho sem DDC/CI (plano B):** o monitor principal do Gustavo (Odyssey, 2560×1440, por USB-C → DisplayPort) não
+  responde ao DDC/CI (erro `0xC02625D8` já na leitura). Ver se é o caminho do cabo ou o menu do monitor; se não houver
+  jeito, escurecer pela imagem (rampa de cores da placa), só abaixo do brilho atual.
 - **Iniciar, próximas etapas** (spec do Iniciar §7): central de notificações e configurações rápidas, busca, textos e
   ícones do Iniciar com as cores da doca, assinatura digital da DLL.
 - **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir

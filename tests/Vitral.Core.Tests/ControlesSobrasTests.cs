@@ -29,7 +29,20 @@ public sealed class ControlesSobrasTests
             (0xC3UL, new AparelhoBluetooth("c1", "BT5.0 KB", TipoAparelho.Teclado, false, false)),
             (0xC3UL, new AparelhoBluetooth("c2", "BT5.0 KB", TipoAparelho.Teclado, true, false)),
         ]);
-        Assert.Equal(["c2", "a", "b"], lista.Select(a => a.Id)); // conectados primeiro, depois pelo nome
+        Assert.Equal(["c1", "a", "b"], lista.Select(a => a.Id)); // o primeiro lado dá o id; conectados primeiro, depois pelo nome
+        Assert.True(lista[0].Conectado);
+    }
+
+    [Fact]
+    public void Juntar_funde_classico_e_le_do_mesmo_aparelho()
+    {
+        // Fone com o link LE ativo e o áudio clássico desligado: continua fone, com áudio, e aparece conectado.
+        var lista = RegrasControles.Juntar([
+            (0xA1UL, new AparelhoBluetooth("classico", "Galaxy Buds", TipoAparelho.Audio, false, true)),
+            (0xA1UL, new AparelhoBluetooth("le", "Galaxy Buds", TipoAparelho.Outro, true, false)),
+        ]);
+        var a = Assert.Single(lista);
+        Assert.Equal(("classico", TipoAparelho.Audio, true, true), (a.Id, a.Tipo, a.Conectado, a.TemAudio));
     }
 
     [Fact]

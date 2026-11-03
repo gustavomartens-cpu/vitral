@@ -38,7 +38,7 @@ public sealed partial class PainelControlesViewModel(IFonteControles fonte, Func
         int minha = ++_geracao;
         var e = await fonte.Ler();
         if (minha != _geracao) return;
-        _brilhoPendente.Clear(); // era de uma tela que pode ter sumido ou mudado
+        foreach (var id in _brilhoPendente.Keys.Except(e.Telas.Select(t => t.Id)).ToList()) _brilhoPendente.Remove(id); // telas que sumiram
         Bluetooth = e.Bluetooth;
         Aviao = e.Aviao;
         NaoPerturbe = e.NaoPerturbe;
@@ -119,11 +119,13 @@ public sealed partial class PainelControlesViewModel(IFonteControles fonte, Func
             if (!_ultimaEscrita.TryGetValue(tela, out var ultima) || t - ultima >= IntervaloBrilho) Escrever(tela, valor, t);
     }
 
-    /// O painel fechou: o último brilho que esperava os 100 ms vai na hora (senão se perderia).
+    /// O painel fechou: o último brilho que esperava os 100 ms vai na hora (senão se perderia), e os deslizantes saem,
+    /// para a próxima abertura mostrar o brilho mudado fora do Vitral (teclas Fn, Win+A).
     public void Descarregar()
     {
         var t = agora();
         foreach (var (tela, valor) in _brilhoPendente.ToList()) Escrever(tela, valor, t);
+        Telas.Clear();
     }
 
     private void Escrever(string telaId, int valor, DateTime t)
