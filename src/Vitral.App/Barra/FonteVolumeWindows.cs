@@ -5,12 +5,12 @@ using Vitral.Ui.Barra;
 namespace Vitral.App.Barra;
 
 /// Volume do dispositivo de saída padrão pelo Core Audio (IAudioEndpointVolume). Acompanha a troca do dispositivo
-/// padrão (fone Bluetooth, monitor HDMI...). Falha vira null.
-internal sealed class FonteVolumeWindows : IFonteVolume, IDisposable
+/// padrão (fone Bluetooth, monitor HDMI...). Falha vira null. Com o fluxo de entrada, é o microfone padrão.
+internal sealed class FonteVolumeWindows : IFonteVolume, IFonteMicrofone, IDisposable
 {
-    private const int Saida = CoreAudio.Saida;
     private const int Multimidia = CoreAudio.Multimidia;
 
+    private readonly int _fluxo;
     private readonly Dispatcher _ui;
     private readonly IMMDeviceEnumerator? _enumerador;
     private readonly AvisoDeDispositivo? _avisoDispositivo;
@@ -21,9 +21,10 @@ internal sealed class FonteVolumeWindows : IFonteVolume, IDisposable
     public bool? Mudo { get; private set; }
     public event Action? Mudou;
 
-    public FonteVolumeWindows(Dispatcher ui)
+    public FonteVolumeWindows(Dispatcher ui, int fluxo = CoreAudio.Saida)
     {
         _ui = ui;
+        _fluxo = fluxo;
         try
         {
             _enumerador = (IMMDeviceEnumerator)new MMDeviceEnumerator();
@@ -41,7 +42,7 @@ internal sealed class FonteVolumeWindows : IFonteVolume, IDisposable
         try
         {
             if (_enumerador is null) return;
-            Marshal.ThrowExceptionForHR(_enumerador.GetDefaultAudioEndpoint(Saida, Multimidia, out var dispositivo));
+            Marshal.ThrowExceptionForHR(_enumerador.GetDefaultAudioEndpoint(_fluxo, Multimidia, out var dispositivo));
             try
             {
                 var iid = typeof(IAudioEndpointVolume).GUID;
@@ -138,7 +139,7 @@ internal sealed class FonteVolumeWindows : IFonteVolume, IDisposable
         public int OnDeviceRemoved(IntPtr id) => 0;
         public int OnDefaultDeviceChanged(int fluxo, int papel, IntPtr id)
         {
-            if (fluxo == Saida && papel == Multimidia) dono.AoTrocarDispositivo();
+            if (fluxo == dono._fluxo && papel == Multimidia) dono.AoTrocarDispositivo();
             return 0;
         }
         public int OnPropertyValueChanged(IntPtr id, IntPtr chave) => 0;

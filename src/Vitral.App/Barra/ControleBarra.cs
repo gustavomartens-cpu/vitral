@@ -45,6 +45,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     {
         public FonteMidiaWindows Midia { get; } = new(Application.Current.Dispatcher);
         public FonteVolumeWindows Volume { get; } = new(Application.Current.Dispatcher);
+        public FonteVolumeWindows Microfone { get; } = new(Application.Current.Dispatcher, CoreAudio.Entrada);
         public FonteRedeWindows Rede { get; } = new(Application.Current.Dispatcher);
         public FonteBateriaWindows Bateria { get; } = new(Application.Current.Dispatcher);
         public FonteDispositivosAudioWindows Dispositivos { get; } = new(Application.Current.Dispatcher);
@@ -57,6 +58,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         {
             Midia.Dispose();
             Volume.Dispose();
+            Microfone.Dispose();
             Rede.Dispose();
             Bateria.Dispose();
             Dispositivos.Dispose();
@@ -339,7 +341,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
                 nova = new JanelaPainel("Calendário", 280) { Conteudo = new PainelCalendario(), DataContext = _vmCalendario };
                 break;
             case Painel.Volume when _fontes is not null:
-                nova = new JanelaPainel("Volume", 280) { Conteudo = new PainelVolume(), DataContext = Guardar(new PainelVolumeViewModel(_fontes.Volume, _fontes.Dispositivos)) };
+                nova = new JanelaPainel("Volume", 280) { Conteudo = new PainelVolume(), DataContext = Guardar(new PainelVolumeViewModel(_fontes.Volume, _fontes.Dispositivos, _fontes.Microfone)) };
                 break;
             case Painel.Bateria when _fontes is not null:
                 _vmBateria = Guardar(new PainelBateriaViewModel(_fontes.Bateria, _fontes.ModoEnergia));

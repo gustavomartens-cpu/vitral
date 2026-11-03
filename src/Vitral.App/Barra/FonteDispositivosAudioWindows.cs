@@ -4,7 +4,7 @@ using Vitral.Ui.Barra;
 
 namespace Vitral.App.Barra;
 
-/// Saídas de áudio ativas e troca do padrão (spec v2 §5). A troca usa IPolicyConfig, interface não documentada:
+/// Saídas e entradas de áudio ativas e troca do padrão (spec v2 §5; microfones: spec dos controles §5). A troca usa IPolicyConfig, interface não documentada:
 /// se ela não estiver disponível, PodeTrocar fica false e o painel esconde a lista. Relê a cada aviso do Windows
 /// (dispositivo ligado, desligado ou padrão trocado).
 internal sealed class FonteDispositivosAudioWindows : IFonteDispositivosAudio, IDisposable
@@ -35,17 +35,23 @@ internal sealed class FonteDispositivosAudioWindows : IFonteDispositivosAudio, I
 
     private void Ler()
     {
+        Saidas = Ler(CoreAudio.Saida);
+        Entradas = Ler(CoreAudio.Entrada);
+    }
+
+    private List<DispositivoAudio> Ler(int fluxo)
+    {
         var lista = new List<DispositivoAudio>();
         try
         {
-            if (_enumerador is null) { Saidas = lista; return; }
+            if (_enumerador is null) return lista;
             string? padrao = null;
-            if (_enumerador.GetDefaultAudioEndpoint(CoreAudio.Saida, CoreAudio.Multimidia, out var d) == 0)
+            if (_enumerador.GetDefaultAudioEndpoint(fluxo, CoreAudio.Multimidia, out var d) == 0)
             {
                 d.GetId(out padrao);
                 Marshal.ReleaseComObject(d);
             }
-            Marshal.ThrowExceptionForHR(_enumerador.EnumAudioEndpoints(CoreAudio.Saida, CoreAudio.DispositivoAtivo, out var colecao));
+            Marshal.ThrowExceptionForHR(_enumerador.EnumAudioEndpoints(fluxo, CoreAudio.DispositivoAtivo, out var colecao));
             try
             {
                 colecao.GetCount(out uint quantidade);
@@ -63,7 +69,7 @@ internal sealed class FonteDispositivosAudioWindows : IFonteDispositivosAudio, I
             finally { Marshal.ReleaseComObject(colecao); }
         }
         catch (Exception e) { LogBarra.Erro("Dispositivos.Ler", e); }
-        Saidas = lista;
+        return lista;
     }
 
     private static string? Nome(IMMDevice dispositivo)
@@ -79,10 +85,10 @@ internal sealed class FonteDispositivosAudioWindows : IFonteDispositivosAudio, I
         finally { Marshal.ReleaseComObject(propriedades); }
     }
 
-    /// Os microfones: a Task 4 do plano dos controles lê pelo fluxo de entrada.
     public IReadOnlyList<DispositivoAudio> Entradas { get; private set; } = [];
 
-    public void TornarEntradaPadrao(string id) { }
+    /// O id já diz se é saída ou entrada: o mesmo IPolicyConfig serve aos dois.
+    public void TornarEntradaPadrao(string id) => TornarPadrao(id);
 
     public void TornarPadrao(string id)
     {
@@ -115,7 +121,7 @@ internal sealed class FonteDispositivosAudioWindows : IFonteDispositivosAudio, I
         public int OnDeviceRemoved(IntPtr id) { dono.AoAvisar(); return 0; }
         public int OnDefaultDeviceChanged(int fluxo, int papel, IntPtr id)
         {
-            if (fluxo == CoreAudio.Saida && papel == CoreAudio.Multimidia) dono.AoAvisar();
+            if (papel == CoreAudio.Multimidia) dono.AoAvisar();
             return 0;
         }
         public int OnPropertyValueChanged(IntPtr id, IntPtr chave) => 0;
