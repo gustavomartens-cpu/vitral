@@ -303,6 +303,13 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     /// Notificações de outros apps (spec das notificações §5): esperam a vez como os outros avisos.
     public void Notificar(AvisoNotificacao aviso) => _estado.Notificou(aviso);
 
+    /// Com o "Não perturbe" ligado, as notificações dos apps não descem no notch (o sino continua contando).
+    public bool NaoPerturbe
+    {
+        get => _estado.NaoPerturbe;
+        set => _estado.NaoPerturbe = value;
+    }
+
     /// O Vitral lê as notificações (o sino abre o painel dele) e quantas há (o número do sino).
     public void NotificacoesMudaram(bool ligadas, int quantas)
     {

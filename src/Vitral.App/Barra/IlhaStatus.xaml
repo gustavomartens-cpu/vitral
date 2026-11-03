@@ -23,6 +23,11 @@
             <TextBlock Text="&#xE70D;" FontFamily="{StaticResource FonteIcones}" FontSize="11" VerticalAlignment="Center" />
         </Border>
 
+        <!-- Controles: Bluetooth, modo avião, não perturbe, luz noturna e brilho -->
+        <Border Style="{StaticResource ItemIlha}" ToolTip="Controles" MouseLeftButtonUp="Controles_Clique" Margin="0,0,2,0">
+            <TextBlock Text="&#xE9E9;" FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center" />
+        </Border>
+
         <!-- Rede -->
         <Border Style="{StaticResource ItemIlha}" ToolTip="Wi-Fi" MouseLeftButtonUp="Rede_Clique" Margin="0,0,2,0">
             <TextBlock Text="{Binding Rede, Converter={StaticResource RedeParaIcone}}" FontFamily="{StaticResource FonteIcones}" FontSize="13" VerticalAlignment="Center" />

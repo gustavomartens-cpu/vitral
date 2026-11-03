@@ -67,6 +67,7 @@ public partial class App : Application
         _barra = new ControleBarra(m => _bandeja?.Avisar("Vitral", m), _bandejaApps);
         _agenda = new Agenda.ServicoAgendaApp(config);
         _barra.Agenda = _agenda;
+        _barra.Controles = new Controles.FonteControlesWindows(config); // spec dos controles
         _agenda.Lembrar += a => _barra?.Lembrar(a);
         _agenda.Sumiu += id => _barra?.SumiuDaAgenda(id);
         _estadoBarra = new EstadoBarra(_barra, config, registro, _notificador); // também cuida do relógio de baixo
