@@ -65,18 +65,40 @@ internal sealed class WindowsQuieto(ServicoConfig config)
             try
             {
                 using var raiz = Registry.CurrentUser.CreateSubKey(Raiz);
-                var marcados = raiz.GetSubKeyNames().Where(a => { using var k = raiz.OpenSubKey(a); return k?.GetValue(Marca) is not null; });
-                var devolver = RegrasNotificacoes.ParaDevolver(config.Ler().BannersDesligados, marcados.ToList());
-                if (devolver.Count == 0) return;
-                foreach (var app in devolver)
-                {
-                    using var k = raiz.OpenSubKey(app, writable: true);
-                    k?.DeleteValue("ShowBanner", throwOnMissingValue: false);
-                    k?.DeleteValue(Marca, throwOnMissingValue: false);
-                }
-                config.Atualizar(c => c with { BannersDesligados = null });
+                var (devolver, soMarca) = RegrasNotificacoes.ParaDevolver(config.Ler().BannersDesligados, Marcados(raiz));
+                foreach (var app in devolver) Apagar(raiz, app, "ShowBanner", Marca);
+                foreach (var app in soMarca) Apagar(raiz, app, Marca);
+                if (devolver.Count > 0) config.Atualizar(c => c with { BannersDesligados = null });
             }
             catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("WindowsQuieto.Devolver", e); }
         }
+    }
+
+    /// Os apps com a marca e o ShowBanner atual. Uma chave ilegível (de qualquer app) fica de fora, sem impedir a
+    /// devolução dos outros.
+    private static List<(string, int?)> Marcados(RegistryKey raiz)
+    {
+        var lista = new List<(string, int?)>();
+        foreach (var app in raiz.GetSubKeyNames())
+        {
+            try
+            {
+                using var k = raiz.OpenSubKey(app);
+                if (k?.GetValue(Marca) is not null) lista.Add((app, k.GetValue("ShowBanner") as int?));
+            }
+            catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro($"WindowsQuieto.Marcados {app}", e); }
+        }
+        return lista;
+    }
+
+    /// Apaga os valores de um app; a falha num app não impede os outros.
+    private static void Apagar(RegistryKey raiz, string app, params string[] valores)
+    {
+        try
+        {
+            using var k = raiz.OpenSubKey(app, writable: true);
+            foreach (var v in valores) k?.DeleteValue(v, throwOnMissingValue: false);
+        }
+        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro($"WindowsQuieto.Apagar {app}", e); }
     }
 }

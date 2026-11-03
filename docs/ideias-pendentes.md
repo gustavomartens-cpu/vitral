@@ -31,6 +31,13 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 - **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir
   o dia inteiro do Outlook na tela.
 - **Escolher agendas da Microsoft** (depois do cadastro no Azure).
+- **Sobras das notificações, segunda rodada** (revisão das sobras):
+  - **Ícone:** um ícone que falha sempre é tentado e vai para o log a cada exibição (tentar de novo só depois de um
+    tempo), e o aviso e o painel podem carregar o mesmo ícone duas vezes.
+  - **Aviso:** começa com " · " quando o app não tem nome. A rajada mostra o ícone do primeiro app e "abrir ›"; o
+    certo seria um sino e "ver ›".
+  - **Testes:** a ordem da saída não tem teste.
+  - **Brilho:** a tela do notebook recusando o ajuste enche o log a cada 100 ms.
 - **Notificações, limites conhecidos** (sobras da 0.15.0, sem saída): app calado pelo Vitral que o usuário desliga
   de vez nas Configurações volta ligado na saída (o Windows grava o mesmo valor, não dá para distinguir); com o Vitral
   nunca mais aberto (sem desinstalar), o balão fica calado (só a desinstalação devolve).
