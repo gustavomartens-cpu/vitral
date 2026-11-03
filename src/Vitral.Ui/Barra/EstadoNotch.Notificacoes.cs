@@ -5,6 +5,16 @@ namespace Vitral.Ui.Barra;
 /// Uma notificação de outro app para avisar no notch (spec das notificações §5); <see cref="Quantas"/> > 1 é a rajada.
 public sealed record AvisoNotificacao(string AppId, string NomeApp, string? Titulo, string? Texto, int Quantas = 1)
 {
+    /// A linha de cima do aviso: "App · título". Sem título, o texto sobe para o lugar dele (nunca "App · " vazio).
+    public string Linha => Quantas > 1 ? Titulo ?? ""
+        : !string.IsNullOrWhiteSpace(Titulo) ? $"{NomeApp} · {Titulo}"
+        : !string.IsNullOrWhiteSpace(Texto) ? $"{NomeApp} · {Texto}"
+        : NomeApp;
+
+    /// A linha de baixo: o texto, a menos que ele tenha subido para a de cima.
+    public string Detalhe => Quantas > 1 ? "clique para ver todas"
+        : !string.IsNullOrWhiteSpace(Titulo) ? Texto ?? "" : "";
+
     /// Até 3 novas de uma vez descem uma a uma; mais que isso viram um aviso só ("{n} notificações novas").
     public static IReadOnlyList<AvisoNotificacao> De(IReadOnlyList<NotificacaoApp> novas) =>
         novas.Count > 3

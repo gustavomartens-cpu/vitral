@@ -13,6 +13,34 @@ public sealed class NotchNotificacoesTests
     private static AvisoNotificacao Chrome(string titulo = "Resultados") => new("Chrome", "Google Chrome", titulo, "4 leads");
 
     [Fact]
+    public void Clique_na_rajada_abre_o_painel()
+    {
+        // "5 notificações novas" não é da primeira: o clique mostra todas no painel do sino (sobras das notificações).
+        var e = Criar();
+        e.Notificou(new AvisoNotificacao("Chrome", "Google Chrome", "5 notificações novas", null, 5));
+        Assert.Equal(AcaoNotch.AbrirPainelNotificacoes, e.Clicou());
+        Assert.Null(e.AppPedido);
+        Assert.Null(e.AvisoNotificacaoAtual);
+    }
+
+    [Theory]
+    [InlineData("Resultados", "4 leads", "Google Chrome · Resultados", "4 leads")]
+    [InlineData(null, "4 leads", "Google Chrome · 4 leads", "")]
+    [InlineData("  ", null, "Google Chrome", "")]
+    public void Linha_do_aviso_sem_titulo_vazio(string? titulo, string? texto, string linha, string detalhe)
+    {
+        var a = new AvisoNotificacao("Chrome", "Google Chrome", titulo, texto);
+        Assert.Equal((linha, detalhe), (a.Linha, a.Detalhe));
+    }
+
+    [Fact]
+    public void Linha_da_rajada()
+    {
+        var a = new AvisoNotificacao("Chrome", "Google Chrome", "5 notificações novas", null, 5);
+        Assert.Equal(("5 notificações novas", "clique para ver todas"), (a.Linha, a.Detalhe));
+    }
+
+    [Fact]
     public void Notificacao_desce_e_sai_em_6s()
     {
         var e = Criar();

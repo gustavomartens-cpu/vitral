@@ -196,23 +196,31 @@ public partial class App : Application
     /// Tudo o que o Sair desfaz antes de fechar (também usado antes de reiniciar para atualizar).
     private void LimparParaSair()
     {
-        _relogioAtualizacao?.Stop();
+        // O balão do Windows volta primeiro, e nada mais o cala: um passo que falhe depois não pode deixá-lo calado.
+        Passo("Notificacoes", () => ServicoDeNotificacoes?.Dispose());
+        Passo("Quieto", () => _quieto?.Encerrar());
+        Passo("Atualizacao", () => _relogioAtualizacao?.Stop());
         // Sair no meio de um teste volta ao anterior, como se a contagem tivesse acabado.
-        Principal.Contagem?.VoltarCommand.Execute(null);
-        _janelaContagem?.Close();
-        _barra?.Fechar();
-        _estadoBarra?.Encerrar(); // sem a barra do topo, o relógio de baixo volta
-        _estadoDoca?.Encerrar(); // sem a doca, a barra do Windows volta
-        _barraWindows?.Dispose();
-        _canalAvisos?.Dispose();
-        _bandejaApps?.Dispose(); // devolve os ícones ao Windows
-        ServicoDeNotificacoes?.Dispose();
-        _quieto?.Encerrar(); // o balão do Windows volta, e nada mais o cala
-        ServicoDoIniciar?.Dispose(); // o Iniciar volta ao do Windows quando o processo sai
-        _observadorIcones?.Dispose();
-        _notificador?.Aguardar(TimeSpan.FromSeconds(5));
-        _bandeja?.Dispose();
-        _instancia?.Dispose();
+        Passo("Contagem", () => Principal.Contagem?.VoltarCommand.Execute(null));
+        Passo("JanelaContagem", () => _janelaContagem?.Close());
+        Passo("Barra", () => _barra?.Fechar());
+        Passo("EstadoBarra", () => _estadoBarra?.Encerrar()); // sem a barra do topo, o relógio de baixo volta
+        Passo("EstadoDoca", () => _estadoDoca?.Encerrar()); // sem a doca, a barra do Windows volta
+        Passo("BarraWindows", () => _barraWindows?.Dispose());
+        Passo("CanalAvisos", () => _canalAvisos?.Dispose());
+        Passo("BandejaApps", () => _bandejaApps?.Dispose()); // devolve os ícones ao Windows
+        Passo("Iniciar", () => ServicoDoIniciar?.Dispose()); // o Iniciar volta ao do Windows quando o processo sai
+        Passo("ObservadorIcones", () => _observadorIcones?.Dispose());
+        Passo("Notificador", () => _notificador?.Aguardar(TimeSpan.FromSeconds(5)));
+        Passo("Bandeja", () => _bandeja?.Dispose());
+        Passo("Instancia", () => _instancia?.Dispose());
+    }
+
+    /// Um passo da saída: a falha de um vai para o log e não impede os seguintes de devolverem o Windows.
+    private static void Passo(string nome, Action fazer)
+    {
+        try { fazer(); }
+        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro($"Sair.{nome}", e); }
     }
 
     /// Rede de segurança: um erro inesperado na interface vira aviso e log, em vez de derrubar o app

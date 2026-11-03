@@ -98,6 +98,28 @@ public sealed class NotificacoesTests
     }
 
     [Fact]
+    public void Devolve_tambem_os_marcados_no_registro()
+    {
+        // Uma versão antiga regravou o config sem a lista: a marca no registro ainda acha o que foi calado.
+        var (devolver, soMarca) = RegrasNotificacoes.ParaDevolver(["A", "B"], [("b", 0), ("C", 0)]);
+        Assert.Equal(["A", "B", "C"], devolver);
+        Assert.Empty(soMarca);
+        Assert.Equal(["C"], RegrasNotificacoes.ParaDevolver(null, [("C", 0)]).Devolver);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(1)]
+    public void Marca_velha_nao_mexe_no_balao(int? showBanner)
+    {
+        // A marca ficou de uma rodada que outra versão devolveu; o balão foi religado (ou é o padrão) e o usuário pode
+        // tê-lo calado depois por conta própria: só a marca sai (revisão das sobras, I1).
+        var (devolver, soMarca) = RegrasNotificacoes.ParaDevolver(null, [("Slack", showBanner)]);
+        Assert.Empty(devolver);
+        Assert.Equal(["Slack"], soMarca);
+    }
+
+    [Fact]
     public void Muitas_e_sem_icone()
     {
         var muitas = Enumerable.Range(1, 150).Select(i => N((uint)i, $"App{i % 20}", i)).ToList();

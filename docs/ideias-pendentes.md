@@ -31,11 +31,16 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 - **Agenda da Microsoft:** cadastrar o app no Azure (`docs/agenda-cadastro.md`) e pôr o ID em `Credenciais.cs`; conferir
   o dia inteiro do Outlook na tela.
 - **Escolher agendas da Microsoft** (depois do cadastro no Azure).
-- **Sobras das notificações** (revisão final da 0.15.0): ícone com falha passageira fica sem ícone até fechar; clique no
-  aviso da rajada abre o app da primeira em vez do painel; título vazio deixa "App · " no aviso; o modelo do painel
-  fica órfão depois de fechar os painéis; o Encerrar vem depois de passos sem proteção na saída; uma versão antiga do
-  Vitral regravando o config apaga a lista do que foi calado; app calado pelo Vitral e desligado de vez pelo usuário
-  volta ligado na saída; se o Vitral nunca mais for aberto (sem desinstalar), o balão fica calado.
+- **Sobras das notificações, segunda rodada** (revisão das sobras):
+  - **Ícone:** um ícone que falha sempre é tentado e vai para o log a cada exibição (tentar de novo só depois de um
+    tempo), e o aviso e o painel podem carregar o mesmo ícone duas vezes.
+  - **Aviso:** começa com " · " quando o app não tem nome. A rajada mostra o ícone do primeiro app e "abrir ›"; o
+    certo seria um sino e "ver ›".
+  - **Testes:** a ordem da saída não tem teste.
+  - **Brilho:** a tela do notebook recusando o ajuste enche o log a cada 100 ms.
+- **Notificações, limites conhecidos** (sobras da 0.15.0, sem saída): app calado pelo Vitral que o usuário desliga
+  de vez nas Configurações volta ligado na saída (o Windows grava o mesmo valor, não dá para distinguir); com o Vitral
+  nunca mais aberto (sem desinstalar), o balão fica calado (só a desinstalação devolve).
 - **Notificações, depois:** responder e os botões próprios das notificações (o Windows não deixa outro app acioná-los);
   assinatura do pacote para funcionar sem o modo de desenvolvedor.
 - **Sobras da 0.13.9** (revisão final): barra única só com a mídia fecha e recria a faixa quando a sessão some e volta
@@ -100,4 +105,4 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   não cai ao clicar no outro monitor e balão do app do Claude calado (0.15.1), borda invisível da janela vizinha sem
   derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2). Painel de controles na barra do topo
   (Bluetooth e aparelhos, modo avião, não perturbe que também cala o notch, luz noturna, brilho por tela) e microfone
-  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1).
+  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2).

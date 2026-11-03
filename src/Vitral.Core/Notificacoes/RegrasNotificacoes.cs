@@ -56,6 +56,20 @@ public static class RegrasNotificacoes
     /// O que o Vitral calou e ainda não devolveu (gravado no config): devolve na saída e, depois de uma queda, ao abrir.
     public static IReadOnlyList<string> ParaDevolver(IReadOnlyList<string>? gravados) => gravados ?? [];
 
+    /// A devolução pela lista do config e pela marca no registro (o ShowBanner atual de cada app marcado). A marca só conta
+    /// com o balão ainda calado; marca com o balão ligado ficou de uma rodada que outra versão do Vitral devolveu, e o
+    /// ShowBanner de agora pode ser do usuário: dessa, só a marca sai.
+    public static (IReadOnlyList<string> Devolver, IReadOnlyList<string> SoMarca) ParaDevolver(
+        IReadOnlyList<string>? gravados, IEnumerable<(string AppId, int? ShowBanner)> marcados)
+    {
+        var lista = marcados.ToList();
+        var devolver = ParaDevolver(gravados).Concat(lista.Where(m => m.ShowBanner == 0).Select(m => m.AppId))
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var soMarca = lista.Where(m => m.ShowBanner != 0 && !devolver.Contains(m.AppId, StringComparer.OrdinalIgnoreCase))
+            .Select(m => m.AppId).ToList();
+        return (devolver, soMarca);
+    }
+
     public static string HaQuanto(DateTimeOffset chegou, DateTimeOffset agora)
     {
         var passou = agora - chegou;
