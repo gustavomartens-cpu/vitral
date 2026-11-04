@@ -39,6 +39,22 @@ public sealed class GanchosClaudeTests
     }
 
     [Fact]
+    public void Atualizar_nao_religa_evento_tirado_a_mao()
+    {
+        // O Gustavo tirou só o PermissionRequest do Vitral: a abertura não pode recriá-lo (revisão, I3).
+        var raiz = Raiz(GanchosClaude.Ligar("", Comando)).AsObject();
+        raiz["hooks"]!.AsObject().Remove("PermissionRequest");
+        Assert.Null(GanchosClaude.Atualizar(raiz.ToJsonString()));
+    }
+
+    [Fact]
+    public void Atualizar_nao_mexe_em_tempo_escolhido_a_mao()
+    {
+        var mexido = GanchosClaude.Ligar("", Comando).Replace("\"timeout\": 330", "\"timeout\": 90");
+        Assert.Null(GanchosClaude.Atualizar(mexido)); // só o 75 de uma versão anterior é atualizado
+    }
+
+    [Fact]
     public void Atualizar_nao_liga_quem_nao_estava_ligado()
     {
         Assert.Null(GanchosClaude.Atualizar("""{"model":"x"}"""));

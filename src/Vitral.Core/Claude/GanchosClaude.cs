@@ -17,6 +17,9 @@ public static class GanchosClaude
     /// o Claude não pode cortar antes.
     public const int TempoPermissao = 330;
 
+    /// O tempo da permissão até a 0.16 (atualizado na abertura para o de cima).
+    private const int TempoPermissaoAntigo = 75;
+
     /// O Stop pode segurar a sessão enquanto o Gustavo responde pelo notch (até 19,5 min, spec da resposta §3.1).
     public const int TempoResposta = 1200;
 
@@ -62,7 +65,11 @@ public static class GanchosClaude
         try
         {
             var raiz = Ler(texto);
-            if (EstaLigado(texto)) return null;
+            // Só a diferença de uma versão anterior: os três eventos nossos, com o Stop em dia e a permissão com o tempo
+            // antigo. Um evento tirado ou um tempo escolhido à mão é do usuário e fica como está.
+            if (EstaLigado(texto) || !Eventos.All(e => Lista(raiz, e)?.Any(EhNosso) == true)
+                || !Lista(raiz, "Stop")!.Any(i => EhNosso(i) && TemTempo(i, TempoResposta))
+                || !Lista(raiz, "PermissionRequest")!.Any(i => EhNosso(i) && TemTempo(i, TempoPermissaoAntigo))) return null;
             var comando = Eventos.SelectMany(e => Lista(raiz, e) ?? []).Where(EhNosso)
                 .SelectMany(i => i!["hooks"]!.AsArray()).Select(c => c?["command"] is JsonValue v && v.TryGetValue<string>(out var s) ? s : null)
                 .FirstOrDefault(s => s?.Contains(Marca, StringComparison.OrdinalIgnoreCase) == true);

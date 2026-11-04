@@ -27,7 +27,7 @@ internal sealed partial class JanelaNotch
     private readonly ScaleTransform _tempoPergunta = new(1, 1);
 
     /// O que a ficha está desenhando (pedido e pergunta), para não refazer os botões a cada tique.
-    private (string Id, int Pergunta, string Marcadas)? _perguntaMostrada;
+    private (string Id, int Pergunta, string Marcadas, int NaFila)? _perguntaMostrada;
 
     /// A última ficha da fila era uma pergunta (durante a confirmação, o pedido já saiu).
     private bool _fichaDePergunta;
@@ -81,12 +81,14 @@ internal sealed partial class JanelaNotch
         bool cabe = RegrasPerguntas.Cabe(perguntas);
         int indice = cabe ? _estado.PerguntaAtual : 0;
         var marcadas = string.Join("|", _estado.Marcadas.Order(StringComparer.Ordinal));
-        if (_perguntaMostrada == (p.Id, indice, marcadas)) return;
+        if (_perguntaMostrada == (p.Id, indice, marcadas, _estado.NaFila)) return;
         bool novoPedido = _perguntaMostrada?.Id != p.Id;
-        _perguntaMostrada = (p.Id, indice, marcadas);
+        _perguntaMostrada = (p.Id, indice, marcadas, _estado.NaFila);
 
         _perguntaSessao.Text = $"  ·  {p.Sessao}";
-        _perguntaContador.Text = cabe && perguntas!.Count > 1 ? $"{indice + 1}/{perguntas.Count}" : "";
+        // "1/2" com várias perguntas e "+N" com pedidos esperando atrás.
+        var contador = cabe && perguntas!.Count > 1 ? $"{indice + 1}/{perguntas.Count}" : "";
+        _perguntaContador.Text = _estado.NaFila > 0 ? (contador.Length > 0 ? $"{contador}  ·  +{_estado.NaFila}" : $"+{_estado.NaFila}") : contador;
         var pergunta = perguntas is { Count: > 0 } ? perguntas[indice] : null;
         _perguntaTexto.Text = pergunta?.Texto ?? p.Resumo;
         _perguntaTexto.ToolTip = new TextBlock { Text = pergunta?.Texto ?? p.Completo ?? p.Resumo, TextWrapping = TextWrapping.Wrap, MaxWidth = 480 };

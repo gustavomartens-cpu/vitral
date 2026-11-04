@@ -22,7 +22,9 @@ public sealed partial class EstadoNotch
     public bool PodeEnviar => _marcadas.Count > 0;
 
     /// O tempo de um pedido na fila: a pergunta do Claude pede leitura (5 min); a permissão, 60 s.
-    public static double Tempo(PedidoPermissao pedido) => pedido.Ferramenta == RegrasPerguntas.Ferramenta ? TempoPergunta : TempoPedido;
+    public static double Tempo(PedidoPermissao pedido) => EhPergunta(pedido) ? TempoPergunta : TempoPedido;
+
+    private static bool EhPergunta(PedidoPermissao pedido) => pedido.Ferramenta == RegrasPerguntas.Ferramenta;
 
     /// O tempo do pedido que está na ficha (a barra de tempo).
     public double TempoDoAtual => PedidoAtual is { } p ? Tempo(p) : TempoPedido;

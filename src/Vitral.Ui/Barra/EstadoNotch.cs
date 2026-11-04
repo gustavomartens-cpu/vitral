@@ -83,6 +83,15 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
 
     public void Pediu(PedidoPermissao pedido)
     {
+        // Uma permissão passa na frente de uma pergunta do Claude na ficha: a pergunta pode ficar 5 min e a permissão de
+        // outra sessão venceria escondida atrás dela. A pergunta volta depois, de onde parou.
+        if (!EhPergunta(pedido) && _fila.Count > 0 && !Confirmando && EhPergunta(_fila[0].Pedido) && Modo == ModoNotch.Permissao)
+        {
+            _fila.Insert(0, (pedido, agora()));
+            PedidoPerdido = false;
+            Mostrar();
+            return;
+        }
         _fila.Add((pedido, agora()));
         PedidoPerdido = false;
         Laterais = false;
@@ -170,7 +179,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
     {
         var pedido = _fila[indice].Pedido;
         _fila.RemoveAt(indice);
-        if (indice == 0) ZerarPergunta(); // o próximo pedido começa da primeira pergunta
+        if (EhPergunta(pedido)) ZerarPergunta(); // só a pergunta que saiu leva o progresso; uma permissão na frente não
         Encerrado?.Invoke(pedido, resposta);
     }
 

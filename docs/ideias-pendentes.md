@@ -4,12 +4,16 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 
 ## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)
 
-- **Perguntas do Claude no notch** (pedido do Gustavo, 03/11/2026): hoje a pergunta de escolha do Claude
-  (`AskUserQuestion`) chega ao notch como uma permissão ("Permitir / Sempre / Negar"), e permitir não responde nada; ele
-  sempre tem que voltar à conversa. Ideia: o gancho `PermissionRequest` já traz as perguntas e opções em `tool_input`;
-  o notch mostra as opções e devolve `allow` com `updatedInput` contendo as respostas (`answers`). Prova primeiro: o
-  Claude Code do app aceita as respostas vindas do gancho e pula a pergunta da tela? Plano B: nada de "Permitir" para
-  perguntas; o notch avisa "Claude tem uma pergunta" e o clique abre a conversa.
+- **Sobras das perguntas no notch** (revisão final):
+  - **Altura da ficha:** a ficha de pergunta sobra uns 22 px embaixo, porque a margem é medida duas vezes.
+  - **Pergunta fora do formato:** um item que não é objeto lança exceção e a pergunta nem chega ao notch (o certo é
+    cair no "não cabe").
+  - **Repetições:** perguntas de texto igual ou rótulos iguais se confundem (fazer o "cabe" recusar).
+  - **Prazo do `--aviso`:** é decidido procurando o texto "AskUserQuestion"; seria melhor decidir pelo pedido lido.
+  - **Ganchos antigos:** entre instalar e o `Atualizar` rodar, o Stop deixa de segurar a resposta pelo notch.
+  - **Comentários:** os de 75 s e 60 s ficaram velhos.
+  - **Testes:** falta o de ida e volta pelo canal de uma resposta com aspas.
+  - **Botões:** são refeitos a cada marcação e perdem o destaque do mouse.
 
 - **Sobras do Iniciar** (revisão final da 0.14.0): o log da DLL ganha 5 a 15 linhas "REPINTADO" a cada abertura,
   gravadas durante a animação; a leitura das cores espera até 250 ms na thread do Iniciar quando o arquivo some; o

@@ -121,6 +121,38 @@ public sealed class NotchPerguntasTests
         Assert.Empty(e.Marcadas);
     }
 
+    private static PedidoPermissao Permissao(string id) => new(id, "sic", "Bash", "Claude quer rodar um comando", "npm test") { SessaoId = "s2" };
+
+    [Fact]
+    public void Permissao_passa_na_frente_da_pergunta()
+    {
+        // Uma pergunta lida com calma não pode esconder a permissão de outra sessão, que vence em 60 s (revisão, I1).
+        var e = ComPergunta(Fruta, Cores);
+        e.Escolheu("p1", "Banana"); // metade respondida
+        e.Pediu(Permissao("b1"));
+        Assert.Equal("b1", e.PedidoAtual!.Id);
+        Assert.Equal(1, e.NaFila); // a pergunta, atrás
+        Avancar(EstadoNotch.EsperaClique, e);
+        e.Respondeu("b1", EscolhaPermissao.Permitir);
+        Avancar(EstadoNotch.TempoConfirmacao, e);
+        Assert.Equal("p1", e.PedidoAtual!.Id);
+        Assert.Equal(1, e.PerguntaAtual); // volta onde parou
+        Avancar(EstadoNotch.EsperaClique, e);
+        e.Marcar("p1", "Azul");
+        Assert.True(e.Enviar("p1"));
+        var (_, r) = _encerrados.Single(x => x.Pedido.Id == "p1");
+        Assert.Equal("Banana", r!.Respostas!["Qual fruta?"]);
+    }
+
+    [Fact]
+    public void Permissao_nao_passa_na_frente_de_outra_permissao()
+    {
+        var e = Criar();
+        e.Pediu(Permissao("b1"));
+        e.Pediu(Permissao("b2"));
+        Assert.Equal("b1", e.PedidoAtual!.Id);
+    }
+
     [Fact]
     public void Proximo_pedido_comeca_da_primeira_pergunta()
     {
