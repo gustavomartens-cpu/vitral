@@ -4,6 +4,13 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 
 ## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)
 
+- **Perguntas do Claude no notch** (pedido do Gustavo, 03/11/2026): hoje a pergunta de escolha do Claude
+  (`AskUserQuestion`) chega ao notch como uma permissão ("Permitir / Sempre / Negar"), e permitir não responde nada; ele
+  sempre tem que voltar à conversa. Ideia: o gancho `PermissionRequest` já traz as perguntas e opções em `tool_input`;
+  o notch mostra as opções e devolve `allow` com `updatedInput` contendo as respostas (`answers`). Prova primeiro: o
+  Claude Code do app aceita as respostas vindas do gancho e pula a pergunta da tela? Plano B: nada de "Permitir" para
+  perguntas; o notch avisa "Claude tem uma pergunta" e o clique abre a conversa.
+
 - **Sobras do Iniciar** (revisão final da 0.14.0): o log da DLL ganha 5 a 15 linhas "REPINTADO" a cada abertura,
   gravadas durante a animação; a leitura das cores espera até 250 ms na thread do Iniciar quando o arquivo some; o
   caminho das cores é regravado sem trava numa reconexão; os logs por processo nunca são apagados; uma cópia
