@@ -82,9 +82,14 @@ internal static partial class Mensageiro
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
     }
 
-    /// Prazo total do "--aviso": permissão 65 s; Stop que espera a resposta 19,5 min; o resto 1,5 s.
+    /// Prazo total do "--aviso": pergunta do Claude 310 s; permissão 65 s; Stop que espera a resposta 19,5 min; o resto 1,5 s.
     public static int PrazoMs(string entrada, bool segurar) =>
-        EhPermissao(entrada) ? 65_000 : segurar ? 1_170_000 : 1_500;
+        EhPermissao(entrada) ? (EhPergunta(entrada) ? 310_000 : 65_000) : segurar ? 1_170_000 : 1_500;
+
+    /// Uma pergunta do Claude (spec das perguntas §4): espera mais que uma permissão.
+    private static bool EhPergunta(string entrada) =>
+        entrada.Contains($"\"tool_name\":\"{RegrasPerguntas.Ferramenta}\"", StringComparison.Ordinal)
+        || entrada.Contains($"\"tool_name\": \"{RegrasPerguntas.Ferramenta}\"", StringComparison.Ordinal);
 
     public static string LerEntrada() => LerEntrada(TimeSpan.FromSeconds(2));
 
@@ -97,7 +102,8 @@ internal static partial class Mensageiro
             if (PedidoPermissao.DeGancho(entrada) is { } pedido)
             {
                 // Sem resposta (tempo, Vitral fechado): não escreve nada e o Claude segue o pedido normal dele.
-                var resposta = Canal.Perguntar(Canal.Nome(sid), pedido.ParaLinha(), Canal.EsperaPedidoMs);
+                var espera = pedido.Ferramenta == RegrasPerguntas.Ferramenta ? Canal.EsperaPerguntaMs : Canal.EsperaPedidoMs;
+                var resposta = Canal.Perguntar(Canal.Nome(sid), pedido.ParaLinha(), espera);
                 // "Responder na conversa" também não escreve nada: a pergunta segue no app.
                 if (RespostaPermissao.DaLinha(resposta, pedido.Id) is not { } escolha
                     || RespostaPermissao.ParaClaude(escolha, entrada) is not { } saida) return;

@@ -13,8 +13,9 @@ public static class GanchosClaude
 
     private static readonly string[] Eventos = ["Stop", "Notification", "PermissionRequest"];
 
-    /// O pedido de permissão espera a resposta do notch por até 60 s (spec das permissões §3.1): o Claude não pode cortar antes.
-    private const int TempoPermissao = 75;
+    /// O pedido de permissão espera o notch por até 60 s, e a pergunta do Claude por até 5 min (spec das perguntas §4):
+    /// o Claude não pode cortar antes.
+    public const int TempoPermissao = 330;
 
     /// O Stop pode segurar a sessão enquanto o Gustavo responde pelo notch (até 19,5 min, spec da resposta §3.1).
     public const int TempoResposta = 1200;
@@ -31,7 +32,8 @@ public static class GanchosClaude
             var raiz = Ler(texto);
             // O Stop sem o tempo da resposta é de uma versão anterior: ligar de novo completa.
             return Eventos.All(e => Lista(raiz, e)?.Any(EhNosso) == true)
-                && Lista(raiz, "Stop")!.Any(i => EhNosso(i) && TemTempo(i, TempoResposta));
+                && Lista(raiz, "Stop")!.Any(i => EhNosso(i) && TemTempo(i, TempoResposta))
+                && Lista(raiz, "PermissionRequest")!.Any(i => EhNosso(i) && TemTempo(i, TempoPermissao));
         }
         catch (FormatException) { return false; }
     }
@@ -50,6 +52,23 @@ public static class GanchosClaude
             lista.Add(new JsonObject { ["hooks"] = new JsonArray(item) });
         }
         return raiz.ToJsonString(Escrita);
+    }
+
+    /// Os ganchos do Vitral de uma versão anterior (outro tempo, evento faltando) regravados com o mesmo comando de antes
+    /// (o Vitral de desenvolvimento não pode apontar os ganchos do instalado para ele). Nulo se não há o que atualizar:
+    /// desligados, já em dia ou settings.json com defeito.
+    public static string? Atualizar(string texto)
+    {
+        try
+        {
+            var raiz = Ler(texto);
+            if (EstaLigado(texto)) return null;
+            var comando = Eventos.SelectMany(e => Lista(raiz, e) ?? []).Where(EhNosso)
+                .SelectMany(i => i!["hooks"]!.AsArray()).Select(c => c?["command"] is JsonValue v && v.TryGetValue<string>(out var s) ? s : null)
+                .FirstOrDefault(s => s?.Contains(Marca, StringComparison.OrdinalIgnoreCase) == true);
+            return comando is null ? null : Ligar(texto, comando);
+        }
+        catch (FormatException) { return null; }
     }
 
     public static string Desligar(string texto)

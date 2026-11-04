@@ -19,6 +19,19 @@ internal sealed class ServicoGanchosClaude
 
     public void Desligar() => Gravar(GanchosClaude.Desligar);
 
+    /// Na abertura: os ganchos de uma versão anterior ganham o tempo e os eventos novos, com o mesmo comando de antes.
+    /// Nunca liga quem estava desligado; falha vai para o log.
+    public void AtualizarSeLigado()
+    {
+        try
+        {
+            if (!File.Exists(_arquivo) || GanchosClaude.Atualizar(File.ReadAllText(_arquivo)) is null) return;
+            Gravar(t => GanchosClaude.Atualizar(t) ?? t);
+            Barra.LogBarra.Info("Ganchos do Claude atualizados");
+        }
+        catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("ServicoGanchosClaude.Atualizar", e); }
+    }
+
     /// Desinstalação: sem o Vitral.exe, os ganchos dariam erro a cada resposta do Claude. Melhor esforço, só se ligados.
     public static void DesligarAoDesinstalar()
     {

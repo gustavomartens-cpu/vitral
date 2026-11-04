@@ -13,6 +13,44 @@ public sealed class GanchosClaudeTests
     private static int Nossos(string texto, string evento) =>
         Raiz(texto)["hooks"]?[evento]?.AsArray().Count(i => i!["hooks"]!.AsArray().Any(h => ((string?)h!["command"])?.Contains(GanchosClaude.Marca) == true)) ?? 0;
 
+    private static int? TempoDaPermissao(string texto) =>
+        (int?)Raiz(texto)["hooks"]!["PermissionRequest"]!.AsArray()
+            .First(i => ((string?)i!["hooks"]![0]!["command"])!.Contains(GanchosClaude.Marca))!["hooks"]![0]!["timeout"];
+
+    [Fact]
+    public void Gancho_de_permissao_com_330s()
+    {
+        // A pergunta do Claude espera até 5 min no notch (spec das perguntas §4).
+        Assert.Equal(330, TempoDaPermissao(GanchosClaude.Ligar("", Comando)));
+    }
+
+    [Fact]
+    public void Gancho_com_tempo_antigo_e_religado()
+    {
+        var antigo = GanchosClaude.Ligar("", Comando).Replace("\"timeout\": 330", "\"timeout\": 75");
+        Assert.Equal(75, TempoDaPermissao(antigo));
+        Assert.False(GanchosClaude.EstaLigado(antigo));
+        var novo = GanchosClaude.Atualizar(antigo)!;
+        Assert.True(GanchosClaude.EstaLigado(novo));
+        Assert.Equal(330, TempoDaPermissao(novo));
+        Assert.Equal(1, Nossos(novo, "PermissionRequest"));
+        Assert.Equal(1, Nossos(novo, "Stop"));
+        Assert.Equal(Comando, (string?)Raiz(novo)["hooks"]!["Stop"]![0]!["hooks"]![0]!["command"]); // o mesmo Vitral.exe
+    }
+
+    [Fact]
+    public void Atualizar_nao_liga_quem_nao_estava_ligado()
+    {
+        Assert.Null(GanchosClaude.Atualizar("""{"model":"x"}"""));
+        Assert.Null(GanchosClaude.Atualizar(GanchosClaude.Ligar("", Comando))); // já em dia
+    }
+
+    [Fact]
+    public void Espera_da_pergunta_cabe_no_gancho()
+    {
+        Assert.InRange(Canal.EsperaPerguntaMs, 300_001, 329_999);
+    }
+
     [Fact]
     public void Ligar_em_arquivo_vazio_cria_os_dois_ganchos()
     {
@@ -113,7 +151,7 @@ public sealed class GanchosClaudeTests
         Assert.Equal(1, Nossos(t, "Stop"));
         Assert.Equal(1, Nossos(t, "Notification"));
         Assert.Equal(1, Nossos(t, "PermissionRequest"));
-        Assert.Equal(75, (int)Raiz(t)["hooks"]!["PermissionRequest"]![0]!["hooks"]![0]!["timeout"]!);
+        Assert.Equal(330, (int)Raiz(t)["hooks"]!["PermissionRequest"]![0]!["hooks"]![0]!["timeout"]!); // perguntas: spec das perguntas §4
     }
 
     [Fact]
@@ -136,7 +174,7 @@ public sealed class GanchosClaudeTests
     {
         var t = GanchosClaude.Ligar("{}", Comando);
         Assert.Equal(1200, (int)Item(t, "Stop")!["timeout"]!);
-        Assert.Equal(75, (int)Item(t, "PermissionRequest")!["timeout"]!);
+        Assert.Equal(330, (int)Item(t, "PermissionRequest")!["timeout"]!);
         Assert.Null(Item(t, "Notification")!["timeout"]);
     }
 
