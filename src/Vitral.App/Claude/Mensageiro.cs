@@ -98,8 +98,10 @@ internal static partial class Mensageiro
             {
                 // Sem resposta (tempo, Vitral fechado): não escreve nada e o Claude segue o pedido normal dele.
                 var resposta = Canal.Perguntar(Canal.Nome(sid), pedido.ParaLinha(), Canal.EsperaPedidoMs);
-                if (RespostaPermissao.DaLinha(resposta, pedido.Id) is not { } escolha) return;
-                Escrever(RespostaPermissao.ParaClaude(escolha, entrada));
+                // "Responder na conversa" também não escreve nada: a pergunta segue no app.
+                if (RespostaPermissao.DaLinha(resposta, pedido.Id) is not { } escolha
+                    || RespostaPermissao.ParaClaude(escolha, entrada) is not { } saida) return;
+                Escrever(saida);
                 return;
             }
             if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !AVista()) is not { } lido) return;
