@@ -4,6 +4,17 @@ Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conve
 
 ## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)
 
+- **Sobras das perguntas no notch** (revisão final):
+  - **Altura da ficha:** a ficha de pergunta sobra uns 22 px embaixo, porque a margem é medida duas vezes.
+  - **Pergunta fora do formato:** um item que não é objeto lança exceção e a pergunta nem chega ao notch (o certo é
+    cair no "não cabe").
+  - **Repetições:** perguntas de texto igual ou rótulos iguais se confundem (fazer o "cabe" recusar).
+  - **Prazo do `--aviso`:** é decidido procurando o texto "AskUserQuestion"; seria melhor decidir pelo pedido lido.
+  - **Ganchos antigos:** entre instalar e o `Atualizar` rodar, o Stop deixa de segurar a resposta pelo notch.
+  - **Comentários:** os de 75 s e 60 s ficaram velhos.
+  - **Testes:** falta o de ida e volta pelo canal de uma resposta com aspas.
+  - **Botões:** são refeitos a cada marcação e perdem o destaque do mouse.
+
 - **Sobras do Iniciar** (revisão final da 0.14.0): o log da DLL ganha 5 a 15 linhas "REPINTADO" a cada abertura,
   gravadas durante a animação; a leitura das cores espera até 250 ms na thread do Iniciar quando o arquivo some; o
   caminho das cores é regravado sem trava numa reconexão; os logs por processo nunca são apagados; uma cópia
@@ -105,4 +116,4 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   não cai ao clicar no outro monitor e balão do app do Claude calado (0.15.1), borda invisível da janela vizinha sem
   derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2). Painel de controles na barra do topo
   (Bluetooth e aparelhos, modo avião, não perturbe que também cala o notch, luz noturna, brilho por tela) e microfone
-  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2).
+  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2), perguntas do Claude no notch com as opções (0.17.0).

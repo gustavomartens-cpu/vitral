@@ -183,9 +183,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     }
 
     /// Pedido de permissão do Claude (spec das permissões §3.5): vai para a ficha do notch; sem notch visível, sem resposta.
-    public Task<Vitral.Core.Claude.EscolhaPermissao?> Pedir(Vitral.Core.Claude.PedidoPermissao pedido)
+    public Task<Vitral.Core.Claude.RespostaPedido?> Pedir(Vitral.Core.Claude.PedidoPermissao pedido)
     {
-        return _relogio is { IsVisible: true } notch ? notch.Pedir(pedido) : Task.FromResult<Vitral.Core.Claude.EscolhaPermissao?>(null);
+        return _relogio is { IsVisible: true } notch ? notch.Pedir(pedido) : Task.FromResult<Vitral.Core.Claude.RespostaPedido?>(null);
     }
 
     /// Uma sessão terminou fora do app (spec da resposta §4.3): vai para a ficha de resposta; sem notch visível, vai

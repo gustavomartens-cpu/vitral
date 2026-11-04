@@ -53,7 +53,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
     public event Action? Mudou;
 
     /// Cada pedido sai uma vez: com a escolha ou com null (tempo esgotado, resolvido no app).
-    public event Action<PedidoPermissao, EscolhaPermissao?>? Encerrado;
+    public event Action<PedidoPermissao, RespostaPedido?>? Encerrado;
 
     public void Chegou(AvisoClaude aviso)
     {
@@ -83,6 +83,15 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
 
     public void Pediu(PedidoPermissao pedido)
     {
+        // Uma permissão passa na frente de uma pergunta do Claude na ficha: a pergunta pode ficar 5 min e a permissão de
+        // outra sessão venceria escondida atrás dela. A pergunta volta depois, de onde parou.
+        if (!EhPergunta(pedido) && _fila.Count > 0 && !Confirmando && EhPergunta(_fila[0].Pedido) && Modo == ModoNotch.Permissao)
+        {
+            _fila.Insert(0, (pedido, agora()));
+            PedidoPerdido = false;
+            Mostrar();
+            return;
+        }
         _fila.Add((pedido, agora()));
         PedidoPerdido = false;
         Laterais = false;
@@ -93,12 +102,16 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
     /// O clique num botão da ficha, para o pedido <paramref name="id"/> que estava na tela; devolve o pedido
     /// respondido (o canal completa a resposta pelo Encerrado). Recusa se outro pedido tomou a ficha ou se o atual
     /// acabou de aparecer.
-    public PedidoPermissao? Respondeu(string id, EscolhaPermissao escolha)
+    public PedidoPermissao? Respondeu(string id, EscolhaPermissao escolha) => Responder(id, escolha);
+
+    /// O pedido da ficha sai com a resposta (de um botão ou da última pergunta) e a ficha mostra a confirmação.
+    private PedidoPermissao? Responder(string id, RespostaPedido resposta)
     {
-        if (PedidoAtual is not { } pedido || pedido.Id != id || (agora() - _mostrou).TotalSeconds < EsperaClique) return null;
-        Sair(0, escolha);
+        if (!NaFicha(id)) return null;
+        var pedido = PedidoAtual!;
+        Sair(0, resposta);
         Confirmando = true;
-        UltimaEscolha = escolha;
+        UltimaEscolha = resposta.Escolha;
         _confirmou = agora();
         Mudou?.Invoke();
         return pedido;
@@ -110,7 +123,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         var t = agora();
         bool perdeu = false;
         for (int i = _fila.Count - 1; i >= 0; i--)
-            if ((t - _fila[i].Chegou).TotalSeconds >= TempoPedido) { Sair(i, null); perdeu = true; }
+            if ((t - _fila[i].Chegou).TotalSeconds >= Tempo(_fila[i].Pedido)) { Sair(i, null); perdeu = true; }
         if (perdeu && Confirmando) _perdeuNaConfirmacao = true; // conta quando a confirmação acabar
         if (Confirmando && (t - _confirmou).TotalSeconds >= TempoConfirmacao)
         {
@@ -162,11 +175,12 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         else Mudou?.Invoke(); // o "+N"
     }
 
-    private void Sair(int indice, EscolhaPermissao? escolha)
+    private void Sair(int indice, RespostaPedido? resposta)
     {
         var pedido = _fila[indice].Pedido;
         _fila.RemoveAt(indice);
-        Encerrado?.Invoke(pedido, escolha);
+        if (EhPergunta(pedido)) ZerarPergunta(); // só a pergunta que saiu leva o progresso; uma permissão na frente não
+        Encerrado?.Invoke(pedido, resposta);
     }
 
     public void MouseEntrou()

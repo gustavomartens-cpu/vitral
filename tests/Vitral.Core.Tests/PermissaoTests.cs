@@ -76,7 +76,7 @@ public sealed class PermissaoTests
     [Fact]
     public void Pedido_leva_o_id_da_sessao() => Assert.Equal("s1", PedidoPermissao.DeGancho(Gancho("Bash", """{"command":"x"}"""))!.SessaoId);
 
-    private static JsonNode Decisao(string json) => JsonNode.Parse(json)!["hookSpecificOutput"]!["decision"]!;
+    private static JsonNode Decisao(string? json) => JsonNode.Parse(json!)!["hookSpecificOutput"]!["decision"]!;
 
     [Fact]
     public void Bash_vira_rodar_um_comando()
@@ -159,7 +159,7 @@ public sealed class PermissaoTests
     public void Resposta_com_id_certo_e_errado()
     {
         Assert.Contains("\"escolha\":\"Negar\"", RespostaPermissao.Linha("a", EscolhaPermissao.Negar)); // spec §3.4
-        Assert.Equal(EscolhaPermissao.Negar, RespostaPermissao.DaLinha(RespostaPermissao.Linha("a", EscolhaPermissao.Negar), "a"));
+        Assert.Equal(EscolhaPermissao.Negar, RespostaPermissao.DaLinha(RespostaPermissao.Linha("a", EscolhaPermissao.Negar), "a")!.Escolha);
         Assert.Null(RespostaPermissao.DaLinha(RespostaPermissao.Linha("a", EscolhaPermissao.Negar), "b"));
         Assert.Null(RespostaPermissao.DaLinha("{", "a"));
     }
@@ -167,7 +167,7 @@ public sealed class PermissaoTests
     [Fact]
     public void Permitir_vira_allow()
     {
-        var j = JsonNode.Parse(RespostaPermissao.ParaClaude(EscolhaPermissao.Permitir, Gancho("Bash", """{"command":"npm test"}""")))!;
+        var j = JsonNode.Parse(RespostaPermissao.ParaClaude(EscolhaPermissao.Permitir, Gancho("Bash", """{"command":"npm test"}"""))!)!;
         Assert.Equal("PermissionRequest", (string?)j["hookSpecificOutput"]!["hookEventName"]);
         Assert.Equal("allow", (string?)j["hookSpecificOutput"]!["decision"]!["behavior"]);
         Assert.Null(j["hookSpecificOutput"]!["decision"]!["updatedPermissions"]);

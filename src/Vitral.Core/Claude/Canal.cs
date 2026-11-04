@@ -12,6 +12,9 @@ public static class Canal
     /// antes (senão um clique no último segundo mostraria "Permitido" sem efeito). Cabe no timeout 75 do gancho.
     public const int EsperaPedidoMs = 62_000;
 
+    /// O mesmo para uma pergunta do Claude: os 5 min da ficha e um pouco mais, abaixo do timeout 330 do gancho.
+    public const int EsperaPerguntaMs = 302_000;
+
     /// Quanto o mensageiro espera o texto de uma ficha de resposta: o notch decide (60 s, ou 15 min digitando); isto é
     /// só o limite, abaixo do timeout 1200 do gancho Stop.
     public const int EsperaRespostaMs = 1_140_000;

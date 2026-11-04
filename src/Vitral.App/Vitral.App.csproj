@@ -17,7 +17,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Debug: pacote esparso próprio (Vitral.Dev), para não roubar a identidade do Vitral instalado -->
     <ApplicationManifest Condition="'$(Configuration)' == 'Debug'">app.Debug.manifest</ApplicationManifest>
-    <Version>0.16.2</Version>
+    <Version>0.17.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- ThemeMode (Fluent) ainda é marcado como experimental no WPF -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>

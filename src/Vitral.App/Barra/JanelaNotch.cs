@@ -59,7 +59,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private readonly StackPanel _botoes = new() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };
     private readonly TextBlock _confirmacao = new() { FontSize = 12, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Center, Height = 28, Visibility = Visibility.Collapsed };
     private readonly ScaleTransform _tempoRestante = new(1, 1);
-    private readonly Dictionary<string, TaskCompletionSource<EscolhaPermissao?>> _esperando = [];
+    private readonly Dictionary<string, TaskCompletionSource<RespostaPedido?>> _esperando = [];
     private string? _pedidoMostrado;
     private Border _botaoSempre = null!;
     private readonly TextBlock _titulo = new() { FontWeight = FontWeights.SemiBold, FontSize = 12 };
@@ -133,6 +133,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         miolo.Children.Add(_painelPedido);
         MontarResposta();
         miolo.Children.Add(_painelResposta);
+        MontarPergunta();
+        miolo.Children.Add(_painelPergunta);
         _meio.Child = miolo;
         _conteudo.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _conteudo.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -449,9 +451,9 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     }
 
     /// Pedido de permissão chegou pelo canal: entra na ficha (ou na fila) e devolve a escolha, ou null sem resposta.
-    public Task<EscolhaPermissao?> Pedir(PedidoPermissao pedido)
+    public Task<RespostaPedido?> Pedir(PedidoPermissao pedido)
     {
-        var espera = new TaskCompletionSource<EscolhaPermissao?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var espera = new TaskCompletionSource<RespostaPedido?>(TaskCreationOptions.RunContinuationsAsynchronously);
         _esperando[pedido.Id] = espera;
         _estado.Pediu(pedido);
         return espera.Task;
@@ -557,7 +559,18 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         var modo = _estado.Modo;
         bool laterais = _estado.Laterais && modo is ModoNotch.Normal or ModoNotch.Lembrete;
         double largura, altura, raio;
-        if (modo == ModoNotch.Permissao)
+        if (modo == ModoNotch.Permissao) _fichaDePergunta = _estado.PedidoAtual is { } atual ? EhPergunta(atual) : _fichaDePergunta;
+        bool pergunta = modo == ModoNotch.Permissao && _fichaDePergunta;
+        if (pergunta)
+        {
+            AtualizarPergunta();
+            _painelPergunta.Visibility = Visibility.Visible;
+            _painelPergunta.Measure(new Size(LarguraPergunta - 36, double.PositiveInfinity));
+            largura = LarguraPergunta;
+            altura = Math.Min(NotchMedidas.AlturaMaxResposta, Math.Ceiling(_painelPergunta.DesiredSize.Height) + 22);
+            raio = NotchMedidas.RaioPermissao;
+        }
+        else if (modo == ModoNotch.Permissao)
         {
             AtualizarPedido();
             _painelPedido.Visibility = Visibility.Visible;
@@ -595,9 +608,10 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
         if (laterais) AtualizarEsquerda();
         _ponto.Visibility = modo == ModoNotch.Lembrete ? Visibility.Visible : Visibility.Collapsed;
-        if (modo != ModoNotch.Permissao) _pedidoMostrado = null;
+        if (modo != ModoNotch.Permissao) { _pedidoMostrado = null; _perguntaMostrada = null; }
         if (modo != ModoNotch.Resposta) { _respostaMostrada = null; Desativar(); }
-        Trocar(_painelPedido, mostrar: modo == ModoNotch.Permissao, animar);
+        Trocar(_painelPedido, mostrar: modo == ModoNotch.Permissao && !pergunta, animar);
+        Trocar(_painelPergunta, mostrar: pergunta, animar);
         Trocar(_painelResposta, mostrar: modo == ModoNotch.Resposta, animar);
         Trocar(_painelAviso, mostrar: modo == ModoNotch.Aviso, animar);
         Trocar(_linhaRelogio, mostrar: modo is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta), animar);
