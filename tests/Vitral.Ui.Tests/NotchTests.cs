@@ -203,7 +203,7 @@ public sealed class NotchTests
     {
         var e = Criar();
         var encerrados = new List<(PedidoPermissao, EscolhaPermissao?)>();
-        e.Encerrado += (p, x) => encerrados.Add((p, x));
+        e.Encerrado += (p, x) => encerrados.Add((p, x?.Escolha));
         var pedido = P("1");
         e.Pediu(pedido);
         Avancar(0.6, e);
@@ -221,7 +221,7 @@ public sealed class NotchTests
     {
         var e = Criar();
         var encerrados = new List<EscolhaPermissao?>();
-        e.Encerrado += (_, x) => encerrados.Add(x);
+        e.Encerrado += (_, x) => encerrados.Add(x?.Escolha);
         e.Pediu(P("1"));
         Avancar(59.9, e);
         Assert.Equal(ModoNotch.Permissao, e.Modo);
@@ -253,7 +253,7 @@ public sealed class NotchTests
     {
         var e = Criar();
         var encerrados = new List<(string, EscolhaPermissao?)>();
-        e.Encerrado += (p, x) => encerrados.Add((p.Id, x));
+        e.Encerrado += (p, x) => encerrados.Add((p.Id, x?.Escolha));
         e.Pediu(P("1"));
         Avancar(50, e);
         e.Pediu(P("2"));
@@ -270,7 +270,7 @@ public sealed class NotchTests
     {
         var e = Criar();
         var encerrados = new List<EscolhaPermissao?>();
-        e.Encerrado += (_, x) => encerrados.Add(x);
+        e.Encerrado += (_, x) => encerrados.Add(x?.Escolha);
         e.Pediu(P("1", "vitral"));
         e.Chegou(new AvisoClaude(TipoAviso.Terminou, "vitral", "feito"));
         Assert.Equal([(EscolhaPermissao?)null], encerrados);
@@ -415,7 +415,7 @@ public sealed class NotchTests
     {
         var e = Criar();
         var encerrados = new List<EscolhaPermissao?>();
-        e.Encerrado += (_, x) => encerrados.Add(x);
+        e.Encerrado += (_, x) => encerrados.Add(x?.Escolha);
         e.Pediu(P("1"));
         e.Pediu(P("2", "sic"));
         e.Desistiu("1"); // respondido no app: o Claude fechou o gancho
