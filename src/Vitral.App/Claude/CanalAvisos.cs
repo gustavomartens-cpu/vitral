@@ -19,10 +19,10 @@ internal sealed class CanalAvisos : IDisposable
     private readonly CancellationTokenSource _parar = new();
 
     /// Quem atende cada tipo de linha, na thread da interface.
-    private sealed record Destinos(Action<AvisoClaude> Chegou, Func<PedidoPermissao, Task<EscolhaPermissao?>> ChegouPedido,
+    private sealed record Destinos(Action<AvisoClaude> Chegou, Func<PedidoPermissao, Task<RespostaPedido?>> ChegouPedido,
         Func<PedidoResposta, Task<string?>> ChegouResposta, Action<string> Desistiu);
 
-    public CanalAvisos(Dispatcher ui, Action<AvisoClaude> chegou, Func<PedidoPermissao, Task<EscolhaPermissao?>> chegouPedido,
+    public CanalAvisos(Dispatcher ui, Action<AvisoClaude> chegou, Func<PedidoPermissao, Task<RespostaPedido?>> chegouPedido,
         Func<PedidoResposta, Task<string?>> chegouResposta, Action<string> desistiu)
     {
         var sid = WindowsIdentity.GetCurrent().User;
@@ -70,7 +70,8 @@ internal sealed class CanalAvisos : IDisposable
             // os limites aqui são só de segurança.
             if (PedidoPermissao.DeLinha(linha) is { } pedido)
             {
-                if (await Decidir(conexao, ui, () => destinos.ChegouPedido(pedido), pedido.Id, destinos.Desistiu, TimeSpan.FromSeconds(65), parar) is { } e)
+                if (await Decidir(conexao, ui, () => destinos.ChegouPedido(pedido), pedido.Id, destinos.Desistiu,
+                    TimeSpan.FromSeconds(pedido.Ferramenta == RegrasPerguntas.Ferramenta ? 305 : 65), parar) is { } e)
                     await Responder(conexao, RespostaPermissao.Linha(pedido.Id, e), parar);
             }
             else if (PedidoResposta.DeLinha(linha) is { } ficha)

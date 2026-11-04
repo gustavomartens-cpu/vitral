@@ -99,8 +99,10 @@ internal static partial class Mensageiro
         {
             var sid = WindowsIdentity.GetCurrent().User?.Value;
             if (sid is null) return;
-            if (PedidoPermissao.DeGancho(entrada) is { } pedido)
+            if (PedidoPermissao.DeGancho(entrada) is { } lidoPedido)
             {
+                // A conversa no app do Claude, para "Responder na conversa" abrir exatamente ela.
+                var pedido = lidoPedido with { AppId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp) };
                 // Sem resposta (tempo, Vitral fechado): não escreve nada e o Claude segue o pedido normal dele.
                 var espera = pedido.Ferramenta == RegrasPerguntas.Ferramenta ? Canal.EsperaPerguntaMs : Canal.EsperaPedidoMs;
                 var resposta = Canal.Perguntar(Canal.Nome(sid), pedido.ParaLinha(), espera);

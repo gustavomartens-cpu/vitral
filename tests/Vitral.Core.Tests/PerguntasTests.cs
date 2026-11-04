@@ -42,6 +42,14 @@ public sealed class PerguntasTests
     }
 
     [Fact]
+    public void Conversa_do_app_viaja_na_linha()
+    {
+        // "Responder na conversa" abre a conversa certa no app do Claude.
+        var p = PedidoPermissao.DeGancho(Gancho("AskUserQuestion", DuasPerguntas))! with { AppId = "conversa-1" };
+        Assert.Equal("conversa-1", PedidoPermissao.DeLinha(p.ParaLinha())!.AppId);
+    }
+
+    [Fact]
     public void Nao_cabe()
     {
         Pergunta Com(int opcoes) => new("Q", null, Enumerable.Range(1, opcoes).Select(i => new Opcao($"O{i}", null)).ToList(), false);

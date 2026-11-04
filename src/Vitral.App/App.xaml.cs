@@ -116,7 +116,7 @@ public partial class App : Application
         // Avisos do Claude Code (spec do notch vivo §4.4); ganchos de uma versão anterior ganham o tempo novo das perguntas
         new Claude.ServicoGanchosClaude().AtualizarSeLigado();
         _canalAvisos = new Claude.CanalAvisos(Dispatcher, a => _barra?.Avisar(a),
-            p => _barra?.Pedir(p) ?? Task.FromResult<Core.Claude.EscolhaPermissao?>(null),
+            p => _barra?.Pedir(p) ?? Task.FromResult<Core.Claude.RespostaPedido?>(null),
             r => _barra?.Responder(r) ?? Task.FromResult<string?>(null), id => _barra?.Desistir(id));
         // Atualização automática pelas releases do GitHub (spec da atualização §5): confere 1 min depois de abrir e a
         // cada 6 h; a versão baixada é avisada no notch e entra com o clique (ou na próxima vez que o Vitral abrir).

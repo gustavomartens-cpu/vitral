@@ -27,6 +27,9 @@ public sealed partial record PedidoPermissao(string Id, string Sessao, string Fe
     /// As perguntas de um `AskUserQuestion` (spec das perguntas §5); nulo nos outros pedidos.
     public IReadOnlyList<Pergunta>? Perguntas { get; init; }
 
+    /// A conversa no app do Claude (herdada da sessão do gancho), para "Responder na conversa" abrir exatamente ela.
+    public string? AppId { get; init; }
+
     public static PedidoPermissao? DeGancho(string json)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
@@ -124,7 +127,7 @@ public sealed partial record PedidoPermissao(string Id, string Sessao, string Fe
         var perguntas = Perguntas?.ToList();
         while (true)
         {
-            var linha = JsonSerializer.Serialize(new Linha("Permissao", Id, Sessao, Ferramenta, Titulo, Resumo, SessaoId, completo, AlcanceSempre, perguntas), Opcoes);
+            var linha = JsonSerializer.Serialize(new Linha("Permissao", Id, Sessao, Ferramenta, Titulo, Resumo, SessaoId, completo, AlcanceSempre, perguntas, AppId), Opcoes);
             if (linha.Length <= AvisoClaude.MaximoLinha || (completo is null && perguntas is null)) return linha;
             if (completo is not null) completo = completo.Length > 100 ? completo[..(completo.Length / 2)] + "…" : null;
             else perguntas = null;
@@ -135,7 +138,7 @@ public sealed partial record PedidoPermissao(string Id, string Sessao, string Fe
 
     public static PedidoPermissao? DeLinha(string? linha) =>
         Ler(linha) is { Tipo: "Permissao", Id: { } id, Sessao: { } s, Ferramenta: { } f, Titulo: { } t, Resumo: { } r } l
-            ? new PedidoPermissao(id, s, f, t, r) { SessaoId = l.SessaoId, Completo = l.Completo, AlcanceSempre = l.AlcanceSempre, Perguntas = l.Perguntas }
+            ? new PedidoPermissao(id, s, f, t, r) { SessaoId = l.SessaoId, Completo = l.Completo, AlcanceSempre = l.AlcanceSempre, Perguntas = l.Perguntas, AppId = l.AppId }
             : null;
 
     private static Linha? Ler(string? linha)
@@ -146,7 +149,7 @@ public sealed partial record PedidoPermissao(string Id, string Sessao, string Fe
     }
 
     private sealed record Linha(string? Tipo, string? Id, string? Sessao, string? Ferramenta, string? Titulo, string? Resumo,
-        string? SessaoId, string? Completo, string? AlcanceSempre, List<Pergunta>? Perguntas = null);
+        string? SessaoId, string? Completo, string? AlcanceSempre, List<Pergunta>? Perguntas = null, string? AppId = null);
 }
 
 /// A resposta do notch: a linha que volta pelo canal e o JSON que o mensageiro devolve ao Claude (spec §3.3).
