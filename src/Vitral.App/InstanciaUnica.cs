@@ -1,6 +1,7 @@
 namespace Vitral.App;
 
-/// Garante um Vitral só por sessão. A segunda instância pede à primeira que mostre a janela e sai.
+/// Garante um Vitral só por sessão. A segunda instância pede à primeira que mostre a janela (se
+/// <c>pedirParaMostrar</c>) e sai.
 internal sealed class InstanciaUnica : IDisposable
 {
     private const string NomeMutex = @"Local\Vitral-InstanciaUnica";
@@ -12,14 +13,14 @@ internal sealed class InstanciaUnica : IDisposable
 
     public bool EhPrimeira { get; }
 
-    public InstanciaUnica(Action aoPedirParaMostrar)
+    public InstanciaUnica(Action aoPedirParaMostrar, bool pedirParaMostrar = true)
     {
         _mutex = new Mutex(initiallyOwned: true, NomeMutex, out bool criado);
         EhPrimeira = criado;
         _evento = new EventWaitHandle(false, EventResetMode.AutoReset, NomeEvento);
         if (EhPrimeira)
             _espera = ThreadPool.RegisterWaitForSingleObject(_evento, (_, _) => aoPedirParaMostrar(), null, Timeout.Infinite, executeOnlyOnce: false);
-        else
+        else if (pedirParaMostrar)
             _evento.Set();
     }
 

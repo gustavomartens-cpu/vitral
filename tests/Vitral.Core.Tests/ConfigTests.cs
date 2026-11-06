@@ -47,25 +47,74 @@ public sealed class ConfigTests : IDisposable
         Assert.Equal(ConfigApp.Padrao, new ServicoConfig(Arquivo).Ler());
     }
 
+    private const string Run = @"Software\Microsoft\Windows\CurrentVersion\Run";
+
+    private sealed class TarefaEmMemoria(bool aceita = true) : ITarefaDeLogin
+    {
+        public (string Exe, string Args)? Criada { get; private set; }
+        public bool Existe() => Criada is not null;
+        public bool Criar(string caminhoExe, string argumentos)
+        {
+            if (aceita) Criada = (caminhoExe, argumentos);
+            return aceita;
+        }
+        public void Apagar() => Criada = null;
+    }
+
+    private static string? ValorNoRun(RegistroEmMemoria registro) => registro.Ler(Run, "Vitral", TipoValor.Texto).Dado as string;
+
     [Fact]
-    public void Ativar_inicializacao_grava_o_comando_no_Run()
+    public void Ativar_inicializacao_cria_a_tarefa_e_tira_o_Run()
     {
         var registro = new RegistroEmMemoria();
-        var ini = new Inicializacao(registro);
+        registro.Gravar(new ValorRegistro(Run, "Vitral", TipoValor.Texto, "\"C:\\x\\Vitral.exe\" --inicializacao"));
+        var tarefa = new TarefaEmMemoria();
+        var ini = new Inicializacao(registro, tarefa);
         ini.Ativar(@"C:\x\Vitral.exe");
-        var v = registro.Ler(@"Software\Microsoft\Windows\CurrentVersion\Run", "Vitral", TipoValor.Texto);
-        Assert.Equal("\"C:\\x\\Vitral.exe\" --inicializacao", v.Dado);
+        Assert.Equal((@"C:\x\Vitral.exe", "--inicializacao"), tarefa.Criada);
+        Assert.Null(ValorNoRun(registro));
         Assert.True(ini.Ativa());
     }
 
     [Fact]
-    public void Desativar_inicializacao_apaga_o_valor()
+    public void Tarefa_recusada_cai_no_Run()
     {
         var registro = new RegistroEmMemoria();
-        var ini = new Inicializacao(registro);
+        var ini = new Inicializacao(registro, new TarefaEmMemoria(aceita: false));
+        ini.Ativar(@"C:\x\Vitral.exe");
+        Assert.Equal("\"C:\\x\\Vitral.exe\" --inicializacao", ValorNoRun(registro));
+        Assert.True(ini.Ativa());
+    }
+
+    [Fact]
+    public void Desativar_inicializacao_apaga_tarefa_e_Run()
+    {
+        var registro = new RegistroEmMemoria();
+        registro.Gravar(new ValorRegistro(Run, "Vitral", TipoValor.Texto, "\"C:\\x\\Vitral.exe\" --inicializacao"));
+        var ini = new Inicializacao(registro, new TarefaEmMemoria());
         ini.Ativar(@"C:\x\Vitral.exe");
         ini.Desativar();
         Assert.False(ini.Ativa());
+        Assert.Null(ValorNoRun(registro));
+    }
+
+    [Fact]
+    public void Migrar_passa_o_exe_do_Run_para_a_tarefa()
+    {
+        var registro = new RegistroEmMemoria();
+        registro.Gravar(new ValorRegistro(Run, "Vitral", TipoValor.Texto, "\"C:\\Users\\a b\\VitralApp\\current\\Vitral.exe\" --inicializacao"));
+        var tarefa = new TarefaEmMemoria();
+        new Inicializacao(registro, tarefa).Migrar();
+        Assert.Equal((@"C:\Users\a b\VitralApp\current\Vitral.exe", "--inicializacao"), tarefa.Criada);
+        Assert.Null(ValorNoRun(registro));
+    }
+
+    [Fact]
+    public void Migrar_sem_Run_nao_liga_nada()
+    {
+        var tarefa = new TarefaEmMemoria();
+        new Inicializacao(new RegistroEmMemoria(), tarefa).Migrar();
+        Assert.Null(tarefa.Criada);
     }
 
     [Fact]
