@@ -53,10 +53,12 @@ public partial class App : Application
         if (Vitral.App.Notificacoes.PacoteVitral.RegistrarEReabrir(e.Args)) { Shutdown(); return; }
         Barra.LogBarra.Info($"Identidade de pacote: {(Vitral.App.Notificacoes.PacoteVitral.TemIdentidade ? "sim" : "não")}");
 
-        _instancia = new InstanciaUnica(() => Dispatcher.BeginInvoke(MostrarJanela));
+        bool peloWindows = e.Args.Contains(Vitral.Core.Configuracao.Inicializacao.Argumento);
+        // Aberto pelo login com o Vitral já aberto (à mão, antes): sai quieto, sem jogar a janela na tela.
+        _instancia = new InstanciaUnica(() => Dispatcher.BeginInvoke(MostrarJanela), pedirParaMostrar: !peloWindows);
         if (!_instancia.EhPrimeira)
         {
-            Shutdown(); // a outra instância vai mostrar a janela
+            Shutdown(); // a outra instância mostra a janela, se foi pedido
             return;
         }
 
@@ -102,9 +104,14 @@ public partial class App : Application
             estadoIniciar.AtualPerfil);
         var perfis = new RepositorioPerfis(Pastas.Perfis);
         Servico = new ServicoVitral(new Aplicador(registro, retratos, _notificador, _estadoBarra, estadoIcones, _estadoDoca, estadoAparencia, estadoFormas, estadoIniciar), retratos, perfis, config);
-        Inicializacao = new Inicializacao(registro);
+        Inicializacao = new Inicializacao(registro, new TarefaDeLoginWindows());
+        // Quem ligou pelo Run passa para a tarefa (abre logo no login); o schtasks fica fora da abertura.
+        _ = Task.Run(() =>
+        {
+            try { Inicializacao.Migrar(); }
+            catch (Exception ex) when (ex is not OutOfMemoryException) { Barra.LogBarra.Erro("Inicializacao.Migrar", ex); }
+        });
 
-        bool peloWindows = e.Args.Contains(Vitral.Core.Configuracao.Inicializacao.Argumento);
         var estado = Servico.AoIniciar(peloWindows);
         estadoAparencia.AoIniciar(); // antes das janelas: elas já nascem com a aparência e as formas guardadas
         estadoFormas.AoIniciar();
