@@ -15,6 +15,14 @@ O repositório é público desde a 0.8.3: o app lê as releases sem token, e a r
    ```
 
 2. Entrar no GitHub CLI com a conta dona do repositório (`gh auth login`). Para conferir: `gh auth status`.
+3. As ferramentas de C++ do componente do Iniciar (`VitralIniciar.dll`), sem admin. No PC com o `G:\dev` elas já
+   estão em `G:\dev\toolchains`. Nos outros, extraia em `%LOCALAPPDATA%\vitral-dev\toolchains`, que o
+   `tools/env.ps1` também procura:
+   - `llvm-mingw-20260922-ucrt-x86_64.zip`, de <https://github.com/mstorsjo/llvm-mingw/releases/tag/20260922>
+     (182 MB, sha256 `e3ad77d1…3047666`), extraído como está (a pasta `llvm-mingw-20260922-ucrt-x86_64`);
+   - o pacote `microsoft.windows.cppwinrt.2.0.250303.1.nupkg`, do nuget.org, extraído (é um zip) na pasta `cppwinrt`.
+
+   Para conferir: `pwsh tools/compilar-iniciar.ps1` termina com "importações OK".
 
 ## 2. Publicar
 

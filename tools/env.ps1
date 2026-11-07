@@ -4,6 +4,13 @@ if (-not (Test-Path 'G:\dev\dotnet')) {
     $usuario = Join-Path $env:LOCALAPPDATA 'Microsoft\dotnet'
     if (Test-Path $usuario) { $env:DOTNET_ROOT = $usuario; $env:PATH = "$usuario;$env:PATH" }
     $env:PATH = "$(Join-Path $env:USERPROFILE '.dotnet\tools');$env:PATH"
+    # As mesmas ferramentas do G:\dev\toolchains (llvm-mingw e cppwinrt, para o componente do Iniciar), instaladas
+    # por usuário em %LOCALAPPDATA%\vitral-dev\toolchains (docs/publicar.md).
+    $toolchains = Join-Path $env:LOCALAPPDATA 'vitral-dev\toolchains'
+    foreach ($bin in 'llvm-mingw-20260922-ucrt-x86_64\bin', 'cppwinrt\bin') {
+        $pasta = Join-Path $toolchains $bin
+        if (Test-Path $pasta) { $env:PATH = "$pasta;$env:PATH" }
+    }
     $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
     $env:DOTNET_NOLOGO               = '1'
     return
