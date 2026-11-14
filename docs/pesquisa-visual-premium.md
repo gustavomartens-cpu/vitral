@@ -9,7 +9,7 @@ Foram três fontes:
 
 ## 1. Resumo
 
-A suspeita sobre as bordas se confirma, mas o problema não é a borda que o Vitral desenha. A linha visível em volta das ilhas e da doca é **cinza neutro, opaca na prática, com o mesmo peso em cima e embaixo**. Pela cor medida, ela parece ser a borda que o próprio Windows 11 desenha em toda janela. A borda de vidro do Vitral, que era um gradiente com realce em cima, foi trocada por uma cor chapada no dicionário da aparência e ficou por baixo da linha do Windows.
+A suspeita sobre as bordas se confirma, mas o problema não é a borda que o Vitral desenha. A linha visível em volta das ilhas e da doca é **cinza neutro, opaca na prática, com o mesmo peso em cima e embaixo**. É a borda que o próprio Windows 11 desenha em toda janela, **confirmado no teste da seção 2.4**. A borda de vidro do Vitral, que era um gradiente com realce em cima, foi trocada por uma cor chapada no dicionário da aparência e ficou por baixo da linha do Windows.
 
 Três outros pontos pesam no "não premium":
 
@@ -66,6 +66,30 @@ Doca, ampliada 3×. O que se vê:
 4. **Linguagem de cantos misturada:** ilhas e doca 8 px, notch 16/22/24 px, pílulas 14 px (cápsula), menus 12 px, painéis 8 px. A HIG da Apple pede raios concêntricos. O Fluent usa 8 px para superfícies e 4 px para o que fica dentro delas.
 5. **Movimento que quica ao fechar.** O corpo do notch anima largura, altura e raio com `BackEase` (amplitude 0,35, 320 ms) na abertura **e** no fechamento (`JanelaNotch.cs:658`). O Boring Notch abre com uma leve sobra e fecha sem quicar.
 6. **Vidro que não parece vidro.** Sobre papel de parede claro, o tingimento de 72% apaga o desfoque. Sobre papel de parede escuro, a linha cinza é o que mais aparece.
+
+### 2.4 Teste: de quem é a linha cinza (14/11/2026)
+
+**Como foi feito.** No Vitral 0.17.1 instalado, sem compilar nada, um script aplicou `DwmSetWindowAttribute(h, DWMWA_BORDER_COLOR = 34, DWMWA_COLOR_NONE)` de fora do processo nas janelas "Vitral · Status" e "Vitral · Doca". Medi os pixels antes, durante e depois, e no fim devolvi o padrão (`DWMWA_COLOR_DEFAULT`). As duas chamadas retornaram `S_OK`.
+
+| Pixel do contorno | Com a borda do Windows | Sem a borda do Windows | Restaurado |
+|---|---|---|---|
+| Ilha de status, topo | `#303235` | `#252834` | `#303235` |
+| Ilha de status, base | `#303134` | `#262935` | `#303134` |
+| Ilha de status, lado esquerdo | `#303235` | `#242733` | `#303235` |
+| Doca, topo | `#37383C` | `#282C38` | `#37383C` |
+| Doca, base | `#54514A` | `#292D38` | `#54514A` |
+| Vidro logo dentro (referência) | `#0C101D` a `#0F131F` | igual | igual |
+
+![Ilha de status: em cima com a borda do Windows, embaixo sem](pesquisa/visual-premium/comparacao-status.png)
+
+![Doca: em cima com a borda do Windows, embaixo sem](pesquisa/visual-premium/comparacao-doca.png)
+
+**Conclusões:**
+- **A linha cinza é a do Windows.** Ela some com o atributo e volta igual ao restaurar.
+- **A borda do Windows fica no mesmo pixel que a do Vitral, por cima.** Embaixo dela aparece a borda WPF do Vitral (branco a 10% sobre o vidro azul-marinho), que dá `#252834`: azulada, combinando com o vidro e com cerca de dois terços do contraste da linha do Windows.
+- **Na base da doca, a borda do Windows clareia com o papel de parede** (`#54514A`, quase a cor do mármore logo abaixo): ela é semitransparente e muda de cor conforme o fundo. Sem ela, a base fica `#292D38`, estável.
+- **A linha do Vitral sozinha ainda é chapada,** com o mesmo peso nos quatro lados. Tirar a borda do Windows já melhora, mas o realce em gradiente da mudança 1 continua valendo.
+- **A chamada funciona em janelas de outro processo.** Dá para fazer prévias de visual sem compilar, aplicando atributos do DWM no Vitral instalado.
 
 ## 3. Referências
 
@@ -134,11 +158,11 @@ São estilizadas por CSS do usuário. Não há um padrão verificável, então n
 
 **Impacto:** alto. **Risco:** baixo a médio.
 
-**Antes, um teste de 5 minutos para confirmar a causa:**
-1. Num build local, chamar `DwmSetWindowAttribute(h, DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE)` também no caminho com vidro de `VidroIlha.Atualizar`.
-2. Ver se a linha `#303235` some.
+**Causa confirmada** no teste da seção 2.4: a linha `#303235` é a borda do Windows, e sem ela aparece a do Vitral (`#252834`).
 
-Se sumir, a causa é a borda do Windows e vale seguir.
+Dá para fazer em dois passos, cada um entregável sozinho:
+- **Passo A:** só desligar a borda do Windows. É uma linha de código e foi exatamente o que o teste mostrou.
+- **Passo B:** o realce em gradiente.
 
 **O que fazer:**
 - `src/Vitral.App/Barra/VidroIlha.cs`: desligar a borda do DWM sempre (`DwmCorNenhuma`), não só no "sem vidro". O bloco que restaura `DwmCorPadrao` ao sair da barra única passa a não ser necessário.
