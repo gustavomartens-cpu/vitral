@@ -64,7 +64,7 @@ Doca, ampliada 3×. O que se vê:
 2. **Notch grafite em vez de preto.** O efeito da Dynamic Island depende do preto puro, que some na moldura e no fundo escuro. Um `#0B0C10` sobre papel de parede escuro vira um retângulo cinza.
 3. **Dois pretos.** Ilhas e doca são azul-marinho (`#0A0F20` a 72%); o notch é grafite (`#0B0C10`). Lado a lado, parecem de dois apps.
 4. **Linguagem de cantos misturada:** ilhas e doca 8 px, notch 16/22/24 px, pílulas 14 px (cápsula), menus 12 px, painéis 8 px. A HIG da Apple pede raios concêntricos. O Fluent usa 8 px para superfícies e 4 px para o que fica dentro delas.
-5. **Movimento que quica ao fechar.** O corpo do notch anima largura, altura e raio com `BackEase` (amplitude 0,35, 320 ms) na abertura **e** no fechamento (`JanelaNotch.cs:651`). O Boring Notch abre com uma leve sobra e fecha sem quicar.
+5. **Movimento que quica ao fechar.** O corpo do notch anima largura, altura e raio com `BackEase` (amplitude 0,35, 320 ms) na abertura **e** no fechamento (`JanelaNotch.cs:658`). O Boring Notch abre com uma leve sobra e fecha sem quicar.
 6. **Vidro que não parece vidro.** Sobre papel de parede claro, o tingimento de 72% apaga o desfoque. Sobre papel de parede escuro, a linha cinza é o que mais aparece.
 
 ## 3. Referências
