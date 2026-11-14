@@ -65,6 +65,9 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
             for (int i = _fila.Count - 1; i >= 0; i--)
             {
                 var p = _fila[i].Pedido;
+                // A pergunta do Claude não sai com o "esperando você": no app, ele chega logo depois de a pergunta abrir.
+                // Respondida no app, o gancho fecha e o Desistiu tira a ficha.
+                if (EhPergunta(p) && aviso.Tipo == TipoAviso.Esperando) continue;
                 if (p.SessaoId is not null && aviso.SessaoId is not null ? p.SessaoId == aviso.SessaoId : p.Sessao == aviso.Sessao) Sair(i, null);
             }
         if (atual is not null && PedidoAtual is { } seguinte && seguinte != atual) _mostrou = agora(); // outro tomou a ficha

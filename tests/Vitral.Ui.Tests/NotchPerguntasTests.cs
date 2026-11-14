@@ -101,6 +101,27 @@ public sealed class NotchPerguntasTests
     }
 
     [Fact]
+    public void Aviso_de_esperando_da_sessao_nao_derruba_a_pergunta()
+    {
+        // No app, o Claude avisa "esperando você" logo depois de abrir a pergunta: a ficha fica (Gustavo, 14/11/2026).
+        var e = ComPergunta(Fruta, Cores);
+        e.Escolheu("p1", "Banana");
+        e.Chegou(new AvisoClaude(TipoAviso.Esperando, "vitral", "Claude tem perguntas para você") { SessaoId = "s1" });
+        Assert.Empty(_encerrados);
+        Assert.Equal(ModoNotch.Permissao, e.Modo);
+        Assert.Equal("p1", e.PedidoAtual!.Id);
+        Assert.Equal(1, e.PerguntaAtual);
+    }
+
+    [Fact]
+    public void Aviso_de_terminou_da_sessao_tira_a_pergunta()
+    {
+        var e = ComPergunta(Fruta);
+        e.Chegou(new AvisoClaude(TipoAviso.Terminou, "vitral", "Pronto.") { SessaoId = "s1" });
+        Assert.Null(Assert.Single(_encerrados).Resposta);
+    }
+
+    [Fact]
     public void Conversa_encerra_com_conversa()
     {
         var e = ComPergunta(Fruta);
