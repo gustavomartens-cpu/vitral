@@ -12,13 +12,13 @@ public enum ParteNotch { Meio, Esquerda, Direita }
 /// O notch vivo (spec do notch vivo §3.3 e §3.4; spec das permissões §4.2):
 /// - o aviso fica 6 s (segurado com o mouse em cima) e recolhe para o lembrete;
 /// - fora do aviso, o mouse parado 250 ms abre as laterais (Claude à esquerda, notificações à direita);
-/// - pedidos de permissão têm prioridade: ficam em fila, cada um com 60 s desde que chegou, e saem com a resposta, com o
+/// - pedidos de permissão têm prioridade: ficam em fila, cada um com 30 s desde que chegou (a pergunta do Claude, 5 min), e saem com a resposta, com o
 ///   tempo esgotado ou com um aviso da mesma sessão (resolvido no app).
 public sealed partial class EstadoNotch(Func<DateTime> agora)
 {
     /// EsperaClique: um pedido que acabou de aparecer na ficha não aceita clique, para um clique dado no anterior não
     /// cair nele.
-    public const double Duracao = 6, EsperaLaterais = 0.25, TempoPedido = 60, TempoConfirmacao = 1, EsperaClique = 0.5;
+    public const double Duracao = 6, EsperaLaterais = 0.25, TempoPedido = 30, TempoConfirmacao = 1, EsperaClique = 0.5;
 
     private readonly List<(PedidoPermissao Pedido, DateTime Chegou)> _fila = [];
     private DateTime _inicio, _entrou, _confirmou, _mostrou;

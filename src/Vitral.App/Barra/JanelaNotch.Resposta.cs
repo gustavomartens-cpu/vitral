@@ -12,7 +12,7 @@ using Vitral.Ui.Barra;
 namespace Vitral.App.Barra;
 
 /// A ficha de resposta ao Claude (spec da resposta §4.2, forma B de notch-resposta.html): a mensagem em duas linhas com
-/// "ver tudo", a caixa de resposta e a barra de 60 s, que para quando o Gustavo começa a digitar. O notch não pega foco;
+/// "ver tudo", a caixa de resposta e a barra de 30 s, que para quando o Gustavo começa a digitar. O notch não pega foco;
 /// ao clicar na caixa ele passa a pegar, e ao terminar a ficha devolve o foco à janela onde o Gustavo estava.
 internal sealed partial class JanelaNotch
 {

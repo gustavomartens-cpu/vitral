@@ -217,13 +217,13 @@ public sealed class NotchTests
     }
 
     [Fact]
-    public void Sessenta_segundos_sem_resposta_encerra_com_null()
+    public void Trinta_segundos_sem_resposta_encerra_com_null()
     {
         var e = Criar();
         var encerrados = new List<EscolhaPermissao?>();
         e.Encerrado += (_, x) => encerrados.Add(x?.Escolha);
         e.Pediu(P("1"));
-        Avancar(59.9, e);
+        Avancar(29.9, e);
         Assert.Equal(ModoNotch.Permissao, e.Modo);
         Avancar(0.2, e);
         Assert.Equal([(EscolhaPermissao?)null], encerrados);
@@ -255,11 +255,11 @@ public sealed class NotchTests
         var encerrados = new List<(string, EscolhaPermissao?)>();
         e.Encerrado += (p, x) => encerrados.Add((p.Id, x?.Escolha));
         e.Pediu(P("1"));
-        Avancar(50, e);
+        Avancar(20, e);
         e.Pediu(P("2"));
         Avancar(5, e);
         e.Respondeu("1", EscolhaPermissao.Permitir);
-        Avancar(54.9, e);
+        Avancar(24.9, e);
         Assert.DoesNotContain(("2", (EscolhaPermissao?)null), encerrados);
         Avancar(0.2, e);
         Assert.Contains(("2", (EscolhaPermissao?)null), encerrados);

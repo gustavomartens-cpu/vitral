@@ -520,7 +520,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         Pilula.Criar(texto, principal ? Pilula.Estilo.Principal : perigo ? Pilula.Estilo.Perigo : Pilula.Estilo.Contorno,
             () => { if (_pedidoMostrado is { } id) _estado.Respondeu(id, escolha); });
 
-    /// Textos e barra do pedido atual; a barra esvazia no tempo que falta dos 60 s.
+    /// Textos e barra do pedido atual; a barra esvazia no tempo que falta dos 30 s.
     private void AtualizarPedido()
     {
         bool confirmando = _estado.Confirmando;

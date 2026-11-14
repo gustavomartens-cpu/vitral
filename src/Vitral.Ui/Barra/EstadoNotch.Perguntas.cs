@@ -21,7 +21,7 @@ public sealed partial class EstadoNotch
     /// A pergunta múltipla tem ao menos uma marcada ("Enviar" ligado).
     public bool PodeEnviar => _marcadas.Count > 0;
 
-    /// O tempo de um pedido na fila: a pergunta do Claude pede leitura (5 min); a permissão, 60 s.
+    /// O tempo de um pedido na fila: a pergunta do Claude pede leitura (5 min); a permissão, 30 s.
     public static double Tempo(PedidoPermissao pedido) => EhPergunta(pedido) ? TempoPergunta : TempoPedido;
 
     private static bool EhPergunta(PedidoPermissao pedido) => pedido.Ferramenta == RegrasPerguntas.Ferramenta;
