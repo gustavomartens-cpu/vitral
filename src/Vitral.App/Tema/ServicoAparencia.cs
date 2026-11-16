@@ -98,7 +98,7 @@ internal sealed class ServicoAparencia : IControleAparencia
         d["TextoSobreAmbar"] = Pincel(Luminancia(v.Destaque) > 0.4 ? new CorArgb(255, 0x1B, 0x14, 0x06) : new CorArgb(255, 255, 255, 255));
         d["Linha"] = Pincel(v.Borda);
         d["Borda"] = Pincel(v.Borda);
-        d["BordaVidro"] = Pincel(v.Borda);
+        d["BordaVidro"] = Contorno(v);
         d["Superficie"] = Pincel(v.Texto.ComAlfa(15));
         d["SuperficieHover"] = Pincel(v.Texto.ComAlfa(26));
         d["Foco"] = Pincel(v.Texto.ComAlfa(0xB3)); // o contorno de foco segue o texto: some no tema claro se for branco
@@ -141,6 +141,19 @@ internal sealed class ServicoAparencia : IControleAparencia
         var p = new SolidColorBrush(Cor(c));
         p.Freeze();
         return p;
+    }
+
+    /// O contorno de vidro das ilhas, da doca e dos painéis (pesquisa visual §4, passo B). Escuro: o realce de cima cai
+    /// até 40% da altura e o resto fica fraco. Claro: fica fraco até 60% e escurece embaixo.
+    private static LinearGradientBrush Contorno(ValoresParte v)
+    {
+        var (cima, baixo) = (Cor(v.BordaCima), Cor(v.BordaBaixo));
+        var g = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+        g.GradientStops.Add(new GradientStop(cima, 0));
+        g.GradientStops.Add(v.TextoClaro ? new GradientStop(baixo, 0.4) : new GradientStop(cima, 0.6));
+        g.GradientStops.Add(new GradientStop(baixo, 1));
+        g.Freeze();
+        return g;
     }
 
     /// O botão principal das ilhas: um pouco mais claro em cima, mais escuro embaixo (como o âmbar de sempre).

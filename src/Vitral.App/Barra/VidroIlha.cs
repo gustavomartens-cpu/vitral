@@ -18,7 +18,7 @@ internal static partial class VidroIlha
     private const int WcaAccentPolicy = 19;
     private const int AccentDisabled = 0, AccentTransparentGradient = 2, AccentAcrylicBlurBehind = 4;
     private const int DwmwaUseImmersiveDarkMode = 20, DwmwaWindowCornerPreference = 33, DwmwaBorderColor = 34;
-    private const int DwmCorNenhuma = unchecked((int)0xFFFFFFFE), DwmCorPadrao = unchecked((int)0xFFFFFFFF);
+    private const int DwmCorNenhuma = unchecked((int)0xFFFFFFFE);
     private const int DwmwcpNaoArredondar = 1, DwmwcpRound = 2, DwmwcpRoundSmall = 3;
 
     [StructLayout(LayoutKind.Sequential)] private struct Accent { public int Estado, Flags; public uint Cor; public int Animacao; }
@@ -82,14 +82,17 @@ internal static partial class VidroIlha
             : v.Cantos switch { CantosParte.Retos => DwmwcpNaoArredondar, CantosParte.Suaves => DwmwcpRoundSmall, _ => DwmwcpRound };
         DwmSetWindowAttribute(h, DwmwaUseImmersiveDarkMode, ref escuro, sizeof(int));
         DwmSetWindowAttribute(h, DwmwaWindowCornerPreference, ref canto, sizeof(int));
+        // Sem a linha de 1 px que o Windows 11 desenha em volta da janela: cinza neutro (#303235 no escuro), por cima da
+        // borda do Vitral e clareando com o papel de parede (teste de 14/11, docs/pesquisa-visual-premium.md §2.4).
+        // A borda que fica é só a da casca, que segue a aparência.
+        int semBorda = DwmCorNenhuma;
+        DwmSetWindowAttribute(h, DwmwaBorderColor, ref semBorda, sizeof(int));
 
         if (SemVidro(janela))
         {
             // Quadro do DWM estendido e fundo transparente, sem acrílico: a janela fica invisível, só o conteúdo aparece.
             int semCanto = DwmwcpNaoArredondar;
             DwmSetWindowAttribute(h, DwmwaWindowCornerPreference, ref semCanto, sizeof(int));
-            int semBorda = DwmCorNenhuma; // o Windows 11 desenha uma linha de 1 px em volta da janela
-            DwmSetWindowAttribute(h, DwmwaBorderColor, ref semBorda, sizeof(int));
             if (HwndSource.FromHwnd(h)?.CompositionTarget is { } alvoTransparente) alvoTransparente.BackgroundColor = Colors.Transparent;
             var tudo = new Margens { Esq = -1, Dir = -1, Topo = -1, Base = -1 };
             DwmExtendFrameIntoClientArea(h, ref tudo);
@@ -99,12 +102,10 @@ internal static partial class VidroIlha
             casca.BorderThickness = new Thickness(0);
             return;
         }
-        if (janela.GetValue(BordaAntesProperty) is Thickness antes) // saiu da barra única: borda e linha do Windows de volta
+        if (janela.GetValue(BordaAntesProperty) is Thickness antes) // saiu da barra única: a borda da casca de volta
         {
             casca.BorderThickness = antes;
             janela.ClearValue(BordaAntesProperty);
-            int bordaPadrao = DwmCorPadrao;
-            DwmSetWindowAttribute(h, DwmwaBorderColor, ref bordaPadrao, sizeof(int));
         }
         bool vidro = v.Desfoque;
         var opaco = ServicoAparencia.Cor(v.Fundo with { A = 255 });
