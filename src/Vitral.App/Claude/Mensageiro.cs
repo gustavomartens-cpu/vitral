@@ -46,6 +46,18 @@ internal static partial class Mensageiro
         return _aVista.Value;
     }
 
+    /// Esta conversa, identificada pelo id dela, está aberta numa janela do Claude à vista. Diferente do <see cref="AVista"/>,
+    /// nunca cai na regra antiga do "app do Claude na frente": sem o id ou sem ler as janelas, o notch avisa (avisar a
+    /// mais é melhor que esconder a conversa de outra sessão).
+    private static bool SessaoAVistaNoApp()
+    {
+        var appId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp);
+        if (string.IsNullOrEmpty(appId)) return false;
+        var leitura = Task.Run(() => ConversaClaude.AVista(appId, JanelasDoClaude.Listar()));
+        try { return leitura.Wait(PrazoDaLeituraMs) && leitura.Result; }
+        catch (AggregateException) { return false; }
+    }
+
     /// A conversa desta sessão está aberta numa janela do Claude que é a da frente em algum monitor (com várias
     /// sessões, as outras continuam avisando). Sem o id da conversa (sessão de terminal), ou sem conseguir ler os
     /// endereços da janela, vale a regra antiga: o app do Claude na frente.
@@ -101,6 +113,8 @@ internal static partial class Mensageiro
             if (sid is null) return;
             if (PedidoPermissao.DeGancho(entrada) is { } lidoPedido)
             {
+                // Com a conversa aberta e à vista, a permissão e a pergunta ficam só no app (Gustavo, 15/11/2026).
+                if (SessaoAVistaNoApp()) return;
                 // A conversa no app do Claude, para "Responder na conversa" abrir exatamente ela.
                 var pedido = lidoPedido with { AppId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp) };
                 // Sem resposta (tempo, Vitral fechado): não escreve nada e o Claude segue o pedido normal dele.
@@ -114,7 +128,7 @@ internal static partial class Mensageiro
             }
             if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !AVista()) is not { } lido) return;
             // A conversa no app do Claude (herdada da sessão), para o clique no notch abrir exatamente ela.
-            var aviso = lido with { AppId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp) };
+            var aviso = lido with { AppId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp), AVista = SessaoAVistaNoApp() };
             // Fora do app, o Stop vira ficha de resposta e segura a sessão até o texto (spec da resposta §3.3); sem
             // texto (tempo, Esc, Vitral fechado), não escreve nada e a sessão termina normal.
             if (segurar && PedidoResposta.DeAviso(aviso, DateTime.Now) is { } ficha)

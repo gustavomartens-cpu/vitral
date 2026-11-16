@@ -278,6 +278,35 @@ public sealed class NotchTests
     }
 
     [Fact]
+    public void Aviso_da_conversa_a_vista_nao_desce()
+    {
+        // Com a conversa aberta e à vista no app, o notch não avisa (Gustavo, 15/11/2026).
+        var e = Criar();
+        e.Chegou(new AvisoClaude(TipoAviso.Terminou, "vitral", "feito") { AVista = true });
+        Assert.Equal(ModoNotch.Normal, e.Modo);
+        Assert.False(e.Pendente);
+        e.Chegou(new AvisoClaude(TipoAviso.Terminou, "sic", "feito"));
+        Assert.Equal(ModoNotch.Aviso, e.Modo); // a de outra conversa continua avisando
+    }
+
+    [Fact]
+    public void Aviso_da_conversa_a_vista_ainda_tira_o_pedido_dela()
+    {
+        var e = Criar();
+        e.Pediu(P("1", "vitral"));
+        e.Chegou(new AvisoClaude(TipoAviso.Terminou, "vitral", "feito") { AVista = true });
+        Assert.NotEqual(ModoNotch.Permissao, e.Modo);
+        Assert.NotEqual(ModoNotch.Aviso, e.Modo);
+    }
+
+    [Fact]
+    public void Aviso_da_conversa_a_vista_viaja_na_linha()
+    {
+        var a = new AvisoClaude(TipoAviso.Esperando, "vitral", "?") { AVista = true };
+        Assert.True(AvisoClaude.DeLinha(a.ParaLinha())!.AVista);
+    }
+
+    [Fact]
     public void Aviso_de_outra_sessao_nao_toma_o_notch()
     {
         var e = Criar();
