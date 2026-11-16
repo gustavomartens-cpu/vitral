@@ -29,7 +29,7 @@ internal static partial class MenuDoca
             mi.Click += (_, _) => item.Acao();
             menu.Items.Add(mi);
         }
-        menu.Opened += (_, _) => Efeitos.Assentar(menu, AssentarDe.Baixo, cascata: false);
+        menu.Opened += (_, _) => { TrazerParaFrente(menu); Efeitos.Assentar(menu, AssentarDe.Baixo, cascata: false); };
         menu.IsOpen = true;
         FecharAoClicarFora(menu);
     }
@@ -48,6 +48,15 @@ internal static partial class MenuDoca
         };
         menu.Closed += (_, _) => vigia.Stop();
         vigia.Start();
+    }
+
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool SetForegroundWindow(IntPtr h);
+
+    /// O WPF fecha o menu cerca de 1 s depois de aberto quando o Vitral não é o app ativo (a doca e as ilhas não pegam o
+    /// foco): a janela do menu vira a ativa, como fazem os menus da bandeja do Windows.
+    internal static void TrazerParaFrente(ContextMenu menu)
+    {
+        if (PresentationSource.FromVisual(menu) is System.Windows.Interop.HwndSource fonte) SetForegroundWindow(fonte.Handle);
     }
 
     private static bool AlgumBotao() =>
