@@ -2,6 +2,18 @@
 
 Considerações do Gustavo que ainda não viraram spec. Cada uma passa por conversa de desenho antes de virar plano.
 
+## Ideias de notch vindas do GitHub (aprovadas pelo Gustavo em 16/11/2026)
+
+Todas as 18 ideias de `docs/pesquisa-notch-repos.md` §4 foram aprovadas. Ordem sugerida, em blocos que não mexem nos
+mesmos arquivos ao mesmo tempo:
+
+1. **Movimento do notch** (V1 mola que guarda a velocidade, V2 orelhas animadas, V3 conteúdo que nasce do notch, V6
+   pulso, V7 hover até o topo da tela; depois V4 sombra e V5 janela do tamanho certo).
+2. **Avisos mais certeiros** (R4 só o que o Gustavo pediu, R5 ausente devolve ao app, R7 lembrar pergunta esquecida).
+3. **HUD de volume e brilho no notch** (R2), primeiro sem esconder o do Windows.
+4. **Notch fechado com atividades** (R1 Claude trabalhando, R3 mídia viva, R8 fila de prioridade), depois do bloco 1.
+5. **Depois:** R6 atalhos nas fichas, R9 cota do Claude, R10 bandeja de arquivos, R11 notch no monitor certo.
+
 ## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)
 
 - **Sobras das perguntas no notch** (revisão final):
