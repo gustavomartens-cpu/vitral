@@ -23,6 +23,9 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     /// A janela da frente não era do app do Claude quando o aviso saiu: um "esperando você" entra nas pendências.
     public bool ForaDoApp { get; init; }
 
+    /// A conversa do aviso estava aberta e à vista no app do Claude: o notch não avisa (o Gustavo já está olhando).
+    public bool AVista { get; init; }
+
     /// A conversa no app do Claude ("local_…"), para o clique abrir exatamente ela (ver <see cref="ConversaClaude"/>).
     public string? AppId { get; init; }
 
@@ -119,7 +122,7 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     [GeneratedRegex(@"\s+")] private static partial Regex Espacos();
 
     /// A linha que viaja pelo canal.
-    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId, Completo, ForaDoApp, AppId), OpcoesLinha);
+    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId, Completo, ForaDoApp, AppId, AVista), OpcoesLinha);
 
     public static AvisoClaude? DeLinha(string? linha)
     {
@@ -128,10 +131,11 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
         {
             var l = JsonSerializer.Deserialize<Linha>(linha, OpcoesLinha);
             return l is { Sessao: not null, Texto: not null } && Enum.TryParse<TipoAviso>(l.Tipo, out var tipo)
-                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId, Completo = l.Completo, ForaDoApp = l.ForaDoApp, AppId = l.AppId } : null;
+                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId, Completo = l.Completo, ForaDoApp = l.ForaDoApp, AppId = l.AppId, AVista = l.AVista } : null;
         }
         catch (JsonException) { return null; }
     }
 
-    private sealed record Linha(string? Tipo, string? Sessao, string? Texto, string? SessaoId, string? Completo, bool ForaDoApp, string? AppId);
+    private sealed record Linha(string? Tipo, string? Sessao, string? Texto, string? SessaoId, string? Completo, bool ForaDoApp, string? AppId,
+        bool AVista = false);
 }

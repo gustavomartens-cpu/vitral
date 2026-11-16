@@ -72,6 +72,14 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
             }
         if (atual is not null && PedidoAtual is { } seguinte && seguinte != atual) _mostrou = agora(); // outro tomou a ficha
         AvisoNasRespostas(aviso);
+        // A conversa está aberta e à vista no app: o aviso já fez o trabalho dele (tirou o pedido e a ficha dela) e não
+        // desce nem acende o ponto (Gustavo, 15/11/2026).
+        if (aviso.AVista && aviso.Tipo != TipoAviso.Atualizacao)
+        {
+            if (Modo == ModoNotch.Permissao && _fila.Count == 0 && !Confirmando) Avancar(semResposta: false);
+            else Mudou?.Invoke();
+            return;
+        }
         Aviso = aviso;
         AvisoEhDaAgenda = false; // o do Claude toma o aviso; o da agenda, se havia, fica no lembrete
         AvisoNotificacaoAtual = null; // a notificação na tela sai (continua no painel do sino)
