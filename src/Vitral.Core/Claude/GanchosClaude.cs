@@ -13,7 +13,7 @@ public static class GanchosClaude
 
     private static readonly string[] Eventos = ["Stop", "Notification", "PermissionRequest"];
 
-    /// O pedido de permissão espera o notch por até 60 s, e a pergunta do Claude por até 5 min (spec das perguntas §4):
+    /// O pedido de permissão espera o notch por até 30 s, e a pergunta do Claude por até 5 min (spec das perguntas §4):
     /// o Claude não pode cortar antes.
     public const int TempoPermissao = 330;
 

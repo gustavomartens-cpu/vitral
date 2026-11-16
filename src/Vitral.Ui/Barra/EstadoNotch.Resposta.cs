@@ -3,11 +3,11 @@ using Vitral.Core.Claude;
 namespace Vitral.Ui.Barra;
 
 /// A ficha de resposta ao Claude (spec da resposta §4.1): fila própria, atrás dos pedidos de permissão e na frente dos
-/// avisos; cada ficha tem 60 s desde que chegou, ou 15 min desde o primeiro caractere digitado. Sem texto (tempo, Esc,
+/// avisos; cada ficha tem 30 s desde que chegou, ou 15 min desde o primeiro caractere digitado. Sem texto (tempo, Esc,
 /// teto), a sessão vai para as <see cref="Pendencias"/>.
 public sealed partial class EstadoNotch
 {
-    public const double TempoResposta = 60, TetoDigitando = 15 * 60;
+    public const double TempoResposta = 30, TetoDigitando = 15 * 60;
 
     private sealed class Ficha(PedidoResposta pedido, DateTime chegou)
     {
@@ -27,7 +27,7 @@ public sealed partial class EstadoNotch
 
     private Ficha? FichaAtual => Modo == ModoNotch.Resposta && !ConfirmandoResposta && _respostas.Count > 0 ? _respostas[0] : null;
 
-    /// Quando a ficha atual chegou (a barra de 60 s conta daí).
+    /// Quando a ficha atual chegou (a barra de 30 s conta daí).
     public DateTime? ChegadaDaResposta => FichaAtual?.Chegou;
 
     /// O Gustavo começou a digitar na ficha atual: a barra para e vale o teto de 15 min.

@@ -66,7 +66,7 @@ internal sealed class CanalAvisos : IDisposable
             using var tempo = CancellationTokenSource.CreateLinkedTokenSource(parar);
             tempo.CancelAfter(TimeSpan.FromSeconds(2));
             var linha = await LerLinha(conexao, tempo.Token);
-            // Pedido de permissão (prazo do notch 60 s) e ficha de resposta (60 s, ou 15 min digitando): o notch decide;
+            // Pedido de permissão (prazo do notch 30 s; pergunta, 5 min) e ficha de resposta (30 s, ou 15 min digitando): o notch decide;
             // os limites aqui são só de segurança.
             if (PedidoPermissao.DeLinha(linha) is { } pedido)
             {

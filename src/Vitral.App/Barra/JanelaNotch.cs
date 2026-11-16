@@ -179,9 +179,42 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         Closed += (_, _) => { _tique.Stop(); _tiqueAgenda.Stop(); SoltarPedidos(); SoltarRespostas(); };
     }
 
-    /// Símbolo do Claude (a partícula com raios abertos), desenhado em vetor no laranja dele. Marca da Anthropic: uso
-    /// pessoal; se o Vitral for distribuído, trocar por um símbolo próprio (ideias-pendentes).
-    private static readonly DrawingImage SimboloClaude = CriarSimbolo();
+    /// O símbolo do Claude: o logo do próprio app do Claude instalado na máquina, lido do Windows na hora (nenhuma
+    /// imagem da marca vai no repositório); sem o app, o símbolo desenhado em vetor.
+    private static readonly ImageSource SimboloClaude = LogoDoAppDoClaude() ?? CriarSimbolo();
+
+    /// O app do Claude para Windows (pacote da Anthropic).
+    private const string AppDoClaude = "Claude_pzs8sxrjxfjjc!Claude";
+
+    private static ImageSource? LogoDoAppDoClaude()
+    {
+        try
+        {
+            // Fora da thread da interface: a leitura do WinRT é assíncrona e esta chamada acontece na criação do notch.
+            var leitura = Task.Run(async () =>
+            {
+                if (Windows.ApplicationModel.AppInfo.GetFromAppUserModelId(AppDoClaude)?.DisplayInfo?.GetLogo(new Windows.Foundation.Size(64, 64))
+                    is not { } logo) return null;
+                using var fluxo = await logo.OpenReadAsync();
+                using var copia = new System.IO.MemoryStream();
+                await System.IO.WindowsRuntimeStreamExtensions.AsStreamForRead(fluxo).CopyToAsync(copia);
+                return copia.ToArray();
+            });
+            if (!leitura.Wait(TimeSpan.FromSeconds(2)) || leitura.Result is not { Length: > 0 } bytes) return null;
+            var imagem = new System.Windows.Media.Imaging.BitmapImage();
+            imagem.BeginInit();
+            imagem.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            imagem.StreamSource = new System.IO.MemoryStream(bytes);
+            imagem.EndInit();
+            imagem.Freeze();
+            return imagem;
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            LogBarra.Erro("JanelaNotch.LogoDoClaude", e); // sem o app do Claude: o símbolo desenhado
+            return null;
+        }
+    }
 
     private static DrawingImage CriarSimbolo()
     {
@@ -520,7 +553,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         Pilula.Criar(texto, principal ? Pilula.Estilo.Principal : perigo ? Pilula.Estilo.Perigo : Pilula.Estilo.Contorno,
             () => { if (_pedidoMostrado is { } id) _estado.Respondeu(id, escolha); });
 
-    /// Textos e barra do pedido atual; a barra esvazia no tempo que falta dos 60 s.
+    /// Textos e barra do pedido atual; a barra esvazia no tempo que falta dos 30 s.
     private void AtualizarPedido()
     {
         bool confirmando = _estado.Confirmando;

@@ -31,12 +31,12 @@ public sealed class RespostaNotchTests
     }
 
     [Fact]
-    public void Sessenta_segundos_sem_digitar_encerra_sem_texto_e_vai_para_as_pendencias()
+    public void Trinta_segundos_sem_digitar_encerra_sem_texto_e_vai_para_as_pendencias()
     {
         var e = Criar();
         var fim = Encerradas(e);
         e.PediuResposta(R("1"));
-        Avancar(59.9, e);
+        Avancar(29.9, e);
         Assert.Equal(ModoNotch.Resposta, e.Modo);
         Avancar(0.2, e);
         Assert.Equal([("1", (string?)null)], fim);
@@ -51,7 +51,7 @@ public sealed class RespostaNotchTests
         var e = Criar();
         var fim = Encerradas(e);
         e.PediuResposta(R("1"));
-        Avancar(30, e);
+        Avancar(15, e);
         e.Digitou("1", "p");
         Assert.True(e.Digitando);
         Avancar(31, e);
@@ -258,7 +258,7 @@ public sealed class RespostaNotchTests
         var e = Criar();
         var fim = Encerradas(e);
         e.PediuResposta(R("1"));
-        Avancar(58, e);
+        Avancar(28, e);
         e.Focou("1");
         Assert.True(e.Digitando);
         Avancar(5, e);

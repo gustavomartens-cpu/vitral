@@ -44,7 +44,11 @@ public static class RegrasNotificacoes
     // alarmes, Teams), os avisos do próprio Windows e o próprio Vitral. O Claude é calado: os avisos dele vêm pelos ganchos
     // no notch, e o balão do Windows era repetição (pedido do Gustavo, 02/11).
     private static readonly string[] Excecoes =
-        ["Vitral_", "Vitral.Dev_", "Microsoft.YourPhone_", "Microsoft.WindowsAlarms_", "Windows.SystemToast.", "MSTeams_", "com.squirrel.Teams."];
+        ["Vitral_", "Vitral.Dev_", "Microsoft.YourPhone_", "Microsoft.WindowsAlarms_", "Windows.SystemToast.", "MSTeams_", "com.squirrel.Teams.",
+         "RealtekSemiconductorCorp.RealtekAudioControl_"]; // o "que dispositivo você conectou?" do fone (15/11)
+
+    /// Os calados pelo Vitral que hoje são exceção (a lista cresceu depois): devolvidos na hora, sem esperar a saída.
+    public static IReadOnlyList<string> ExcecoesCaladas(IEnumerable<string>? calados) => calados?.Where(NuncaCalar).ToList() ?? [];
 
     private static bool NuncaCalar(string appId) => Excecoes.Any(e => appId.StartsWith(e, StringComparison.OrdinalIgnoreCase));
 

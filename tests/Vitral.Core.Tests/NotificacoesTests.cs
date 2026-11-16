@@ -97,6 +97,22 @@ public sealed class NotificacoesTests
         Assert.Empty(RegrasNotificacoes.ParaDevolver(null));
     }
 
+    private const string Realtek = "RealtekSemiconductorCorp.RealtekAudioControl_dt26b99r8h8gj!App";
+
+    [Fact]
+    public void Realtek_nao_e_calado()
+    {
+        // O "que dispositivo você conectou?" do fone precisa dos botões do balão (Gustavo, 15/11/2026).
+        Assert.Empty(RegrasNotificacoes.ParaCalar([(Realtek, null)]));
+    }
+
+    [Fact]
+    public void Calado_que_virou_excecao_volta_na_hora()
+    {
+        Assert.Equal([Realtek], RegrasNotificacoes.ExcecoesCaladas([Realtek, "Chrome"]));
+        Assert.Empty(RegrasNotificacoes.ExcecoesCaladas(null));
+    }
+
     [Fact]
     public void Devolve_tambem_os_marcados_no_registro()
     {

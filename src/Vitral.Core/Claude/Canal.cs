@@ -8,14 +8,14 @@ public static class Canal
 {
     public static string Nome(string sid) => $"Vitral-Avisos-{sid}";
 
-    /// Quanto o mensageiro espera a resposta de um pedido: um pouco mais que os 60 s do notch, para o notch decidir
-    /// antes (senão um clique no último segundo mostraria "Permitido" sem efeito). Cabe no timeout 75 do gancho.
+    /// Quanto o mensageiro espera a resposta de um pedido: mais que os 30 s do notch, para o notch decidir
+    /// antes (senão um clique no último segundo mostraria "Permitido" sem efeito). Cabe no timeout 330 do gancho.
     public const int EsperaPedidoMs = 62_000;
 
     /// O mesmo para uma pergunta do Claude: os 5 min da ficha e um pouco mais, abaixo do timeout 330 do gancho.
     public const int EsperaPerguntaMs = 302_000;
 
-    /// Quanto o mensageiro espera o texto de uma ficha de resposta: o notch decide (60 s, ou 15 min digitando); isto é
+    /// Quanto o mensageiro espera o texto de uma ficha de resposta: o notch decide (30 s, ou 15 min digitando); isto é
     /// só o limite, abaixo do timeout 1200 do gancho Stop.
     public const int EsperaRespostaMs = 1_140_000;
 

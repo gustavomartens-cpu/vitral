@@ -1,0 +1,16 @@
+quando;modo;estado_antes;i;ok;etapa;ms;estado_depois;foco_devolvido;detalhe
+2026-11-14T11:28:43;fundo;minimizada;1;True;enviado;1529;minimizada;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:28:46;fundo;minimizada;2;True;enviado;1521;minimizada;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:28:52;fundo;minimizada;3;False;escrever;4272;minimizada;True;caixa ficou com ''
+2026-11-14T11:28:56;fundo;minimizada;4;True;enviado;1704;minimizada;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:28:59;fundo;minimizada;5;True;enviado;1358;minimizada;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:02;fundo;minimizada;6;True;enviado;1421;minimizada;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:05;fundo;minimizada;7;True;enviado;1646;minimizada;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:08;fundo;minimizada;8;True;enviado;1656;minimizada;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:12;fundo;minimizada;9;True;enviado;1648;minimizada;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:15;fundo;minimizada;10;True;enviado;1626;minimizada;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:35;fundo;frente;1;True;enviado;1310;fundo;False;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:38;fundo;fundo;2;True;enviado;1208;fundo;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:41;fundo;fundo;3;True;enviado;1504;fundo;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:44;fundo;fundo;4;True;enviado;1330;fundo;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
+2026-11-14T11:29:47;fundo;fundo;5;True;enviado;1318;fundo;True;iguais=1 abriu=PostMessage:Chrome_WidgetWin_0 escreveu=Chrome_WidgetWin_0 enviou=Invoke
