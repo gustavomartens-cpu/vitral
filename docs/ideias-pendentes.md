@@ -9,7 +9,10 @@ mesmos arquivos ao mesmo tempo:
 
 1. **Movimento do notch** (V1 mola que guarda a velocidade, V2 orelhas animadas, V3 conteúdo que nasce do notch, V6
    pulso, V7 hover até o topo da tela; depois V4 sombra e V5 janela do tamanho certo).
-2. **Avisos mais certeiros** (R4 só o que o Gustavo pediu, R5 ausente devolve ao app, R7 lembrar pergunta esquecida).
+2. ~~**Avisos mais certeiros**~~ (R4 só o que o Gustavo pediu, R5 ausente devolve ao app, R7 lembrar pergunta
+   esquecida): feito na 0.18.0. Ficou para depois: o pulso da forma no lembrete da pergunta espera o V6 do bloco 1
+   (o evento `EstadoNotch.PerguntaEsquecida` já existe); a espera de ~6 s antes do "terminou" não entrou (o gancho
+   Stop já marca o fim do turno); o tempo de ausência (5 min) é fixo, sem opção nas Configurações.
 3. **HUD de volume e brilho no notch** (R2), primeiro sem esconder o do Windows.
 4. **Notch fechado com atividades** (R1 Claude trabalhando, R3 mídia viva, R8 fila de prioridade), depois do bloco 1.
 5. **Depois:** R6 atalhos nas fichas, R9 cota do Claude, R10 bandeja de arquivos, R11 notch no monitor certo.
@@ -128,4 +131,4 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   não cai ao clicar no outro monitor e balão do app do Claude calado (0.15.1), borda invisível da janela vizinha sem
   derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2). Painel de controles na barra do topo
   (Bluetooth e aparelhos, modo avião, não perturbe que também cala o notch, luz noturna, brilho por tela) e microfone
-  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2), perguntas do Claude no notch com as opções (0.17.0), aviso do fone (Realtek) de volta, pergunta que não cai com o aviso do Claude, fichas de 30 s e logo do app do Claude (0.17.2), conversa à vista sem aviso no notch (0.17.3).
+  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2), perguntas do Claude no notch com as opções (0.17.0), aviso do fone (Realtek) de volta, pergunta que não cai com o aviso do Claude, fichas de 30 s e logo do app do Claude (0.17.2), conversa à vista sem aviso no notch (0.17.3), avisos do Claude só do que foi pedido, uma vez por mensagem, pedido direto para o app com o Gustavo ausente e lembrete da pergunta esquecida (0.18.0).
