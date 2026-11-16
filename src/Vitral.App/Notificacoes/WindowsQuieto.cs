@@ -39,6 +39,7 @@ internal sealed class WindowsQuieto(ServicoConfig config)
             try
             {
                 using var raiz = Registry.CurrentUser.CreateSubKey(Raiz);
+                DevolverExcecoes(raiz);
                 var apps = raiz.GetSubKeyNames().Concat(novos).Distinct(StringComparer.OrdinalIgnoreCase)
                     .Select(a => { using var k = raiz.OpenSubKey(a); return (a, k?.GetValue("ShowBanner") as int?); }).ToList();
                 var calar = RegrasNotificacoes.ParaCalar(apps);
@@ -72,6 +73,20 @@ internal sealed class WindowsQuieto(ServicoConfig config)
             }
             catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("WindowsQuieto.Devolver", e); }
         }
+    }
+
+    /// Um app calado por uma versão anterior que hoje é exceção (o Realtek, que pergunta o tipo do fone conectado) volta
+    /// na hora: só quando a marca do Vitral diz que fomos nós (um ShowBanner do usuário fica).
+    private void DevolverExcecoes(RegistryKey raiz)
+    {
+        var excecoes = RegrasNotificacoes.ExcecoesCaladas(Marcados(raiz).Where(m => m.Item2 == 0).Select(m => m.Item1));
+        if (excecoes.Count == 0) return;
+        foreach (var app in excecoes) Apagar(raiz, app, "ShowBanner", Marca);
+        config.Atualizar(c => c with
+        {
+            BannersDesligados = c.BannersDesligados?.Where(a => !excecoes.Contains(a, StringComparer.OrdinalIgnoreCase)).ToList(),
+        });
+        Barra.LogBarra.Info($"Balão devolvido: {string.Join(", ", excecoes)}");
     }
 
     /// Os apps com a marca e o ShowBanner atual. Uma chave ilegível (de qualquer app) fica de fora, sem impedir a
