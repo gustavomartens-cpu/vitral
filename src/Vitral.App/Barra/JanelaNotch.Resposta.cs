@@ -52,7 +52,7 @@ internal sealed partial class JanelaNotch
     {
         var espera = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         _esperandoResposta[pedido.Id] = espera;
-        _estado.PediuResposta(pedido);
+        ComPulso(() => _estado.PediuResposta(pedido));
         return espera.Task;
     }
 

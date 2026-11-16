@@ -150,7 +150,7 @@ public sealed class PreviaAparencia : FrameworkElement
 
         // O notch com o mesmo desenho da tela (orelhas, ilha), na escala da prévia.
         var fn = fo.Notch;
-        double larguraNotch = 132 * s, alturaNotch = fn.Altura * k * s, orelha = fn.Orelha * k * s;
+        double larguraNotch = 132 * s, alturaNotch = fn.Altura * k * s, orelha = Core.Formas.ResolverFormas.OrelhaNaAltura(fn, fn.Altura) * k * s;
         var notch = new Rect(w / 2 - larguraNotch / 2, fn.Afastamento * k * s, larguraNotch, alturaNotch);
         var formaNotch = Geometry.Parse(Ui.Barra.FormaNotch.Caminho(larguraNotch, alturaNotch, fn.Raio * k * s, orelha, fn.CantosDeCima)).CloneCurrentValue();
         formaNotch.Transform = new TranslateTransform(notch.X - orelha, notch.Y);

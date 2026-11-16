@@ -82,4 +82,21 @@ public sealed class FormasTests
         Assert.Equal(54, R(new FormasPerfil(Notch: ilhaGrande)).ReservaTopo);
         Assert.Equal(72, R(new FormasPerfil(new FormasDoca(Icones: TamanhoIcones.Grande))).Doca.Reserva);
     }
+    [Fact]
+    public void Orelha_cresce_com_a_altura_a_partir_do_perfil()
+    {
+        var n = R(null).Notch; // encaixado normal: orelha 16, altura 34
+        Assert.Equal(10, ResolverFormas.OrelhaNaAltura(n, n.Altura));
+        Assert.Equal(20, ResolverFormas.OrelhaNaAltura(n, 112));
+        Assert.Equal(20, ResolverFormas.OrelhaNaAltura(n, 300)); // as fichas maiores ficam na de cima
+        Assert.Equal(15, ResolverFormas.OrelhaNaAltura(n, (34 + 112) / 2.0));
+        Assert.Equal(10, ResolverFormas.OrelhaNaAltura(n, 20)); // abaixo do repouso não encolhe mais
+    }
+
+    [Fact]
+    public void Sem_orelhas_no_perfil_continua_sem()
+    {
+        var ilha = R(new FormasPerfil(Notch: new FormasNotch(FormatoNotch.Ilha))).Notch;
+        Assert.Equal(0, ResolverFormas.OrelhaNaAltura(ilha, 112));
+    }
 }

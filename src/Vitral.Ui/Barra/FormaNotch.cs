@@ -10,8 +10,11 @@ public static class NotchMedidas
     public const double AlturaPermissao = 112, LarguraMaxPermissao = 420, RaioPermissao = 24;
     /// Ficha de resposta (spec da resposta §4.2): largura fixa; a altura acompanha a mensagem, até o máximo.
     public const double LarguraResposta = 460, AlturaMaxResposta = 300;
-    public const double JanelaLargura = LarguraMaxCorpo + 2 * FormaNotch.Orelha;
-    public const double JanelaAltura = PosicaoIlhas.NotchSobra + AlturaMaxResposta;
+    /// A orelha maior (a das fichas, V2) cabe dos dois lados do corpo mais largo.
+    public const double OrelhaMaxima = FormaNotch.Orelha * Core.Formas.ResolverFormas.EscalaOrelhaAberta;
+    public const double JanelaLargura = LarguraMaxCorpo + 2 * OrelhaMaxima;
+    /// Folga embaixo para o repique e o pulso da ficha mais alta (V1, V6) e para o afastamento do formato Ilha (V7).
+    public const double JanelaAltura = PosicaoIlhas.NotchSobra + AlturaMaxResposta + 16;
 }
 
 /// O desenho do notch: o corpo com os cantos de baixo arredondados e as duas orelhas (quarto de círculo côncavo) que o
