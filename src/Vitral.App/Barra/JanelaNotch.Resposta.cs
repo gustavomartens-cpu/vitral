@@ -52,8 +52,9 @@ internal sealed partial class JanelaNotch
     {
         var espera = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         _esperandoResposta[pedido.Id] = espera;
-        _estado.PediuResposta(pedido);
-        return espera.Task;
+        if (_estado.PediuResposta(pedido)) return espera.Task;
+        _esperandoResposta.Remove(pedido.Id); // mensagem já avisada (R4): a sessão é solta na hora
+        return Task.FromResult<string?>(null);
     }
 
     /// Sem notch visível: a sessão vai direto para as pendências.

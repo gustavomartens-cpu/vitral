@@ -34,9 +34,20 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     /// O id da sessão do Claude (session_id): descarta só os pedidos dessa mesma sessão, mesmo com outras na pasta.
     public string? SessaoId { get; init; }
 
-    /// O que o gancho recebe na entrada padrão. <paramref name="lerFimDoArquivo"/> devolve os últimos 64 KB da
-    /// transcrição (ou null). Evento que não interessa, JSON vazio ou com defeito: null.
-    public static AvisoClaude? DeGancho(string json, Func<string, string?> lerFimDoArquivo, bool foraDoApp = false)
+    /// De onde veio o turno que terminou (só no Stop; ver <see cref="TurnoClaude"/>): null quando não deu para saber.
+    public string? Origem { get; init; }
+
+    /// A mensagem que abriu o turno (o uuid dela na transcrição): o notch avisa uma vez só por mensagem.
+    public string? Mensagem { get; init; }
+
+    /// Fim de um turno que o Gustavo não pediu (tarefa em segundo plano, subagente, outra sessão, continuação
+    /// automática): não desce no notch. Sem a origem (versão do Claude Code sem o campo), avisa como antes.
+    public bool DeOutraOrigem => Tipo == TipoAviso.Terminou && Origem is not null && Origem != TurnoClaude.Humano;
+
+    /// O que o gancho recebe na entrada padrão. <paramref name="lerFimDoArquivo"/> devolve o fim da transcrição (ou
+    /// null); <paramref name="lerMais"/>, um fim maior, lido só quando o primeiro não alcança a mensagem que abriu o
+    /// turno. Evento que não interessa, JSON vazio ou com defeito: null.
+    public static AvisoClaude? DeGancho(string json, Func<string, string?> lerFimDoArquivo, bool foraDoApp = false, Func<string, string?>? lerMais = null)
     {
         if (string.IsNullOrWhiteSpace(json)) return null;
         try
@@ -56,14 +67,21 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
             if (string.IsNullOrEmpty(sessao)) sessao = "Claude";
             // A última resposta do Claude: o resumo do Stop e, nos dois eventos, a mensagem inteira.
             string? resposta = null;
+            TurnoClaude? turno = null;
             if (Campo(raiz, "transcript_path") is { } caminho && lerFimDoArquivo(caminho) is { } trecho)
+            {
                 resposta = UltimaRespostaDoAssistente(trecho);
+                if (tipo == TipoAviso.Terminou)
+                    turno = TurnoClaude.Ultimo(trecho) ?? (lerMais?.Invoke(caminho) is { } maior ? TurnoClaude.Ultimo(maior) : null);
+            }
             var texto = tipo == TipoAviso.Esperando ? Campo(raiz, "message") ?? "" : resposta ?? "";
             return new AvisoClaude(tipo.Value, sessao, Encurtar(texto))
             {
                 SessaoId = Campo(raiz, "session_id"),
                 Completo = string.IsNullOrEmpty(resposta) ? null : Completar(resposta),
                 ForaDoApp = foraDoApp,
+                Origem = turno?.Origem,
+                Mensagem = turno?.Mensagem,
             };
         }
         catch (JsonException) { return null; }
@@ -122,7 +140,7 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     [GeneratedRegex(@"\s+")] private static partial Regex Espacos();
 
     /// A linha que viaja pelo canal.
-    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId, Completo, ForaDoApp, AppId, AVista), OpcoesLinha);
+    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId, Completo, ForaDoApp, AppId, AVista, Origem, Mensagem), OpcoesLinha);
 
     public static AvisoClaude? DeLinha(string? linha)
     {
@@ -131,11 +149,11 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
         {
             var l = JsonSerializer.Deserialize<Linha>(linha, OpcoesLinha);
             return l is { Sessao: not null, Texto: not null } && Enum.TryParse<TipoAviso>(l.Tipo, out var tipo)
-                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId, Completo = l.Completo, ForaDoApp = l.ForaDoApp, AppId = l.AppId, AVista = l.AVista } : null;
+                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId, Completo = l.Completo, ForaDoApp = l.ForaDoApp, AppId = l.AppId, AVista = l.AVista, Origem = l.Origem, Mensagem = l.Mensagem } : null;
         }
         catch (JsonException) { return null; }
     }
 
     private sealed record Linha(string? Tipo, string? Sessao, string? Texto, string? SessaoId, string? Completo, bool ForaDoApp, string? AppId,
-        bool AVista = false);
+        bool AVista = false, string? Origem = null, string? Mensagem = null);
 }

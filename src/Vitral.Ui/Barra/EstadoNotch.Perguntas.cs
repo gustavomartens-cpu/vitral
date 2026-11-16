@@ -7,9 +7,15 @@ namespace Vitral.Ui.Barra;
 /// a resposta sai na última.
 public sealed partial class EstadoNotch
 {
-    public const double TempoPergunta = 300;
+    /// LembretePergunta: a pergunta na ficha sem resposta há 90 s ganha um lembrete (R7 da pesquisa de notches).
+    public const double TempoPergunta = 300, LembretePergunta = 90;
 
     private readonly Dictionary<string, string> _respostasDaPergunta = [];
+    private readonly HashSet<string> _lembradas = new(StringComparer.Ordinal);
+
+    /// A pergunta da ficha segue sem resposta há <see cref="LembretePergunta"/> (R7): uma vez por pergunta, e nunca com
+    /// o "Não perturbe", com o mouse em cima ou com a resposta já começada (o Gustavo está nela).
+    public event Action<PedidoPermissao>? PerguntaEsquecida;
     private readonly HashSet<string> _marcadas = new(StringComparer.Ordinal);
 
     /// Qual pergunta do pedido está na ficha (0 = a primeira).
@@ -72,6 +78,15 @@ public sealed partial class EstadoNotch
             return true;
         }
         return Responder(id, new RespostaPedido(EscolhaPermissao.Permitir, new Dictionary<string, string>(_respostasDaPergunta))) is not null;
+    }
+
+    /// Do Tique: o lembrete da pergunta esquecida. Conta desde a chegada, então uma pergunta que ficou atrás de uma
+    /// permissão é lembrada logo que volta à ficha, se já passou o tempo.
+    private void TiquePergunta(DateTime t)
+    {
+        if (PedidoAtual is not { } p || !EhPergunta(p) || _mouse || PerguntaAtual > 0 || _marcadas.Count > 0) return;
+        if ((t - _fila[0].Chegou).TotalSeconds < LembretePergunta || !_lembradas.Add(p.Id)) return;
+        if (!NaoPerturbe) PerguntaEsquecida?.Invoke(p); // com o "Não perturbe", a vez dela passa calada
     }
 
     private void ZerarPergunta()
