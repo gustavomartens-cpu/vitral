@@ -193,7 +193,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             // Fora da thread da interface: a leitura do WinRT é assíncrona e esta chamada acontece na criação do notch.
             var leitura = Task.Run(async () =>
             {
-                if (Windows.ApplicationModel.AppInfo.GetFromAppUserModelId(AppDoClaude)?.DisplayInfo?.GetLogo(new Windows.Foundation.Size(64, 64))
+                if (Windows.ApplicationModel.AppInfo.GetFromAppUserModelId(AppDoClaude)?.DisplayInfo?.GetLogo(new Windows.Foundation.Size(96, 96))
                     is not { } logo) return null;
                 using var fluxo = await logo.OpenReadAsync();
                 using var copia = new System.IO.MemoryStream();
@@ -207,13 +207,40 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             imagem.StreamSource = new System.IO.MemoryStream(bytes);
             imagem.EndInit();
             imagem.Freeze();
-            return imagem;
+            return SemMargem(imagem);
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
             LogBarra.Erro("JanelaNotch.LogoDoClaude", e); // sem o app do Claude: o símbolo desenhado
             return null;
         }
+    }
+
+    /// O logo do app vem com margem transparente em volta (o desenho ocupava uns 10 px dos 18): corta a margem para o
+    /// símbolo preencher o espaço dele no notch.
+    private static System.Windows.Media.Imaging.BitmapSource SemMargem(System.Windows.Media.Imaging.BitmapSource imagem)
+    {
+        var bgra = new System.Windows.Media.Imaging.FormatConvertedBitmap(imagem, PixelFormats.Bgra32, null, 0);
+        int largura = bgra.PixelWidth, altura = bgra.PixelHeight, passo = largura * 4;
+        var pixels = new byte[passo * altura];
+        bgra.CopyPixels(pixels, passo, 0);
+        int esquerda = largura, topo = altura, direita = -1, baixo = -1;
+        for (int y = 0; y < altura; y++)
+            for (int x = 0; x < largura; x++)
+                if (pixels[y * passo + x * 4 + 3] > 16) // alfa: o que se vê
+                {
+                    esquerda = Math.Min(esquerda, x); direita = Math.Max(direita, x);
+                    topo = Math.Min(topo, y); baixo = Math.Max(baixo, y);
+                }
+        if (direita < 0) return imagem; // toda transparente: fica como veio
+        // Quadrado, centrado no desenho, para o símbolo não esticar.
+        int lado = Math.Max(direita - esquerda, baixo - topo) + 1;
+        int x0 = Math.Clamp((esquerda + direita + 1 - lado) / 2, 0, Math.Max(0, largura - lado));
+        int y0 = Math.Clamp((topo + baixo + 1 - lado) / 2, 0, Math.Max(0, altura - lado));
+        var recorte = new System.Windows.Media.Imaging.CroppedBitmap(bgra,
+            new Int32Rect(x0, y0, Math.Min(lado, largura - x0), Math.Min(lado, altura - y0)));
+        recorte.Freeze();
+        return recorte;
     }
 
     private static DrawingImage CriarSimbolo()
@@ -263,10 +290,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         if (IsLoaded) Ajustar(animar: false);
     }
 
-    internal static Image IconeClaude(double tamanho) => new()
+    internal static Image IconeClaude(double tamanho)
     {
-        Width = tamanho, Height = tamanho, Source = SimboloClaude, VerticalAlignment = VerticalAlignment.Center,
-    };
+        var icone = new Image { Width = tamanho, Height = tamanho, Source = SimboloClaude, VerticalAlignment = VerticalAlignment.Center };
+        RenderOptions.SetBitmapScalingMode(icone, BitmapScalingMode.HighQuality); // o logo do app, reduzido, sem serrilhado
+        return icone;
+    }
 
     private void MontarAviso()
     {
@@ -302,7 +331,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     /// Lateral esquerda (spec §3.4): o Claude, com o aviso pendente se houver.
     private Border MontarEsquerda()
     {
-        var icone = IconeClaude(18);
+        var icone = IconeClaude(20);
         icone.Margin = new Thickness(0, 0, 8, 0);
         _esquerdaSessao.SetResourceReference(TextBlock.ForegroundProperty, "TextoSecundario");
         var textos = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
