@@ -733,6 +733,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         var antes = _estado.Modo;
         chegada();
         if (antes is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta) || _estado.Modo != antes) return;
+        Pulsar();
+    }
+
+    /// O pulso curto da forma (V6), no máximo um a cada 0,4 s; também lembra a pergunta esquecida (R7).
+    private void Pulsar()
+    {
         if (!Movimento.Ligado || !IsLoaded || DateTime.Now - _ultimoPulso < TimeSpan.FromMilliseconds(400)) return;
         _ultimoPulso = DateTime.Now;
         _largura.Pulsar(20);

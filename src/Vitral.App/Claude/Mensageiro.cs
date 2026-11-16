@@ -13,7 +13,8 @@ internal static partial class Mensageiro
 {
     // A entrada inteira de um pedido de permissão pode ser grande (um Write com o arquivo todo): cortada, viraria JSON
     // inválido e o pedido não chegaria ao notch. Da transcrição bastam os últimos 256 KB (a resposta inteira do Claude).
-    private const int LimiteEntrada = 8 * 1024 * 1024, Limite = 256 * 1024;
+    // Num turno longo, a mensagem que o abriu (com a origem, R4) pode estar antes disso: aí lê até 4 MB.
+    private const int LimiteEntrada = 8 * 1024 * 1024, Limite = 256 * 1024, LimiteTurno = 4 * 1024 * 1024;
 
     [LibraryImport("user32.dll")] private static partial IntPtr GetForegroundWindow();
     [LibraryImport("user32.dll")] private static partial uint GetWindowThreadProcessId(IntPtr h, out uint processo);
@@ -81,7 +82,32 @@ internal static partial class Mensageiro
     public static bool SegurarStop(string entrada) =>
         entrada.Contains("\"Stop\"", StringComparison.Ordinal) && Segurar.NoStop(entrada, AVista(),
             Segurar.SessaoComGente(Environment.GetEnvironmentVariable("CLAUDE_CODE_ENTRYPOINT"), Environment.GetEnvironmentVariable("CLAUDE_CODE_SESSION_ATTENDED")),
-            GanchoComTempo());
+            GanchoComTempo(), turnoDoGustavo: LerAviso(entrada)?.DeOutraOrigem != true);
+
+    private static (string Entrada, AvisoClaude? Aviso)? _lido;
+
+    /// O aviso do Stop ou do Notification, com a transcrição lida uma vez só por gancho (o SegurarStop e o Executar
+    /// usam o mesmo).
+    private static AvisoClaude? LerAviso(string entrada)
+    {
+        if (_lido is { } l && ReferenceEquals(l.Entrada, entrada)) return l.Aviso;
+        var aviso = AvisoClaude.DeGancho(entrada, c => LerFim(c, Limite), lerMais: c => LerFim(c, LimiteTurno));
+        _lido = (entrada, aviso);
+        return aviso;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct UltimoUso { public uint Tamanho; public uint Quando; }
+
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool GetLastInputInfo(ref UltimoUso info);
+
+    /// Há quanto tempo não há teclado nem mouse nesta sessão do Windows (null se não deu para ler).
+    private static TimeSpan? SemUso()
+    {
+        var info = new UltimoUso { Tamanho = (uint)Marshal.SizeOf<UltimoUso>() };
+        if (!GetLastInputInfo(ref info)) return null;
+        return TimeSpan.FromMilliseconds(unchecked((uint)Environment.TickCount - info.Quando)); // as duas voltam a zero a cada 49,7 dias
+    }
 
     /// O settings.json do Claude já tem o Stop com o tempo da resposta (a caixa foi religada depois da 0.9.0).
     private static bool GanchoComTempo()
@@ -115,6 +141,9 @@ internal static partial class Mensageiro
             {
                 // Com a conversa aberta e à vista, a permissão e a pergunta ficam só no app (Gustavo, 15/11/2026).
                 if (SessaoAVistaNoApp()) return;
+                // O Gustavo saiu da mesa (R5): o pedido não espera o notch e vai na hora para o app do Claude, que o
+                // guarda até a volta (o "esperando você" do Claude vira pendência no notch).
+                if (Ausencia.Ausente(SemUso())) return;
                 // A conversa no app do Claude, para "Responder na conversa" abrir exatamente ela.
                 var pedido = lidoPedido with { AppId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp) };
                 // Sem resposta (tempo, Vitral fechado): não escreve nada e o Claude segue o pedido normal dele.
@@ -126,9 +155,11 @@ internal static partial class Mensageiro
                 Escrever(saida);
                 return;
             }
-            if (AvisoClaude.DeGancho(entrada, LerFim, foraDoApp: !AVista()) is not { } lido) return;
-            // A conversa no app do Claude (herdada da sessão), para o clique no notch abrir exatamente ela.
-            var aviso = lido with { AppId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp), AVista = SessaoAVistaNoApp() };
+            if (LerAviso(entrada) is not { } lido) return;
+            // A conversa no app do Claude (herdada da sessão), para o clique no notch abrir exatamente ela. O fim de um
+            // turno que o Gustavo não pediu (R4) segue pelo canal mesmo assim: tira do notch o pedido e a ficha da
+            // sessão, que foram resolvidos, sem descer.
+            var aviso = lido with { ForaDoApp = !AVista(), AppId = Environment.GetEnvironmentVariable(ConversaClaude.VariavelDoApp), AVista = SessaoAVistaNoApp() };
             // Fora do app, o Stop vira ficha de resposta e segura a sessão até o texto (spec da resposta §3.3); sem
             // texto (tempo, Esc, Vitral fechado), não escreve nada e a sessão termina normal.
             if (segurar && PedidoResposta.DeAviso(aviso, DateTime.Now) is { } ficha)
@@ -164,13 +195,13 @@ internal static partial class Mensageiro
         return leitura.Wait(espera) ? leitura.Result : "";
     }
 
-    /// Os últimos 64 KB da transcrição (o Claude continua escrevendo nela: abre compartilhado).
-    private static string? LerFim(string caminho)
+    /// Os últimos <paramref name="limite"/> bytes da transcrição (o Claude continua escrevendo nela: abre compartilhado).
+    private static string? LerFim(string caminho, int limite)
     {
         try
         {
             using var f = new FileStream(caminho, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-            if (f.Length > Limite) f.Seek(-Limite, SeekOrigin.End);
+            if (f.Length > limite) f.Seek(-limite, SeekOrigin.End);
             using var leitor = new StreamReader(f, Encoding.UTF8);
             return leitor.ReadToEnd();
         }

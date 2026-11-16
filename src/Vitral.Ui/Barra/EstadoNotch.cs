@@ -71,10 +71,14 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
                 if (p.SessaoId is not null && aviso.SessaoId is not null ? p.SessaoId == aviso.SessaoId : p.Sessao == aviso.Sessao) Sair(i, null);
             }
         if (atual is not null && PedidoAtual is { } seguinte && seguinte != atual) _mostrou = agora(); // outro tomou a ficha
-        AvisoNasRespostas(aviso);
+        // O fim de um turno que o Gustavo não pediu, ou de uma mensagem já avisada (R4), é calado: tira o pedido e a
+        // ficha da sessão, mas não desce nem mexe nas pendências (a sessão continua esperando o que esperava).
+        bool calado = aviso.DeOutraOrigem || JaAvisada(aviso);
+        AvisoNasRespostas(aviso, mexerNasPendencias: !calado);
+        if (!calado && !aviso.AVista) Avisada(aviso);
         // A conversa está aberta e à vista no app: o aviso já fez o trabalho dele (tirou o pedido e a ficha dela) e não
         // desce nem acende o ponto (Gustavo, 15/11/2026).
-        if (aviso.AVista && aviso.Tipo != TipoAviso.Atualizacao)
+        if ((aviso.AVista || calado) && aviso.Tipo != TipoAviso.Atualizacao)
         {
             if (Modo == ModoNotch.Permissao && _fila.Count == 0 && !Confirmando) Avancar(semResposta: false);
             else Mudou?.Invoke();
@@ -146,6 +150,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
         else if (perdeu && !Confirmando) Avancar(semResposta: true);
         else if (perdeu) Mudou?.Invoke();
         if (TiqueResposta(t) && Modo == ModoNotch.Resposta) Avancar(semResposta: false);
+        TiquePergunta(t);
 
         TiqueAgenda(t);
         if (Modo == ModoNotch.Aviso && !_mouse && (t - _inicio).TotalSeconds >= Duracao)
@@ -190,6 +195,7 @@ public sealed partial class EstadoNotch(Func<DateTime> agora)
     {
         var pedido = _fila[indice].Pedido;
         _fila.RemoveAt(indice);
+        _lembradas.Remove(pedido.Id);
         if (EhPergunta(pedido)) ZerarPergunta(); // só a pergunta que saiu leva o progresso; uma permissão na frente não
         Encerrado?.Invoke(pedido, resposta);
     }

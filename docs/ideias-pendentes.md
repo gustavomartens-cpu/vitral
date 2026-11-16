@@ -9,10 +9,11 @@ mesmos arquivos ao mesmo tempo:
 
 1. **Movimento do notch:** V1 mola, V2 orelhas, V3 conteúdo que nasce do notch, V6 pulso e V7 mouse no alto da tela
    feitos na 0.18.0; faltam V4 sombra e V5 janela do tamanho certo.
-2. **Avisos mais certeiros** (R4 só o que o Gustavo pediu, R5 ausente devolve ao app, R7 lembrar pergunta esquecida).
-3. **HUD de volume e brilho no notch** (R2), primeiro sem esconder o do Windows.
-4. **Notch fechado com atividades** (R1 Claude trabalhando, R3 mídia viva, R8 fila de prioridade), depois do bloco 1.
-5. **Depois:** R6 atalhos nas fichas, R9 cota do Claude, R10 bandeja de arquivos, R11 notch no monitor certo.
+2. ~~**Avisos mais certeiros**~~ (R4 só o que o Gustavo pediu, R5 ausente devolve ao app, R7 lembrar pergunta
+   esquecida, com o pulso da forma): feito na 0.18.0. Ficou para depois: a espera de ~6 s antes do "terminou" não
+   entrou (o gancho Stop já marca o fim do turno); o tempo de ausência (5 min) é fixo, sem opção nas Configurações.
+3. **Notch fechado com atividades** (R1 Claude trabalhando, R3 mídia viva, R8 fila de prioridade), depois do bloco 1.
+4. **Depois:** R6 atalhos nas fichas, R9 cota do Claude, R10 bandeja de arquivos, R11 notch no monitor certo.
 
 ## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)
 
@@ -92,6 +93,8 @@ que não fizerem efeito saem da tela (`Visibility="Collapsed"`) e entram aqui co
 
 ## Descartado
 
+- HUD de volume e brilho no notch (R2 da pesquisa de notches, 16/11/2026): o Gustavo achou que não vai precisar.
+
 - Responder às pendências pelo notch (27/10/2026): a pendência existe para abrir a conversa no app, com tempo para
   rever.
 
@@ -128,4 +131,4 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   não cai ao clicar no outro monitor e balão do app do Claude calado (0.15.1), borda invisível da janela vizinha sem
   derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2). Painel de controles na barra do topo
   (Bluetooth e aparelhos, modo avião, não perturbe que também cala o notch, luz noturna, brilho por tela) e microfone
-  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2), perguntas do Claude no notch com as opções (0.17.0), aviso do fone (Realtek) de volta, pergunta que não cai com o aviso do Claude, fichas de 30 s e logo do app do Claude (0.17.2), conversa à vista sem aviso no notch (0.17.3), notch com mola, orelhas que crescem, conteúdo que nasce do notch, pulso e mouse no alto da tela (0.18.0).
+  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2), perguntas do Claude no notch com as opções (0.17.0), aviso do fone (Realtek) de volta, pergunta que não cai com o aviso do Claude, fichas de 30 s e logo do app do Claude (0.17.2), conversa à vista sem aviso no notch (0.17.3), notch com mola, orelhas que crescem, conteúdo que nasce do notch, pulso e mouse no alto da tela, avisos do Claude só do que foi pedido, uma vez por mensagem, pedido direto para o app com o Gustavo ausente e lembrete da pergunta esquecida (0.18.0).
