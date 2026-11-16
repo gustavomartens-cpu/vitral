@@ -45,13 +45,36 @@ public sealed partial class EstadoNotch
     /// Cada ficha sai uma vez: com o texto ou com null (tempo, Esc, teto, desistência, aviso da mesma sessão).
     public event Action<PedidoResposta, string?>? RespostaEncerrada;
 
-    public void PediuResposta(PedidoResposta pedido)
+    /// A última mensagem do Gustavo já avisada em cada sessão (R4: um "Claude terminou" por mensagem). Um gancho Stop
+    /// de outro programa que devolve o Claude ao trabalho termina o mesmo turno de novo, com a mesma mensagem.
+    private readonly Dictionary<string, string> _avisadas = new(StringComparer.Ordinal);
+
+    private static string Chave(string? sessaoId, string sessao) => sessaoId ?? "pasta:" + sessao;
+
+    private bool JaAvisada(AvisoClaude aviso) =>
+        aviso.Tipo == TipoAviso.Terminou && aviso.Mensagem is { } m && _avisadas.TryGetValue(Chave(aviso.SessaoId, aviso.Sessao), out var a) && a == m;
+
+    private void Avisada(AvisoClaude aviso)
     {
+        if (aviso.Tipo == TipoAviso.Terminou && aviso.Mensagem is { } m) _avisadas[Chave(aviso.SessaoId, aviso.Sessao)] = m;
+    }
+
+    /// Uma sessão terminou fora do app: a ficha entra (ou espera na fila). Devolve false, sem ficha, para uma mensagem
+    /// que já teve o aviso dela (R4); o mensageiro solta a sessão na hora.
+    public bool PediuResposta(PedidoResposta pedido)
+    {
+        var chave = Chave(pedido.SessaoId, pedido.Sessao);
+        if (pedido.Mensagem is { } m)
+        {
+            if (_avisadas.TryGetValue(chave, out var a) && a == m) return false;
+            _avisadas[chave] = m;
+        }
         Pendencias.SaiuDaSessao(pedido.SessaoId, pedido.Sessao);
         _respostas.Add(new Ficha(pedido, agora()));
         Laterais = false;
-        if (Modo is ModoNotch.Permissao or ModoNotch.Resposta || Confirmando || ConfirmandoResposta) { Mudou?.Invoke(); return; } // "+N"
+        if (Modo is ModoNotch.Permissao or ModoNotch.Resposta || Confirmando || ConfirmandoResposta) { Mudou?.Invoke(); return true; } // "+N"
         MostrarResposta();
+        return true;
     }
 
     public void Digitou(string id, string texto)
@@ -82,6 +105,8 @@ public sealed partial class EstadoNotch
         if (FichaAtual is not { } f || f.Pedido.Id != id || string.IsNullOrWhiteSpace(f.Rascunho)
             || (agora() - _mostrouResposta).TotalSeconds < EsperaClique) return false;
         _respostas.Remove(f);
+        // O texto volta ao Claude como mais uma instrução no mesmo turno: o próximo fim dele avisa de novo.
+        _avisadas.Remove(Chave(f.Pedido.SessaoId, f.Pedido.Sessao));
         RespostaEncerrada?.Invoke(f.Pedido, f.Rascunho.Trim());
         ConfirmandoResposta = true;
         _confirmou = agora();
@@ -135,13 +160,13 @@ public sealed partial class EstadoNotch
 
     /// Um aviso chegou: a ficha da mesma sessão sai (resolvida no app), as pendências dela também, e um "esperando
     /// você" fora do app vira pendência. O aviso de atualização é do Vitral e não mexe em nada disso.
-    private void AvisoNasRespostas(AvisoClaude aviso)
+    private void AvisoNasRespostas(AvisoClaude aviso, bool mexerNasPendencias = true)
     {
         if (aviso.Tipo == TipoAviso.Atualizacao) return;
         var antes = RespostaAtual;
         foreach (var f in _respostas.Where(f => Pendencias.MesmaSessao(f.Pedido.SessaoId, f.Pedido.Sessao, aviso.SessaoId, aviso.Sessao)).ToList())
             Encerrar(f, pendente: false);
-        Pendencias.SaiuDaSessao(aviso.SessaoId, aviso.Sessao);
+        if (mexerNasPendencias) Pendencias.SaiuDaSessao(aviso.SessaoId, aviso.Sessao);
         if (aviso is { Tipo: TipoAviso.Esperando, ForaDoApp: true })
             Pendencias.Entrou(new(aviso.SessaoId, aviso.Sessao, TipoAviso.Esperando, agora(), aviso.Completo ?? aviso.Texto, aviso.AppId));
         if (antes is not null && _respostas.Count > 0 && _fila.Count == 0 && RespostaAtual != antes) MostrarResposta(); // outra tomou a ficha

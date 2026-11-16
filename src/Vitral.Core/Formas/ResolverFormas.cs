@@ -73,6 +73,19 @@ public static class ResolverFormas
             ilha ? 6 : 0, raio, ilha);
     }
 
+    /// Orelhas que crescem junto (pesquisa dos notches §4 V2): a orelha do perfil é a base; no relógio ela fica em 5/8
+    /// dela e cresce com a altura do corpo até 5/4 na altura da ficha de permissão (as fichas maiores ficam em 5/4).
+    /// Acompanha a altura de cada quadro, então anima junto com o corpo. Sem orelhas no perfil, continua sem.
+    public const double EscalaOrelhaFechada = 0.625, EscalaOrelhaAberta = 1.25, AlturaOrelhaAberta = 112;
+
+    public static double OrelhaNaAltura(ValoresNotch notch, double altura)
+    {
+        if (notch.Orelha <= 0) return 0;
+        double faixa = AlturaOrelhaAberta - notch.Altura;
+        double t = faixa <= 0 ? 1 : Math.Clamp((altura - notch.Altura) / faixa, 0, 1);
+        return notch.Orelha * (EscalaOrelhaFechada + (EscalaOrelhaAberta - EscalaOrelhaFechada) * t);
+    }
+
     private static ValoresIlhas Ilhas(FormasIlhas? f)
     {
         bool encostadas = f?.Distancia == DistanciaIlhas.Encostadas;

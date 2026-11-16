@@ -8,6 +8,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Vitral.App.Tema;
+using Vitral.Core.Formas;
+using Vitral.Ui.Tema;
 using Shape = System.Windows.Shapes.Shape;
 using Vitral.Core.Claude;
 using Vitral.Ui.Barra;
@@ -28,16 +30,26 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
 
     private static readonly Brush CorClaude = Congelado(new SolidColorBrush(Color.FromRgb(0xD9, 0x77, 0x57)));
 
-    public static readonly DependencyProperty LarguraCorpoProperty =
-        DependencyProperty.Register(nameof(LarguraCorpo), typeof(double), typeof(JanelaNotch), new PropertyMetadata(120d, Redesenhar));
-    public static readonly DependencyProperty AlturaCorpoProperty =
-        DependencyProperty.Register(nameof(AlturaCorpo), typeof(double), typeof(JanelaNotch), new PropertyMetadata(NotchMedidas.AlturaNormal, Redesenhar));
-    public static readonly DependencyProperty RaioCorpoProperty =
-        DependencyProperty.Register(nameof(RaioCorpo), typeof(double), typeof(JanelaNotch), new PropertyMetadata(NotchMedidas.RaioNormal, Redesenhar));
+    // Movimento do corpo (pesquisa dos notches V1): uma mola por medida, que guarda a velocidade. Um aviso que chega no
+    // meio da abertura de uma ficha muda o rumo da forma sem recomeçar parada. As orelhas (V2) seguem a altura.
+    private readonly Mola _largura = new(120), _altura = new(NotchMedidas.AlturaNormal), _raio = new(NotchMedidas.RaioNormal);
+    private bool _rodando;
+    private TimeSpan? _ultimoQuadro;
+    private DateTime _ultimoPulso;
 
-    public double LarguraCorpo { get => (double)GetValue(LarguraCorpoProperty); set => SetValue(LarguraCorpoProperty, value); }
-    public double AlturaCorpo { get => (double)GetValue(AlturaCorpoProperty); set => SetValue(AlturaCorpoProperty, value); }
-    public double RaioCorpo { get => (double)GetValue(RaioCorpoProperty); set => SetValue(RaioCorpoProperty, value); }
+    /// Os painéis à vista (ou entrando): só a troca de visível para escondido, e vice-versa, anima (V3).
+    private readonly HashSet<UIElement> _mostrando = [];
+
+    private double LarguraCorpo => _largura.Valor;
+    private double AlturaCorpo => _altura.Valor;
+    private double RaioCorpo => _raio.Valor;
+
+    /// Área de passar o mouse (V7): o corpo e uma faixa invisível na borda de cima da tela, por cima das orelhas e um
+    /// pouco além delas; jogar o mouse para o alto conta como estar em cima do notch. No formato Ilha, a faixa também é
+    /// a ponte entre a borda e o corpo solto.
+    private readonly Grid _areaMouse = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
+    private readonly Border _faixaMouse = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top, Background = Brushes.Transparent };
+    private const double FaixaAlem = 12, FaixaMinima = 6;
 
     private readonly Border _topo = new() { Height = PosicaoIlhas.NotchSobra + 1, VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Center };
     private readonly Path _forma = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top };
@@ -153,7 +165,9 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _corpo.Children.Add(_topo);
         _corpo.Children.Add(_forma);
         raiz.Children.Add(_corpo);
-        raiz.Children.Add(_conteudo);
+        _areaMouse.Children.Add(_faixaMouse);
+        _areaMouse.Children.Add(_conteudo);
+        raiz.Children.Add(_areaMouse);
         Content = raiz;
 
         _estado.Mudou += AoMudarEstado;
@@ -163,8 +177,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         };
         _tique.Tick += (_, _) => _estado.Tique();
         _tiqueAgenda.Tick += (_, _) => _estado.Tique();
-        _conteudo.MouseEnter += (_, _) => { _estado.MouseEntrou(); _tique.Start(); };
-        _conteudo.MouseLeave += (_, _) => { _estado.MouseSaiu(); if (_estado.Modo is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta)) _tique.Stop(); };
+        _areaMouse.MouseEnter += (_, _) => { _estado.MouseEntrou(); _tique.Start(); };
+        _areaMouse.MouseLeave += (_, _) => { _estado.MouseSaiu(); if (_estado.Modo is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta)) _tique.Stop(); };
         _estado.Pendencias.Mudou += () => { if (_estado.Laterais) AtualizarEsquerda(); };
         _meio.MouseLeftButtonUp += (_, _) => Clicou(ParteNotch.Meio);
         _esquerda.MouseLeftButtonUp += (_, _) => Clicou(ParteNotch.Esquerda);
@@ -176,7 +190,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             var h = new WindowInteropHelper(this).Handle;
             SetLong(h, GwlExStyle, (IntPtr)((long)GetLong(h, GwlExStyle) | WsExToolWindow | WsExNoActivate));
         };
-        Closed += (_, _) => { _tique.Stop(); _tiqueAgenda.Stop(); SoltarPedidos(); SoltarRespostas(); };
+        Closed += (_, _) => { _tique.Stop(); _tiqueAgenda.Stop(); Desligar(); SoltarPedidos(); SoltarRespostas(); };
     }
 
     /// O símbolo do Claude: o logo do próprio app do Claude instalado na máquina, lido do Windows na hora (nenhuma
@@ -259,7 +273,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     private void AplicarFormas()
     {
         AplicarFormasNoRelogio();
-        Redesenhar(this, default);
+        Redesenhar();
         if (IsLoaded) Ajustar(animar: false);
     }
 
@@ -330,13 +344,17 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     };
 
     /// Um aviso chegou pelo canal.
-    public void Avisar(AvisoClaude aviso) => _estado.Chegou(aviso);
+    public void Avisar(AvisoClaude aviso) => ComPulso(() => _estado.Chegou(aviso));
 
     /// Um compromisso entrou na antecedência (spec da agenda §5.5): espera a vez como os outros avisos.
-    public void Lembrar(AvisoAgenda aviso) => _estado.Lembrou(aviso);
+    public void Lembrar(AvisoAgenda aviso) => ComPulso(() => _estado.Lembrou(aviso));
 
     /// Notificações de outros apps (spec das notificações §5): esperam a vez como os outros avisos.
-    public void Notificar(AvisoNotificacao aviso) => _estado.Notificou(aviso);
+    public void Notificar(AvisoNotificacao aviso)
+    {
+        if (NaoPerturbe) _estado.Notificou(aviso); // calada, não chama atenção
+        else ComPulso(() => _estado.Notificou(aviso));
+    }
 
     /// Com o "Não perturbe" ligado, as notificações dos apps não descem no notch (o sino continua contando).
     public bool NaoPerturbe
@@ -439,7 +457,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     public Retangulo AreaDoRelogio(uint dpi)
     {
         var janela = PosicaoNativa.Ler(this, dpi);
-        return new(janela.X + (janela.Largura - LarguraNormal) / 2, janela.Y, LarguraNormal, Formas.Sobra + Formas.Altura);
+        return new(janela.X + (janela.Largura - LarguraNormal) / 2, janela.Y + Formas.Afastamento, LarguraNormal, Formas.Sobra + Formas.Altura);
     }
 
     /// A largura do corpo com o relógio (o que a ilha do relógio ocupava antes).
@@ -452,9 +470,10 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         }
     }
 
-    /// Centra a janela fixa no lugar do relógio calculado pelas ilhas (DIPs do monitor de escala dpi).
+    /// Centra a janela fixa no lugar do relógio calculado pelas ilhas (DIPs do monitor de escala dpi). No formato Ilha a
+    /// janela sobe até a borda da tela, para a faixa do mouse chegar ao topo (V7); o corpo continua no lugar.
     public void Colocar(Retangulo relogio, uint dpi) =>
-        PosicaoNativa.Colocar(this, relogio.X + relogio.Largura / 2, relogio.Y, dpi, ancora: 0.5,
+        PosicaoNativa.Colocar(this, relogio.X + relogio.Largura / 2, relogio.Y - Formas.Afastamento, dpi, ancora: 0.5,
             new Size(NotchMedidas.JanelaLargura, NotchMedidas.JanelaAltura));
 
     private void Clicou(ParteNotch parte)
@@ -488,7 +507,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     {
         var espera = new TaskCompletionSource<RespostaPedido?>(TaskCreationOptions.RunContinuationsAsynchronously);
         _esperando[pedido.Id] = espera;
-        _estado.Pediu(pedido);
+        ComPulso(() => _estado.Pediu(pedido));
         return espera.Task;
     }
 
@@ -651,10 +670,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         Trocar(_esquerda, mostrar: laterais, animar);
         Trocar(_direita, mostrar: laterais, animar);
 
-        var duracao = animar ? Efeitos.Tempo("DuracaoNotch", 320) : new Duration(TimeSpan.Zero);
-        Animar(LarguraCorpoProperty, largura, duracao);
-        Animar(AlturaCorpoProperty, altura, duracao);
-        Animar(RaioCorpoProperty, raio, duracao);
+        Mover(largura, altura, raio, animar);
     }
 
     private void AtualizarEsquerda()
@@ -688,29 +704,146 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         }
     }
 
-    private void Animar(DependencyProperty p, double alvo, Duration duracao) =>
-        BeginAnimation(p, new DoubleAnimation(alvo, duracao) { EasingFunction = Efeitos.Mola });
-
-    private static void Trocar(UIElement e, bool mostrar, bool animar)
+    /// Leva as molas aos alvos (V1). Crescendo, abre com repique leve; encolhendo, fecha sem repique. Sem animação (ou
+    /// com os efeitos do Windows desligados) vai direto, a não ser que a forma já esteja no meio de um movimento: aí só
+    /// troca o rumo, para um relógio que mudou de largura não cortar a abertura de uma ficha.
+    private void Mover(double largura, double altura, double raio, bool animar)
     {
-        if (mostrar) e.Visibility = Visibility.Visible;
-        var a = new DoubleAnimation(mostrar ? 1 : 0, animar ? Efeitos.Media : new Duration(TimeSpan.Zero)) { EasingFunction = Efeitos.Suave };
-        if (!mostrar) a.Completed += (_, _) => { if (e.Opacity == 0) e.Visibility = Visibility.Collapsed; };
-        e.BeginAnimation(OpacityProperty, a);
+        bool mover = Movimento.Ligado && (animar || _rodando);
+        if (!mover)
+        {
+            Desligar();
+            _largura.Pular(largura);
+            _altura.Pular(altura);
+            _raio.Pular(raio);
+            Redesenhar();
+            return;
+        }
+        var jeito = largura * altura >= _largura.Alvo * _altura.Alvo ? JeitoMola.Abrir : JeitoMola.Fechar;
+        _largura.IrPara(largura, jeito);
+        _altura.IrPara(altura, jeito);
+        _raio.IrPara(raio, jeito);
+        Ligar();
     }
 
-    private static void Redesenhar(DependencyObject o, DependencyPropertyChangedEventArgs _)
+    /// Chegou algo novo: com o notch já aberto no mesmo modo (mais um pedido na fila, outro aviso), a forma dá um pulso
+    /// curto (V6), no máximo um a cada 0,4 s.
+    private void ComPulso(Action chegada)
     {
-        if (o is not JanelaNotch n) return;
+        var antes = _estado.Modo;
+        chegada();
+        if (antes is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta) || _estado.Modo != antes) return;
+        Pulsar();
+    }
+
+    /// O pulso curto da forma (V6), no máximo um a cada 0,4 s; também lembra a pergunta esquecida (R7).
+    private void Pulsar()
+    {
+        if (!Movimento.Ligado || !IsLoaded || DateTime.Now - _ultimoPulso < TimeSpan.FromMilliseconds(400)) return;
+        _ultimoPulso = DateTime.Now;
+        _largura.Pulsar(20);
+        _altura.Pulsar(6);
+        Ligar();
+    }
+
+    /// O laço de quadros só corre com a forma em movimento.
+    private void Ligar()
+    {
+        if (_rodando) return;
+        _rodando = true;
+        _ultimoQuadro = null;
+        CompositionTarget.Rendering += Quadro;
+    }
+
+    private void Desligar()
+    {
+        if (!_rodando) return;
+        _rodando = false;
+        CompositionTarget.Rendering -= Quadro;
+    }
+
+    private void Quadro(object? sender, EventArgs e)
+    {
+        var agora = e is RenderingEventArgs r ? r.RenderingTime : TimeSpan.Zero;
+        double segundos = _ultimoQuadro is { } u ? (agora - u).TotalSeconds : 1.0 / 60;
+        if (segundos <= 0) return; // o mesmo quadro avisado duas vezes
+        _ultimoQuadro = agora;
+        bool movendo = _largura.Avancar(segundos) | _altura.Avancar(segundos) | _raio.Avancar(segundos);
+        Redesenhar();
+        if (!movendo) Desligar();
+    }
+
+    /// Conteúdo que nasce do notch (V3): o que entra cresce de 0,94 a 1 ancorado no topo e aparece um pouco depois da
+    /// casca começar a crescer; o que sai some mais rápido do que entra. Só anima a troca de estado: chamado de novo
+    /// com o painel já à vista, não faz nada.
+    private void Trocar(UIElement e, bool mostrar, bool animar)
+    {
+        if (mostrar == _mostrando.Contains(e)) return;
+        bool mover = animar && Movimento.Ligado;
+        var escala = e.RenderTransform as ScaleTransform;
+        if (escala is null && e.RenderTransform == Transform.Identity)
+        {
+            e.RenderTransform = escala = new ScaleTransform(1, 1);
+            e.RenderTransformOrigin = new Point(0.5, 0);
+        }
+        double atual = e.Opacity;
+        e.BeginAnimation(OpacityProperty, null);
+        escala?.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+        escala?.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+        if (mostrar)
+        {
+            _mostrando.Add(e);
+            e.Visibility = Visibility.Visible;
+            if (!mover)
+            {
+                e.Opacity = 1;
+                if (escala is not null) escala.ScaleX = escala.ScaleY = 1;
+                return;
+            }
+            var atraso = TimeSpan.FromMilliseconds(80);
+            e.Opacity = atual;
+            e.BeginAnimation(OpacityProperty, new DoubleAnimation(atual, 1, Efeitos.Media) { BeginTime = atraso, EasingFunction = Efeitos.Suave });
+            if (escala is null) return;
+            double de = atual > 0.5 ? escala.ScaleX : 0.94; // voltando no meio da saída: segue da escala em que está
+            escala.ScaleX = escala.ScaleY = de;
+            var crescer = new DoubleAnimation(de, 1, Efeitos.Lenta) { BeginTime = atraso, EasingFunction = Efeitos.Suave };
+            escala.BeginAnimation(ScaleTransform.ScaleXProperty, crescer);
+            escala.BeginAnimation(ScaleTransform.ScaleYProperty, crescer);
+            return;
+        }
+        _mostrando.Remove(e);
+        if (escala is not null) escala.ScaleX = escala.ScaleY = 1;
+        if (!mover)
+        {
+            e.Opacity = 0;
+            e.Visibility = Visibility.Collapsed;
+            return;
+        }
+        e.Opacity = atual;
+        var sumir = new DoubleAnimation(atual, 0, Efeitos.Rapida) { EasingFunction = Efeitos.Suave };
+        sumir.Completed += (_, _) => { if (!_mostrando.Contains(e)) e.Visibility = Visibility.Collapsed; };
+        e.BeginAnimation(OpacityProperty, sumir);
+    }
+
+    /// Desenha o corpo nas medidas de agora. As orelhas acompanham a altura (V2); no formato Ilha, a janela começa na
+    /// borda da tela e o corpo, <c>Afastamento</c> abaixo dela (a faixa do mouse faz a ponte).
+    private void Redesenhar()
+    {
         var f = Formas;
-        n._forma.Data = Geometry.Parse(FormaNotch.Caminho(n.LarguraCorpo, n.AlturaCorpo, n.RaioCorpo, f.Orelha, f.CantosDeCima));
-        n._forma.Margin = new Thickness(0, f.Sobra, 0, 0);
-        n._conteudo.Width = n.LarguraCorpo;
-        n._conteudo.Height = n.AlturaCorpo;
-        n._conteudo.Margin = new Thickness(0, f.Sobra, 0, 0);
-        n._topo.Width = n.LarguraCorpo + 2 * f.Orelha;
-        n._topo.Height = f.Sobra + 1;
-        n._topo.Visibility = f.Sobra > 0 ? Visibility.Visible : Visibility.Collapsed; // Ilha: nada acima da borda
+        double orelha = ResolverFormas.OrelhaNaAltura(f, AlturaCorpo);
+        double largura = Math.Min(LarguraCorpo, NotchMedidas.JanelaLargura - 2 * orelha), altura = AlturaCorpo;
+        double topo = f.Sobra + f.Afastamento;
+        _forma.Data = Geometry.Parse(FormaNotch.Caminho(largura, altura, RaioCorpo, orelha, f.CantosDeCima));
+        _forma.Margin = new Thickness(0, topo, 0, 0);
+        _conteudo.Width = largura;
+        _conteudo.Height = altura;
+        _conteudo.Margin = new Thickness(0, topo, 0, 0);
+        _topo.Width = largura + 2 * orelha;
+        _topo.Height = f.Sobra + 1;
+        _topo.Visibility = f.Sobra > 0 ? Visibility.Visible : Visibility.Collapsed; // Ilha: nada acima da borda
+        _faixaMouse.Width = Math.Min(NotchMedidas.JanelaLargura, largura + 2 * (orelha + FaixaAlem));
+        _faixaMouse.Height = f.Afastamento + Math.Max(orelha, FaixaMinima);
+        _faixaMouse.Margin = new Thickness(0, f.Sobra, 0, 0);
     }
 
     private static T Congelado<T>(T f) where T : Freezable { f.Freeze(); return f; }

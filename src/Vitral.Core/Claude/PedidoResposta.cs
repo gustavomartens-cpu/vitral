@@ -16,18 +16,21 @@ public sealed record PedidoResposta(string Id, string Sessao, string Completo, D
     /// A conversa no app do Claude ("local_…"): "abrir no Claude" vai direto a ela.
     public string? AppId { get; init; }
 
+    /// A mensagem do Gustavo que abriu o turno (ver <see cref="AvisoClaude.Mensagem"/>): uma ficha só por ela.
+    public string? Mensagem { get; init; }
+
     /// A ficha para o aviso de fim de tarefa (a mensagem inteira; sem ela, o resumo).
     public static PedidoResposta? DeAviso(AvisoClaude aviso, DateTime hora) =>
         aviso.Tipo != TipoAviso.Terminou ? null
-            : new PedidoResposta(Guid.NewGuid().ToString("N"), aviso.Sessao, aviso.Completo ?? aviso.Texto, hora) { SessaoId = aviso.SessaoId, AppId = aviso.AppId };
+            : new PedidoResposta(Guid.NewGuid().ToString("N"), aviso.Sessao, aviso.Completo ?? aviso.Texto, hora) { SessaoId = aviso.SessaoId, AppId = aviso.AppId, Mensagem = aviso.Mensagem };
 
-    public string ParaLinha() => JsonSerializer.Serialize(new Linha("Resposta", Id, Sessao, Completo, Hora, SessaoId, AppId), Opcoes);
+    public string ParaLinha() => JsonSerializer.Serialize(new Linha("Resposta", Id, Sessao, Completo, Hora, SessaoId, AppId, Mensagem), Opcoes);
 
     public static bool EhPedido(string? linha) => Ler(linha)?.Tipo == "Resposta";
 
     public static PedidoResposta? DeLinha(string? linha) =>
         Ler(linha) is { Tipo: "Resposta", Id: { } id, Sessao: { } s, Completo: { } c, Hora: { } h } l
-            ? new PedidoResposta(id, s, c, h) { SessaoId = l.SessaoId, AppId = l.AppId } : null;
+            ? new PedidoResposta(id, s, c, h) { SessaoId = l.SessaoId, AppId = l.AppId, Mensagem = l.Mensagem } : null;
 
     private static Linha? Ler(string? linha)
     {
@@ -36,7 +39,7 @@ public sealed record PedidoResposta(string Id, string Sessao, string Completo, D
         catch (JsonException) { return null; }
     }
 
-    private sealed record Linha(string? Tipo, string? Id, string? Sessao, string? Completo, DateTime? Hora, string? SessaoId, string? AppId);
+    private sealed record Linha(string? Tipo, string? Id, string? Sessao, string? Completo, DateTime? Hora, string? SessaoId, string? AppId, string? Mensagem = null);
 }
 
 /// O texto digitado no notch: a linha que volta pelo canal e o que o mensageiro devolve ao Claude no Stop.

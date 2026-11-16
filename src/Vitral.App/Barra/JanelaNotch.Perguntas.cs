@@ -34,6 +34,7 @@ internal sealed partial class JanelaNotch
 
     private void MontarPergunta()
     {
+        _estado.PerguntaEsquecida += _ => LembrarPergunta();
         var icone = IconeClaude(20);
         icone.Margin = new Thickness(0, 0, 8, 0);
         var titulo = new TextBlock { Text = "Claude pergunta", FontWeight = FontWeights.SemiBold, FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
@@ -129,5 +130,18 @@ internal sealed partial class JanelaNotch
         _tempoPergunta.BeginAnimation(ScaleTransform.ScaleXProperty, Movimento.Ligado
             ? new DoubleAnimation(falta / tempo, 0, new Duration(TimeSpan.FromSeconds(falta)))
             : new DoubleAnimation(1, new Duration(TimeSpan.Zero)));
+    }
+
+    /// A pergunta ficou esquecida na ficha (R7): o som de aviso do Windows toca uma vez e o texto da pergunta pisca duas
+    /// vezes. O pulso da forma inteira (V6) é do bloco do movimento do notch e entra aqui quando existir.
+    private void LembrarPergunta()
+    {
+        System.Media.SystemSounds.Asterisk.Play();
+        if (!Movimento.Ligado) return;
+        Pulsar();
+        var piscar = new DoubleAnimationUsingKeyFrames { Duration = TimeSpan.FromMilliseconds(900) };
+        foreach (var (ms, valor) in new[] { (0, 1.0), (180, 0.3), (360, 1.0), (540, 0.3), (720, 1.0) })
+            piscar.KeyFrames.Add(new LinearDoubleKeyFrame(valor, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(ms))));
+        _perguntaTexto.BeginAnimation(OpacityProperty, piscar);
     }
 }
