@@ -30,6 +30,13 @@ public sealed record ValoresParte(MaterialParte Material, CorArgb Fundo, CorArgb
 
     public bool TextoClaro => Luminancia(Texto) > 0.5;
 
+    /// Contorno de vidro em gradiente (pesquisa visual §4, passo B), de cima para baixo. Fundo escuro: um realce de luz no
+    /// alto (branco 16%) que some para 6%. Fundo claro: o inverso, como o Windows 11 faz — fraco em cima (preto 5%) e mais
+    /// marcado embaixo (14%), uma sombra de contato que separa a peça do fundo.
+    public CorArgb BordaCima => TextoClaro ? new CorArgb(41, 255, 255, 255) : new CorArgb(13, 0, 0, 0);
+
+    public CorArgb BordaBaixo => TextoClaro ? new CorArgb(15, 255, 255, 255) : new CorArgb(36, 0, 0, 0);
+
     /// Texto sobre o próprio texto (a pílula principal inverte as cores). Não vem do fundo: no Cristal o fundo é branco
     /// quase transparente e o texto é claro.
     public CorArgb TextoInverso => TextoClaro ? Escuro : Claro;

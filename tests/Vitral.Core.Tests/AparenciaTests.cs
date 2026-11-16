@@ -80,6 +80,21 @@ public sealed class AparenciaTests
     }
 
     [Fact]
+    public void Contorno_de_vidro_tem_realce_em_cima_no_escuro_e_sombra_embaixo_no_claro()
+    {
+        // Pesquisa visual §4, passo B: no escuro, luz de cima (branco 16% → 6%); no claro, o inverso do Fluent
+        // (preto 5% em cima → 14% embaixo), que separa a ilha do fundo sem a linha do Windows.
+        var escuro = R(new AparenciaPerfil(TemaAparencia.VidroEscuro)).Ilhas;
+        Assert.Equal(new CorArgb(41, 255, 255, 255), escuro.BordaCima);
+        Assert.Equal(new CorArgb(15, 255, 255, 255), escuro.BordaBaixo);
+        var claro = R(new AparenciaPerfil(TemaAparencia.Claro)).Ilhas;
+        Assert.Equal(new CorArgb(13, 0, 0, 0), claro.BordaCima);
+        Assert.Equal(new CorArgb(36, 0, 0, 0), claro.BordaBaixo);
+        // Segue o texto, não o tema: o Cristal (branco quase transparente, texto escuro) fica com o contorno do claro.
+        Assert.Equal(claro.BordaBaixo, R(new AparenciaPerfil(TemaAparencia.Cristal)).Ilhas.BordaBaixo);
+    }
+
+    [Fact]
     public void Transparencia_do_Windows_desligada_vira_solido()
     {
         var v = R(new AparenciaPerfil(TemaAparencia.VidroColorido), Escuro with { Transparencia = false });

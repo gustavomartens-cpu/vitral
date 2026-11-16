@@ -237,3 +237,13 @@ Repetir as capturas desta pesquisa e medir os mesmos pontos:
 - **Borda das ilhas:** no lugar de `#303235` uniforme, o pixel de cima um pouco mais claro que o vidro e o de baixo quase igual ao vidro.
 - **Notch:** pixels `#000000` sobre o papel de parede escuro.
 - **Os 7 temas:** conferir um a um, nos dois modos do Windows, para garantir que o tema Claro e o Cristal não perderam a separação do fundo.
+
+## 6. Já aplicado nesta branch
+
+- **Passo A da mudança 1**: `VidroIlha.Atualizar` desliga sempre a linha do Windows (`DWMWA_BORDER_COLOR = NONE`), em todas as janelas com vidro: ilhas, doca, painéis, miniaturas e fundo da barra única.
+- **Passo B da mudança 1**: a `BordaVidro` das partes virou um gradiente vertical, definido por `ValoresParte.BordaCima`/`BordaBaixo` em `ResolverAparencia.cs` e montado em `ServicoAparencia.Contorno`.
+  - **Fundo escuro (texto claro):** branco a 16% em cima, que cai até branco a 6% aos 40% da altura e fica assim até embaixo. Sobre o vidro do Vidro escuro (`#0E121F`), a conta dá cerca de `#353843` no topo e `#1C2030` nos lados e na base, no lugar do `#303235` uniforme.
+  - **Fundo claro (texto escuro):** preto a 5% até 60% da altura, que escurece até preto a 14% embaixo. É a sombra de contato do Windows 11, que compensa a linha do Windows que saiu.
+  - `Linha` e `Borda` (separadores, campos) continuam chapadas em `v.Borda`.
+  - O `BordaVidro` de `Tokens.xaml` (janela principal) não mudou.
+- **Falta conferir na tela**, rodando o build desta branch, nos 7 temas e nos dois modos do Windows.
