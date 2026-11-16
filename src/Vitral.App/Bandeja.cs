@@ -34,9 +34,22 @@ internal sealed class Bandeja : IDisposable
         catch (Exception e) when (e is not OutOfMemoryException) { Barra.LogBarra.Erro("Bandeja.Avisar", e); }
     }
 
-    private void MontarMenu()
+    /// O menu do ícone aberto pelo próprio Vitral no cursor (clique direito no ícone do Vitral no painel da setinha): o
+    /// clique repassado ao ícone abria o menu dentro do mesmo clique e ele fechava na hora. Fecha num clique fora, como
+    /// o menu da doca.
+    public void AbrirNoCursor()
     {
-        var menu = _icone.ContextMenu!;
+        var menu = new ContextMenu { Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint };
+        MontarMenu(menu);
+        menu.Opened += (_, _) => Tema.Efeitos.Assentar(menu, Tema.AssentarDe.Cima, cascata: false);
+        menu.IsOpen = true;
+        Doca.MenuDoca.FecharAoClicarFora(menu);
+    }
+
+    private void MontarMenu() => MontarMenu(_icone.ContextMenu!);
+
+    private void MontarMenu(ContextMenu menu)
+    {
         menu.Items.Clear();
         var vm = _app.Principal;
         foreach (var item in MenuBandeja.Montar(vm.NomesParaMenu(), vm.PerfilAtivo)) // não mexe na janela (editor não salvo)

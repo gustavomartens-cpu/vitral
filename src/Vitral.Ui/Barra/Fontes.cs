@@ -138,7 +138,10 @@ public interface IFonteWifi
 }
 
 /// Um ícone de bandeja de app (spec da doca §7). Imagem é do WPF (ImageSource), opaca aqui.
-public sealed record IconeBandeja(string Id, string Titulo, object? Imagem, bool JaNoTopo);
+public sealed record IconeBandeja(string Id, string Titulo, object? Imagem, bool JaNoTopo)
+{
+    public bool DoVitral { get; init; }
+}
 
 public enum BotaoMouse { Esquerdo, Direito }
 

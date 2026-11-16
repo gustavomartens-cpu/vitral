@@ -33,6 +33,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     private PainelWifiViewModel? _vmWifi;
     private PainelControlesViewModel? _vmControles;
 
+    /// O menu do ícone do Vitral (o da bandeja), aberto pelo App no cursor.
+    public Action? MenuDoVitral { get; set; }
+
     /// Os controles do Windows (spec dos controles): o painel que desce do ícone da ilha de status.
     public IFonteControles? Controles { get; set; }
     private readonly List<IDisposable> _vmsPaineis = [];
@@ -375,7 +378,14 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
                 nova = new JanelaPainel("Notificações", 380) { Conteudo = new PainelNotificacoes(_vmNotificacoes, Notificacoes.Icone) };
                 break;
             case Painel.Icones:
-                nova = new JanelaPainel("Ícones", 280) { Conteudo = new PainelIcones(), DataContext = Guardar(new PainelIconesViewModel(bandeja)) };
+                var icones = Guardar(new PainelIconesViewModel(bandeja));
+                icones.PediuMenuDoVitral += () =>
+                {
+                    // O painel sai primeiro; o menu do Vitral abre depois, já sem o clique e sem o painel trocando o foco.
+                    _coordenador.FecharTodos();
+                    _ = Application.Current.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () => MenuDoVitral?.Invoke());
+                };
+                nova = new JanelaPainel("Ícones", 280) { Conteudo = new PainelIcones(), DataContext = icones };
                 break;
             case Painel.Midia when _fontes is not null:
                 nova = new JanelaPainel("Mídia", 260)

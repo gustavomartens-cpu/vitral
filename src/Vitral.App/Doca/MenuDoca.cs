@@ -36,7 +36,7 @@ internal static partial class MenuDoca
 
     /// A doca não rouba o foco, então o Windows não avisa o menu de um clique em outro app: confere os botões do mouse
     /// a cada 50 ms enquanto ele está aberto e fecha num clique novo fora dele.
-    private static void FecharAoClicarFora(ContextMenu menu)
+    internal static void FecharAoClicarFora(ContextMenu menu)
     {
         bool antes = AlgumBotao();
         var vigia = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };

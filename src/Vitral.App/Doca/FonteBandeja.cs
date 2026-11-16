@@ -46,7 +46,7 @@ internal sealed partial class FonteBandeja(Dispatcher ui) : IFonteBandeja, IDisp
 
     public IReadOnlyList<IconeBandeja> Icones =>
         _shell?.NotificationArea.TrayIcons.ToList()
-            .Select(i => new IconeBandeja(i.Identifier, i.Title ?? "", i.Icon, JaNoTopo.Contains(i.GUID)))
+            .Select(i => new IconeBandeja(i.Identifier, i.Title ?? "", i.Icon, JaNoTopo.Contains(i.GUID)) { DoVitral = DoProprioVitral(i.HWnd) })
             .ToList() ?? [];
 
     public void Ligar()
@@ -114,15 +114,8 @@ internal sealed partial class FonteBandeja(Dispatcher ui) : IFonteBandeja, IDisp
             GetCursorPos(out var p);
             uint posicao = (uint)((p.Y << 16) | (p.X & 0xFFFF));
             int duplo = (int)GetDoubleClickTime();
-            void Repassar()
-            {
-                icone.IconMouseDown(b, posicao, duplo);
-                icone.IconMouseUp(b, posicao, duplo);
-            }
-            // O ícone do próprio Vitral: o menu dele abriria dentro deste clique, com o painel ainda trocando o foco, e
-            // fechava na hora. Repassado um instante depois, o menu abre com o clique já terminado.
-            if (DoProprioVitral(icone.HWnd)) { _ = ui.BeginInvoke(DispatcherPriority.ApplicationIdle, Repassar); return; }
-            Repassar();
+            icone.IconMouseDown(b, posicao, duplo);
+            icone.IconMouseUp(b, posicao, duplo);
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("Bandeja.Clicar", e); }
     }
