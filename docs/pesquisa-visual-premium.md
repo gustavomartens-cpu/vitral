@@ -246,4 +246,22 @@ Repetir as capturas desta pesquisa e medir os mesmos pontos:
   - **Fundo claro (texto escuro):** preto a 5% até 60% da altura, que escurece até preto a 14% embaixo. É a sombra de contato do Windows 11, que compensa a linha do Windows que saiu.
   - `Linha` e `Borda` (separadores, campos) continuam chapadas em `v.Borda`.
   - O `BordaVidro` de `Tokens.xaml` (janela principal) não mudou.
-- **Falta conferir na tela**, rodando o build desta branch, nos 7 temas e nos dois modos do Windows.
+### 6.1 Conferido na tela (16/11/2026)
+
+**Como foi feito.** Rodei o build de Debug desta branch no lugar do Vitral instalado, com o Windows em modo escuro e o papel de parede escuro. Troquei o tema pelo `config.json`, que tinha guardado antes. Depois de medir, devolvi a config original, conferida byte a byte, e reabri o instalado.
+
+| Pixel do contorno | Antes (0.17.1) | Vidro escuro | Claro | Cristal |
+|---|---|---|---|---|
+| Ilha de status, topo | `#303235` | `#323540` (vidro `#0E121F`) | `#D4D6D9` (vidro `#E1E3E7`) | `#D9D9DA` (vidro `#E7E7E8`) |
+| Ilha de status, base | `#303134` | `#1B1F2B` | `#C1C3C6` | `#C6C6C7` |
+| Ilha de status, lado | `#303235` | `#191D29` | `#D3D5D8` | `#D8D8D9` |
+| Doca, base | `#54514A` | `#212530` | `#C2C5C6` | `#C7C8C8` |
+
+![Ilha de status: antes, Vidro escuro, Claro e Cristal](pesquisa/visual-premium/comparacao-status-temas.png)
+
+![Doca: antes, Vidro escuro e Claro](pesquisa/visual-premium/comparacao-doca-temas.png)
+
+**O que mostram as medidas:**
+- **Vidro escuro:** um filete mais claro no topo e lados e base quase do tom do vidro. A linha cinza de antes sumiu, e a base da doca não clareia mais com o papel de parede.
+- **Claro e Cristal:** o contorno é quase invisível em cima e escurece embaixo, como uma sombra de contato. Sobre o papel de parede escuro, a ilha clara se separa sozinha.
+- **Falta conferir:** os temas Automático, Grafite, Preto sólido e Vidro colorido, o Windows em modo claro e papel de parede claro.
