@@ -265,3 +265,21 @@ Repetir as capturas desta pesquisa e medir os mesmos pontos:
 - **Vidro escuro:** um filete mais claro no topo e lados e base quase do tom do vidro. A linha cinza de antes sumiu, e a base da doca não clareia mais com o papel de parede.
 - **Claro e Cristal:** o contorno é quase invisível em cima e escurece embaixo, como uma sombra de contato. Sobre o papel de parede escuro, a ilha clara se separa sozinha.
 - **Falta conferir:** os temas Automático, Grafite, Preto sólido e Vidro colorido, o Windows em modo claro e papel de parede claro.
+
+### 6.2 Mudança 2: notch em preto puro (16/11/2026)
+
+**O que mudou.** Em `ResolverAparencia.Tema()`, o fundo do notch passou de `#0B0C10` para `#000000` nos temas Vidro escuro, Preto sólido e Automático (com o Windows escuro).
+- Grafite, Vidro colorido, Cristal e os temas claros não mudaram.
+- A opção "Preto" (`#0B0C10`) que o Gustavo pode escolher à mão em Opções também não mudou.
+- A key line opcional não foi feita.
+
+**Conferido na tela** com o build desta branch, no Vidro escuro, coluna x=1280:
+
+| | Corpo do notch | Papel de parede ao lado |
+|---|---|---|
+| Antes | `#0B0C10` | `#03060D` (logo abaixo, `#070A11`) |
+| Depois | `#000000` | `#03060D` |
+
+O notch deixou de ser mais claro que o fundo. O texto do relógio não mudou: o pico de brilho foi de `#ADAFB3` para `#AAACAF`, só a suavização das bordas das letras sobre o preto.
+
+**A mudança 3 (mola assimétrica) já está no PR #2**, da sessão `notch-mola-orelhas-anima`: abre com repique leve (0,42 s, amortecimento 0,8) e fecha sem repique. Não fiz nada aqui para não conflitar.

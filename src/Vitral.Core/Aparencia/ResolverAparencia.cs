@@ -81,11 +81,11 @@ public static class ResolverAparencia
     private static (Base Partes, Base Notch) Tema(TemaAparencia tema, VisualWindows w) => tema switch
     {
         TemaAparencia.Automatico when w.ModoEscuro =>
-            (new(MaterialParte.Vidro, "#141826", 55, null), new(MaterialParte.Solido, "#0B0C10", 100, null)),
+            (new(MaterialParte.Vidro, "#141826", 55, null), new(MaterialParte.Solido, "#000000", 100, null)),
         TemaAparencia.Automatico =>
             (new(MaterialParte.Vidro, "#FAFAFC", 72, null), new(MaterialParte.Solido, "#F4F4F6", 100, null)),
         TemaAparencia.PretoSolido =>
-            (new(MaterialParte.Solido, "#0B0C10", 100, "#F2F2F2"), new(MaterialParte.Solido, "#0B0C10", 100, "#F2F2F2")),
+            (new(MaterialParte.Solido, "#0B0C10", 100, "#F2F2F2"), new(MaterialParte.Solido, "#000000", 100, "#F2F2F2")),
         TemaAparencia.Claro =>
             (new(MaterialParte.Vidro, "#FAFAFC", 72, "#2F6FED"), new(MaterialParte.Solido, "#F4F4F6", 100, "#2F6FED")),
         TemaAparencia.VidroColorido =>
@@ -94,7 +94,7 @@ public static class ResolverAparencia
             (new(MaterialParte.Solido, "#24262B", 100, "#3DDBB5"), new(MaterialParte.Solido, "#1A1B1F", 100, "#3DDBB5")),
         TemaAparencia.Cristal =>
             (new(MaterialParte.Vidro, "#FFFFFF", 8, "#FFFFFF"), new(MaterialParte.Vidro, "#000000", 55, "#FFFFFF")),
-        _ => (new(MaterialParte.Vidro, "#0A0F20", 72, "#F2B544"), new(MaterialParte.Solido, "#0B0C10", 100, "#F2B544")),
+        _ => (new(MaterialParte.Vidro, "#0A0F20", 72, "#F2B544"), new(MaterialParte.Solido, "#000000", 100, "#F2B544")),
     };
 
     private static ValoresParte Montar(Base b, AjustesAparencia? geral, AjustesAparencia? propria, bool ehNotch, VisualWindows w)

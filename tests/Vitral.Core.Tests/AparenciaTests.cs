@@ -12,8 +12,8 @@ public sealed class AparenciaTests
     private static CorArgb C(string hex, byte alfa = 255) => CorArgb.DeHex(hex, alfa)!.Value;
 
     [Theory]
-    [InlineData(TemaAparencia.VidroEscuro, MaterialParte.Vidro, "#0A0F20", 184, "#F2B544", MaterialParte.Solido, "#0B0C10", 255)]
-    [InlineData(TemaAparencia.PretoSolido, MaterialParte.Solido, "#0B0C10", 255, "#F2F2F2", MaterialParte.Solido, "#0B0C10", 255)]
+    [InlineData(TemaAparencia.VidroEscuro, MaterialParte.Vidro, "#0A0F20", 184, "#F2B544", MaterialParte.Solido, "#000000", 255)]
+    [InlineData(TemaAparencia.PretoSolido, MaterialParte.Solido, "#0B0C10", 255, "#F2F2F2", MaterialParte.Solido, "#000000", 255)]
     [InlineData(TemaAparencia.Claro, MaterialParte.Vidro, "#FAFAFC", 184, "#2F6FED", MaterialParte.Solido, "#F4F4F6", 255)]
     [InlineData(TemaAparencia.VidroColorido, MaterialParte.Vidro, "#783CB4", 107, "#FFD1FF", MaterialParte.Vidro, "#461E6E", 217)]
     [InlineData(TemaAparencia.Grafite, MaterialParte.Solido, "#24262B", 255, "#3DDBB5", MaterialParte.Solido, "#1A1B1F", 255)]
@@ -39,7 +39,7 @@ public sealed class AparenciaTests
         var escuro = R(new AparenciaPerfil(TemaAparencia.Automatico), Escuro);
         Assert.Equal(C("#141826", 140), escuro.Ilhas.Fundo);
         Assert.Equal(C("#0078D4"), escuro.Ilhas.Destaque);
-        Assert.Equal(C("#0B0C10"), escuro.Notch.Fundo);
+        Assert.Equal(C("#000000"), escuro.Notch.Fundo);
 
         var claro = R(new AparenciaPerfil(TemaAparencia.Automatico), ClaroWin with { CorDestaque = "#E81123" });
         Assert.Equal(C("#FAFAFC", 184), claro.Doca.Fundo);
