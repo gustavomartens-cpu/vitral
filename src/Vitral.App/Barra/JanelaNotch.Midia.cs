@@ -19,7 +19,7 @@ internal sealed partial class JanelaNotch
     private readonly TextBlock _subtituloMidia = new() { FontSize = 11, TextTrimming = TextTrimming.CharacterEllipsis };
     private readonly Grid _tempoMidia = new() { Height = 3, Margin = new Thickness(0, 7, 0, 0) };
     private readonly ScaleTransform _fracaoMidia = new(0, 1);
-    private readonly TextBlock _botaoTocar = new();
+    private readonly TextBlock _botaoTocar = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private readonly Rectangle[] _barrasCartao = new Rectangle[5];
     private PainelMidiaViewModel? _cartao;
 
