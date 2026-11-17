@@ -31,6 +31,10 @@ public sealed class AtividadeClaude(Func<DateTime> agora)
     }
 
     private readonly Dictionary<string, Sessao> _sessoes = [];
+
+    /// A transcrição de cada sessão que já passou por aqui: a resposta pela ficha do notch retoma a sessão sem um novo
+    /// UserPromptSubmit, e a conferência continua precisando do arquivo.
+    private readonly Dictionary<string, string> _transcricoes = [];
     private DateTime? _checkAte;
 
     public event Action? Mudou;
@@ -47,6 +51,9 @@ public sealed class AtividadeClaude(Func<DateTime> agora)
     /// Há o que conferir de tempos em tempos: sessões abertas ou o check aceso.
     public bool PrecisaConferir => _sessoes.Count > 0 || _checkAte is not null;
 
+    /// De quanto em quanto tempo conferir: a cada segundo com o check aceso (some em ~3 s), senão a cada 10 s.
+    public TimeSpan IntervaloConferencia => TimeSpan.FromSeconds(_checkAte is null ? 10 : 1);
+
     public void Chegou(AvisoClaude aviso) => Mudando(() =>
     {
         var chave = aviso.ChaveSessao;
@@ -55,6 +62,7 @@ public sealed class AtividadeClaude(Func<DateTime> agora)
             case TipoAviso.Comecou:
                 var s = Pegar(chave);
                 s.Transcricao = aviso.Transcricao ?? s.Transcricao;
+                if (s.Transcricao is { } t) _transcricoes[chave] = t;
                 s.UltimaAtividade = agora();
                 s.EsperaDesde = null; // mensagem nova: o Claude voltou a trabalhar
                 break;
@@ -65,6 +73,16 @@ public sealed class AtividadeClaude(Func<DateTime> agora)
                 if (!aviso.DeOutraOrigem) _checkAte = agora().AddSeconds(SegundosCheck);
                 break;
         }
+    });
+
+    /// O Gustavo respondeu pela ficha do notch: o Stop devolveu o texto e o Claude segue trabalhando, sem passar pelo
+    /// UserPromptSubmit.
+    public void Retomou(string chave) => Mudando(() =>
+    {
+        var s = Pegar(chave);
+        s.Transcricao ??= _transcricoes.GetValueOrDefault(chave);
+        s.UltimaAtividade = agora();
+        s.EsperaDesde = null;
     });
 
     /// Um pedido de permissão ou uma pergunta da sessão entrou no notch.

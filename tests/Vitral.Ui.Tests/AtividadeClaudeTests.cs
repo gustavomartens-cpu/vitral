@@ -211,6 +211,41 @@ public sealed class AtividadeClaudeTests
         Assert.Equal(new ResumoAtividade(0, 1, false), a.Resumo);
     }
 
+    [Fact]
+    public void Com_o_check_aceso_confere_a_cada_segundo() // o check some em ~3 s, não no tique de 10 s
+    {
+        var a = Criar();
+        a.Chegou(Comecou());
+        Assert.Equal(TimeSpan.FromSeconds(10), a.IntervaloConferencia);
+        a.Chegou(Terminou());
+        Assert.Equal(TimeSpan.FromSeconds(1), a.IntervaloConferencia);
+        _agora = _agora.AddSeconds(3.1);
+        a.Conferir(_ => null);
+        Assert.Equal(TimeSpan.FromSeconds(10), a.IntervaloConferencia);
+    }
+
+    [Fact]
+    public void Resposta_pelo_notch_volta_a_rodar_com_a_mesma_transcricao()
+    {
+        var a = Criar();
+        a.Chegou(Comecou());
+        a.Chegou(Terminou());
+        a.Retomou("s1"); // o texto da ficha de resposta voltou pelo Stop: o Claude segue trabalhando
+        Assert.Equal(new ResumoAtividade(1, 0, true), a.Resumo);
+        string? lida = null;
+        a.Conferir(c => { lida = c; return new(_agora, true); });
+        Assert.Equal("t1", lida);
+        Assert.Equal(0, a.Resumo.Rodando);
+    }
+
+    [Fact]
+    public void Retomou_sessao_desconhecida_conta_sem_transcricao()
+    {
+        var a = Criar();
+        a.Retomou("s7");
+        Assert.Equal(1, a.Resumo.Rodando);
+    }
+
     // Os lados do notch fechado (R8: ordem fixa)
 
     private static readonly EstadoMidia Musica = new("Lo-fi", "Lofi Girl", "Spotify", true, null);

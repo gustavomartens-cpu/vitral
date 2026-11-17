@@ -118,11 +118,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         if (!_atividadeLigada)
         {
             _atividadeLigada = true;
-            _atividade.Mudou += () => { if (_atividade.PrecisaConferir) _tiqueAtividade.Start(); };
+            _atividade.Mudou += ConferirAtividade;
             _tiqueAtividade.Tick += (_, _) =>
             {
                 _atividade.Conferir(LerTranscricao);
-                if (!_atividade.PrecisaConferir) _tiqueAtividade.Stop();
+                ConferirAtividade();
             };
         }
         if (_relogio is not null)
@@ -213,10 +213,19 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         // O Stop que segura a resposta não manda o aviso de fim: o turno do Gustavo terminou (o check, R1).
         _atividade.Chegou(new Vitral.Core.Claude.AvisoClaude(Vitral.Core.Claude.TipoAviso.Terminou, pedido.Sessao, "")
             { SessaoId = pedido.SessaoId, Origem = Vitral.Core.Claude.TurnoClaude.Humano });
-        if (_atividade.PrecisaConferir) _tiqueAtividade.Start();
-        if (_relogio is { IsVisible: true } notch) return notch.Responder(pedido);
-        _relogio?.SemNotch(pedido);
-        return Task.FromResult<string?>(null);
+        ConferirAtividade();
+        if (_relogio is not { IsVisible: true } notch)
+        {
+            _relogio?.SemNotch(pedido);
+            return Task.FromResult<string?>(null);
+        }
+        var resposta = notch.Responder(pedido);
+        // Com o texto da ficha, o Claude volta a trabalhar sem passar pelo UserPromptSubmit: o spinner volta.
+        _ = resposta.ContinueWith(t =>
+        {
+            if (t.IsCompletedSuccessfully && t.Result is not null) _atividade.Retomou(pedido.SessaoId ?? pedido.Sessao);
+        }, TaskScheduler.FromCurrentSynchronizationContext());
+        return resposta;
     }
 
     /// O Claude largou o pedido (respondido no app): a ficha sai.
@@ -265,7 +274,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     public void Avisar(Vitral.Core.Claude.AvisoClaude aviso)
     {
         _atividade.Chegou(aviso); // conta mesmo com o notch escondido (tela cheia)
-        if (_atividade.PrecisaConferir) _tiqueAtividade.Start(); // o check se apaga sozinho
+        ConferirAtividade(); // o check se apaga sozinho
         if (aviso.Tipo == Vitral.Core.Claude.TipoAviso.Comecou) return; // só conta a sessão (notch fechado, R1)
         if (_relogio is { IsVisible: true } notch) notch.Avisar(aviso);
         else if (aviso.Tipo == Vitral.Core.Claude.TipoAviso.Atualizacao) _atualizacaoGuardada = aviso;
@@ -278,6 +287,14 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     public void SumiuDaAgenda(string idCompromisso) => _relogio?.SumiuDaAgenda(idCompromisso);
 
     private Vitral.Core.Claude.AvisoClaude? _atualizacaoGuardada;
+
+    /// O tique das conferências: a cada segundo com o check aceso, a cada 10 s com sessões abertas, parado sem nada.
+    private void ConferirAtividade()
+    {
+        if (!_atividade.PrecisaConferir) { _tiqueAtividade.Stop(); return; }
+        if (_tiqueAtividade.Interval != _atividade.IntervaloConferencia) _tiqueAtividade.Interval = _atividade.IntervaloConferencia;
+        _tiqueAtividade.Start();
+    }
 
     /// A data da última escrita da transcrição e se o fim dela é um Ctrl+C (os últimos 8 KB). Null se não deu para ler.
     private static LeituraTranscricao? LerTranscricao(string caminho)

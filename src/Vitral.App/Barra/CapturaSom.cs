@@ -21,10 +21,17 @@ internal sealed class CapturaSom(Dispatcher ui) : IDisposable
     private static readonly Guid IidCaptureClient = new("C8ADBD64-E71E-48A0-A4DE-185C395CD317");
     private static readonly Guid SubtipoFloat = new("00000003-0000-0010-8000-00AA00389B71");
 
-    private readonly BandasSom _bandas = new();
-    private Thread? _thread;
-    private volatile bool _ligada;
-    private int _envioPendente;
+    /// Cada ligada tem a própria thread e o próprio estado: desligar só avisa a thread, que termina sozinha (sem travar a
+    /// interface), e uma ligada logo em seguida não divide nada com a anterior que ainda esteja saindo.
+    private sealed class Execucao
+    {
+        public volatile bool Ligada = true;
+        public readonly BandasSom Bandas = new();
+        public long UltimoEnvio;
+        public int EnvioPendente;
+    }
+
+    private Execucao? _atual;
     private string? _ultimoErro;
 
     /// As 5 barras (0 a 1), na thread da interface.
@@ -32,40 +39,38 @@ internal sealed class CapturaSom(Dispatcher ui) : IDisposable
 
     public void Ligar()
     {
-        if (_ligada) return;
-        _ligada = true;
-        _thread = new Thread(Rodar) { IsBackground = true, Name = "Vitral.CapturaSom" };
-        _thread.SetApartmentState(ApartmentState.MTA);
-        _thread.Start();
+        if (_atual is not null) return;
+        var execucao = _atual = new Execucao();
+        var thread = new Thread(() => Rodar(execucao)) { IsBackground = true, Name = "Vitral.CapturaSom" };
+        thread.SetApartmentState(ApartmentState.MTA);
+        thread.Start();
     }
 
     public void Desligar()
     {
-        if (!_ligada) return;
-        _ligada = false;
-        _thread?.Join(500);
-        _thread = null;
-        _bandas.Zerar();
+        if (_atual is null) return;
+        _atual.Ligada = false;
+        _atual = null;
     }
 
     public void Dispose() => Desligar();
 
-    private void Rodar()
+    private void Rodar(Execucao e)
     {
-        while (_ligada)
+        while (e.Ligada)
         {
-            try { CapturarAteTrocar(); }
-            catch (Exception e) when (e is not OutOfMemoryException)
+            try { CapturarAteTrocar(e); }
+            catch (Exception erro) when (erro is not OutOfMemoryException)
             {
                 // Um log por tipo de falha, não um por tentativa (o aparelho pode ficar sumido por muito tempo).
-                if (_ultimoErro != e.Message) { _ultimoErro = e.Message; LogBarra.Erro("CapturaSom", e); }
-                Dormir(EsperaErroMs);
+                if (_ultimoErro != erro.Message) { _ultimoErro = erro.Message; LogBarra.Erro("CapturaSom", erro); }
+                Dormir(e, EsperaErroMs);
             }
         }
     }
 
     /// Captura no aparelho padrão até ele deixar de ser o padrão, a captura ser desligada ou dar erro.
-    private void CapturarAteTrocar()
+    private void CapturarAteTrocar(Execucao e)
     {
         var enumerador = (IMMDeviceEnumerator)new MMDeviceEnumerator();
         object? cliente = null, captura = null;
@@ -92,7 +97,7 @@ internal sealed class CapturaSom(Dispatcher ui) : IDisposable
             var leitor = (IAudioCaptureClient)captura;
             Marshal.ThrowExceptionForHR(audio.Start());
             _ultimoErro = null;
-            try { Ler(enumerador, id, leitor, canais, taxa); }
+            try { Ler(e, enumerador, id, leitor, canais, taxa); }
             finally { audio.Stop(); }
         }
         finally
@@ -102,13 +107,13 @@ internal sealed class CapturaSom(Dispatcher ui) : IDisposable
         }
     }
 
-    private void Ler(IMMDeviceEnumerator enumerador, string id, IAudioCaptureClient leitor, int canais, int taxa)
+    private void Ler(Execucao e, IMMDeviceEnumerator enumerador, string id, IAudioCaptureClient leitor, int canais, int taxa)
     {
         int tamanhoJanela = taxa / 50; // 20 ms
         var janela = new float[tamanhoJanela];
         int cheio = 0;
         long ultimaJanela = Environment.TickCount64, ultimaConferencia = ultimaJanela;
-        while (_ligada)
+        while (e.Ligada)
         {
             Thread.Sleep(10);
             Marshal.ThrowExceptionForHR(leitor.GetNextPacketSize(out var pacote));
@@ -124,7 +129,7 @@ internal sealed class CapturaSom(Dispatcher ui) : IDisposable
                             for (int c = 0; c < canais; c++)
                                 soma += BitConverter.Int32BitsToSingle(Marshal.ReadInt32(dados, (q * canais + c) * 4));
                         janela[cheio++] = soma / canais;
-                        if (cheio == tamanhoJanela) { Entregar(janela, taxa); cheio = 0; ultimaJanela = Environment.TickCount64; }
+                        if (cheio == tamanhoJanela) { Entregar(e, janela, taxa); cheio = 0; ultimaJanela = Environment.TickCount64; }
                     }
                 }
                 finally { leitor.ReleaseBuffer(quadros); }
@@ -132,7 +137,7 @@ internal sealed class CapturaSom(Dispatcher ui) : IDisposable
             }
             // Nada tocando: o loopback não manda pacotes; as barras descem como num silêncio.
             var agora = Environment.TickCount64;
-            if (agora - ultimaJanela > 40) { Array.Clear(janela); cheio = 0; Entregar(janela, taxa); ultimaJanela = agora; }
+            if (agora - ultimaJanela > 40) { Array.Clear(janela); cheio = 0; Entregar(e, janela, taxa); ultimaJanela = agora; }
             if (agora - ultimaConferencia > ConferirAparelhoMs)
             {
                 ultimaConferencia = agora;
@@ -143,24 +148,22 @@ internal sealed class CapturaSom(Dispatcher ui) : IDisposable
         }
     }
 
-    private long _ultimoEnvio;
-
-    private void Entregar(float[] janela, int taxa)
+    private void Entregar(Execucao e, float[] janela, int taxa)
     {
-        var valores = _bandas.Processar(janela, taxa);
+        var valores = e.Bandas.Processar(janela, taxa);
         var agora = Environment.TickCount64;
-        if (agora - _ultimoEnvio < IntervaloEnvioMs || Interlocked.Exchange(ref _envioPendente, 1) == 1) return;
-        _ultimoEnvio = agora;
+        if (agora - e.UltimoEnvio < IntervaloEnvioMs || Interlocked.Exchange(ref e.EnvioPendente, 1) == 1) return;
+        e.UltimoEnvio = agora;
         ui.BeginInvoke(() =>
         {
-            Interlocked.Exchange(ref _envioPendente, 0);
-            if (_ligada) Bandas?.Invoke(valores);
+            Interlocked.Exchange(ref e.EnvioPendente, 0);
+            if (e.Ligada) Bandas?.Invoke(valores);
         });
     }
 
-    private void Dormir(int ms)
+    private static void Dormir(Execucao e, int ms)
     {
-        for (int t = 0; t < ms && _ligada; t += 50) Thread.Sleep(50);
+        for (int t = 0; t < ms && e.Ligada; t += 50) Thread.Sleep(50);
     }
 
     /// WAVEFORMATEX (ou EXTENSIBLE) em float de 32 bits.
