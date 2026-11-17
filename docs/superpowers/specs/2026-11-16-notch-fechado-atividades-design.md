@@ -11,6 +11,11 @@ passa a morar no notch.
 
 ## 2. O que fica
 
+> **Mudou na execução (pedidos do Gustavo, 16/11/2026):** a capa fica à esquerda só sem o Claude; com ele à esquerda,
+> a capa vai para a direita junto das barras. Sem som saindo do PC (música noutro aparelho, como o Echo Dot), as
+> barras dançam num ritmo próprio (a análise de áudio do Spotify não está aberta a apps novos). Cada lado tem 52 px.
+> O glifo ✳ virou ✶ (o ✳ sai como emoji no Windows). O logo do app do Claude perde a margem transparente.
+
 ### 2.1 Notch fechado (opção B)
 
 ```

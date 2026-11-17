@@ -12,7 +12,10 @@ mesmos arquivos ao mesmo tempo:
 2. ~~**Avisos mais certeiros**~~ (R4 só o que o Gustavo pediu, R5 ausente devolve ao app, R7 lembrar pergunta
    esquecida, com o pulso da forma): feito na 0.18.0. Ficou para depois: a espera de ~6 s antes do "terminou" não
    entrou (o gancho Stop já marca o fim do turno); o tempo de ausência (5 min) é fixo, sem opção nas Configurações.
-3. **Notch fechado com atividades** (R1 Claude trabalhando, R3 mídia viva, R8 fila de prioridade), depois do bloco 1.
+3. ~~**Notch fechado com atividades**~~ (R1 Claude trabalhando, R3 mídia viva, R8 fila de prioridade): feito na
+   0.19.0, com a ilha da mídia retirada (a música mora no notch). Ficou para depois: ordem configurável nas
+   Configurações (R8 virou ordem fixa), nome da música no notch fechado, e apagar o `IlhaMidiaViewModel` que ficou
+   sem uso.
 4. **Depois:** R6 atalhos nas fichas, R9 cota do Claude, R10 bandeja de arquivos, R11 notch no monitor certo.
 
 ## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)
@@ -131,4 +134,4 @@ uso pessoal tudo bem; se o Vitral for distribuído para outras pessoas, trocar p
   não cai ao clicar no outro monitor e balão do app do Claude calado (0.15.1), borda invisível da janela vizinha sem
   derrubar a tela cheia e aba Aparência sem esticar quando maximizada (0.15.2). Painel de controles na barra do topo
   (Bluetooth e aparelhos, modo avião, não perturbe que também cala o notch, luz noturna, brilho por tela) e microfone
-  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2), perguntas do Claude no notch com as opções (0.17.0), aviso do fone (Realtek) de volta, pergunta que não cai com o aviso do Claude, fichas de 30 s e logo do app do Claude (0.17.2), conversa à vista sem aviso no notch (0.17.3), notch com mola, orelhas que crescem, conteúdo que nasce do notch, pulso e mouse no alto da tela, avisos do Claude só do que foi pedido, uma vez por mensagem, pedido direto para o app com o Gustavo ausente e lembrete da pergunta esquecida (0.18.0).
+  no painel de volume (0.16.0), acertos do brilho, do Bluetooth e do microfone (0.16.1), acertos das notificações e balões marcados no registro (0.16.2), perguntas do Claude no notch com as opções (0.17.0), aviso do fone (Realtek) de volta, pergunta que não cai com o aviso do Claude, fichas de 30 s e logo do app do Claude (0.17.2), conversa à vista sem aviso no notch (0.17.3), notch com mola, orelhas que crescem, conteúdo que nasce do notch, pulso e mouse no alto da tela, avisos do Claude só do que foi pedido, uma vez por mensagem, pedido direto para o app com o Gustavo ausente e lembrete da pergunta esquecida (0.18.0), notch fechado com o Claude trabalhando (spinner, número, espera e check) e a música (capa e barras do som, dançando quando toca noutro aparelho), notch que desce com a música e sem a ilha da mídia (0.19.0).
