@@ -13,6 +13,9 @@ public sealed partial class PainelIconesViewModel : ObservableObject, IDisposabl
 
     public ObservableCollection<IconeBandeja> Icones { get; } = [];
 
+    /// Clique direito no ícone do Vitral.
+    public event Action? PediuMenuDoVitral;
+
     public PainelIconesViewModel(IFonteBandeja fonte)
     {
         _fonte = fonte;
@@ -28,7 +31,15 @@ public sealed partial class PainelIconesViewModel : ObservableObject, IDisposabl
     }
 
     [RelayCommand] private void ClicarEsquerdo(IconeBandeja? icone) { if (icone is not null) _fonte.Clicar(icone.Id, BotaoMouse.Esquerdo); }
-    [RelayCommand] private void ClicarDireito(IconeBandeja? icone) { if (icone is not null) _fonte.Clicar(icone.Id, BotaoMouse.Direito); }
+    /// No ícone do próprio Vitral o menu não é repassado: ele abriria dentro deste clique e fecharia na hora; o App abre o
+    /// menu dele (o da bandeja) depois de fechar o painel.
+    [RelayCommand]
+    private void ClicarDireito(IconeBandeja? icone)
+    {
+        if (icone is null) return;
+        if (icone.DoVitral) PediuMenuDoVitral?.Invoke();
+        else _fonte.Clicar(icone.Id, BotaoMouse.Direito);
+    }
 
     public void Dispose() => _fonte.Mudou -= Ler;
 }

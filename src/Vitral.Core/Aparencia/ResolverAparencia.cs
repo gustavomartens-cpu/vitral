@@ -30,6 +30,13 @@ public sealed record ValoresParte(MaterialParte Material, CorArgb Fundo, CorArgb
 
     public bool TextoClaro => Luminancia(Texto) > 0.5;
 
+    /// Contorno de vidro em gradiente (pesquisa visual §4, passo B), de cima para baixo. Fundo escuro: um realce de luz no
+    /// alto (branco 16%) que some para 6%. Fundo claro: o inverso, como o Windows 11 faz — fraco em cima (preto 5%) e mais
+    /// marcado embaixo (14%), uma sombra de contato que separa a peça do fundo.
+    public CorArgb BordaCima => TextoClaro ? new CorArgb(41, 255, 255, 255) : new CorArgb(13, 0, 0, 0);
+
+    public CorArgb BordaBaixo => TextoClaro ? new CorArgb(15, 255, 255, 255) : new CorArgb(36, 0, 0, 0);
+
     /// Texto sobre o próprio texto (a pílula principal inverte as cores). Não vem do fundo: no Cristal o fundo é branco
     /// quase transparente e o texto é claro.
     public CorArgb TextoInverso => TextoClaro ? Escuro : Claro;
@@ -74,11 +81,11 @@ public static class ResolverAparencia
     private static (Base Partes, Base Notch) Tema(TemaAparencia tema, VisualWindows w) => tema switch
     {
         TemaAparencia.Automatico when w.ModoEscuro =>
-            (new(MaterialParte.Vidro, "#141826", 55, null), new(MaterialParte.Solido, "#0B0C10", 100, null)),
+            (new(MaterialParte.Vidro, "#141826", 55, null), new(MaterialParte.Solido, "#000000", 100, null)),
         TemaAparencia.Automatico =>
             (new(MaterialParte.Vidro, "#FAFAFC", 72, null), new(MaterialParte.Solido, "#F4F4F6", 100, null)),
         TemaAparencia.PretoSolido =>
-            (new(MaterialParte.Solido, "#0B0C10", 100, "#F2F2F2"), new(MaterialParte.Solido, "#0B0C10", 100, "#F2F2F2")),
+            (new(MaterialParte.Solido, "#0B0C10", 100, "#F2F2F2"), new(MaterialParte.Solido, "#000000", 100, "#F2F2F2")),
         TemaAparencia.Claro =>
             (new(MaterialParte.Vidro, "#FAFAFC", 72, "#2F6FED"), new(MaterialParte.Solido, "#F4F4F6", 100, "#2F6FED")),
         TemaAparencia.VidroColorido =>
@@ -87,7 +94,7 @@ public static class ResolverAparencia
             (new(MaterialParte.Solido, "#24262B", 100, "#3DDBB5"), new(MaterialParte.Solido, "#1A1B1F", 100, "#3DDBB5")),
         TemaAparencia.Cristal =>
             (new(MaterialParte.Vidro, "#FFFFFF", 8, "#FFFFFF"), new(MaterialParte.Vidro, "#000000", 55, "#FFFFFF")),
-        _ => (new(MaterialParte.Vidro, "#0A0F20", 72, "#F2B544"), new(MaterialParte.Solido, "#0B0C10", 100, "#F2B544")),
+        _ => (new(MaterialParte.Vidro, "#0A0F20", 72, "#F2B544"), new(MaterialParte.Solido, "#000000", 100, "#F2B544")),
     };
 
     private static ValoresParte Montar(Base b, AjustesAparencia? geral, AjustesAparencia? propria, bool ehNotch, VisualWindows w)

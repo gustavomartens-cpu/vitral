@@ -168,6 +168,7 @@ public partial class App : Application
         if (estado.Aviso is not null) Principal.Mensagem = estado.Aviso;
 
         _bandeja = new Bandeja(this);
+        if (_barra is not null) _barra.MenuDoVitral = () => _bandeja?.AbrirNoCursor(); // clique direito no ícone do Vitral no painel da setinha
         if (!peloWindows) MostrarJanela();
         else if (estado.Aviso is not null || estado.TesteCancelado) _bandeja.Avisar("Vitral", Principal.Mensagem ?? "");
     }

@@ -46,7 +46,7 @@ internal sealed partial class FonteBandeja(Dispatcher ui) : IFonteBandeja, IDisp
 
     public IReadOnlyList<IconeBandeja> Icones =>
         _shell?.NotificationArea.TrayIcons.ToList()
-            .Select(i => new IconeBandeja(i.Identifier, i.Title ?? "", i.Icon, JaNoTopo.Contains(i.GUID)))
+            .Select(i => new IconeBandeja(i.Identifier, i.Title ?? "", i.Icon, JaNoTopo.Contains(i.GUID)) { DoVitral = DoProprioVitral(i.HWnd) })
             .ToList() ?? [];
 
     public void Ligar()
@@ -118,6 +118,14 @@ internal sealed partial class FonteBandeja(Dispatcher ui) : IFonteBandeja, IDisp
             icone.IconMouseUp(b, posicao, duplo);
         }
         catch (Exception e) when (e is not OutOfMemoryException) { LogBarra.Erro("Bandeja.Clicar", e); }
+    }
+
+    [LibraryImport("user32.dll")] private static partial uint GetWindowThreadProcessId(IntPtr h, out uint processo);
+
+    private static bool DoProprioVitral(IntPtr janela)
+    {
+        GetWindowThreadProcessId(janela, out var processo);
+        return processo == (uint)Environment.ProcessId;
     }
 
     public void Dispose() => Desligar();
