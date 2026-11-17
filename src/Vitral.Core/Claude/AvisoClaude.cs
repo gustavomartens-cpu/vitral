@@ -6,7 +6,8 @@ using System.Text.RegularExpressions;
 namespace Vitral.Core.Claude;
 
 /// Atualizacao: aviso do próprio Vitral (versão nova pronta), que usa o mesmo notch (spec da atualização §5.3).
-public enum TipoAviso { Terminou, Esperando, Atualizacao }
+/// Comecou: o Gustavo mandou uma mensagem (gancho UserPromptSubmit); não desce, só conta a sessão como rodando (R1).
+public enum TipoAviso { Terminou, Esperando, Atualizacao, Comecou }
 
 /// Aviso do Claude Code para o notch (spec do notch vivo §4.3): vem do gancho (Stop ou Notification) e viaja pelo canal
 /// como uma linha JSON.
@@ -42,6 +43,15 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
 
     /// Fim de um turno que o Gustavo não pediu (tarefa em segundo plano, subagente, outra sessão, continuação
     /// automática): não desce no notch. Sem a origem (versão do Claude Code sem o campo), avisa como antes.
+    /// A transcrição da sessão (transcript_path): o notch confere se ela parou ou foi interrompida (R1).
+    public string? Transcricao { get; init; }
+
+    /// O tipo do Notification ("permission_prompt", "idle_prompt"…): o ocioso não pinta a sessão de âmbar (R1).
+    public string? TipoNotificacao { get; init; }
+
+    /// A sessão, para contar: o id dela, ou a pasta quando o Claude Code não manda o id.
+    public string ChaveSessao => SessaoId ?? Sessao;
+
     public bool DeOutraOrigem => Tipo == TipoAviso.Terminou && Origem is not null && Origem != TurnoClaude.Humano;
 
     /// O que o gancho recebe na entrada padrão. <paramref name="lerFimDoArquivo"/> devolve o fim da transcrição (ou
@@ -59,6 +69,7 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
             {
                 "Stop" => TipoAviso.Terminou,
                 "Notification" => TipoAviso.Esperando,
+                "UserPromptSubmit" => TipoAviso.Comecou,
                 _ => null,
             };
             if (tipo is null) return null;
@@ -66,6 +77,9 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
             var sessao = string.IsNullOrEmpty(pasta) ? "Claude" : Path.GetFileName(pasta);
             if (string.IsNullOrEmpty(sessao)) sessao = "Claude";
             // A última resposta do Claude: o resumo do Stop e, nos dois eventos, a mensagem inteira.
+            // O começo não lê a transcrição: o gancho é assíncrono e só marca a sessão como rodando.
+            if (tipo == TipoAviso.Comecou)
+                return new AvisoClaude(TipoAviso.Comecou, sessao, "") { SessaoId = Campo(raiz, "session_id"), Transcricao = Campo(raiz, "transcript_path"), ForaDoApp = foraDoApp };
             string? resposta = null;
             TurnoClaude? turno = null;
             if (Campo(raiz, "transcript_path") is { } caminho && lerFimDoArquivo(caminho) is { } trecho)
@@ -82,6 +96,8 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
                 ForaDoApp = foraDoApp,
                 Origem = turno?.Origem,
                 Mensagem = turno?.Mensagem,
+                Transcricao = Campo(raiz, "transcript_path"),
+                TipoNotificacao = Campo(raiz, "notification_type"),
             };
         }
         catch (JsonException) { return null; }
@@ -140,7 +156,7 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
     [GeneratedRegex(@"\s+")] private static partial Regex Espacos();
 
     /// A linha que viaja pelo canal.
-    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId, Completo, ForaDoApp, AppId, AVista, Origem, Mensagem), OpcoesLinha);
+    public string ParaLinha() => JsonSerializer.Serialize(new Linha(Tipo.ToString(), Sessao, Texto, SessaoId, Completo, ForaDoApp, AppId, AVista, Origem, Mensagem, Transcricao, TipoNotificacao), OpcoesLinha);
 
     public static AvisoClaude? DeLinha(string? linha)
     {
@@ -149,11 +165,11 @@ public sealed partial record AvisoClaude(TipoAviso Tipo, string Sessao, string T
         {
             var l = JsonSerializer.Deserialize<Linha>(linha, OpcoesLinha);
             return l is { Sessao: not null, Texto: not null } && Enum.TryParse<TipoAviso>(l.Tipo, out var tipo)
-                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId, Completo = l.Completo, ForaDoApp = l.ForaDoApp, AppId = l.AppId, AVista = l.AVista, Origem = l.Origem, Mensagem = l.Mensagem } : null;
+                ? new AvisoClaude(tipo, l.Sessao, l.Texto) { SessaoId = l.SessaoId, Completo = l.Completo, ForaDoApp = l.ForaDoApp, AppId = l.AppId, AVista = l.AVista, Origem = l.Origem, Mensagem = l.Mensagem, Transcricao = l.Transcricao, TipoNotificacao = l.TipoNotificacao } : null;
         }
         catch (JsonException) { return null; }
     }
 
     private sealed record Linha(string? Tipo, string? Sessao, string? Texto, string? SessaoId, string? Completo, bool ForaDoApp, string? AppId,
-        bool AVista = false, string? Origem = null, string? Mensagem = null);
+        bool AVista = false, string? Origem = null, string? Mensagem = null, string? Transcricao = null, string? TipoNotificacao = null);
 }

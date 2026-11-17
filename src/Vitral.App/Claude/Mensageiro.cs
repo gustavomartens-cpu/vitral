@@ -156,6 +156,8 @@ internal static partial class Mensageiro
                 return;
             }
             if (LerAviso(entrada) is not { } lido) return;
+            // O começo do turno (R1) só conta a sessão como rodando: vai direto, sem ler as janelas.
+            if (lido.Tipo == TipoAviso.Comecou) { Canal.Enviar(Canal.Nome(sid), lido.ParaLinha()); return; }
             // A conversa no app do Claude (herdada da sessão), para o clique no notch abrir exatamente ela. O fim de um
             // turno que o Gustavo não pediu (R4) segue pelo canal mesmo assim: tira do notch o pedido e a ficha da
             // sessão, que foram resolvidos, sem descer.

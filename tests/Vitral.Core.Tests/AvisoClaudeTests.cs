@@ -13,7 +13,7 @@ public sealed class AvisoClaudeTests
     {
         var a = AvisoClaude.DeGancho("""{"hook_event_name":"Stop","cwd":"G:\\dev\\vitral","transcript_path":"t"}""",
             caminho => caminho == "t" ? Usuario + "\n" + Assistente + "\n" : null);
-        Assert.Equal(new AvisoClaude(TipoAviso.Terminou, "vitral", "Pronto, fiz o commit.") { Completo = "Pronto, fiz o commit." }, a);
+        Assert.Equal(new AvisoClaude(TipoAviso.Terminou, "vitral", "Pronto, fiz o commit.") { Completo = "Pronto, fiz o commit.", Transcricao = "t" }, a);
     }
 
     [Fact]
@@ -109,5 +109,53 @@ public sealed class AvisoClaudeTests
         Assert.Equal("Feito\n\nTudo certo aqui, com uma resposta bem mais longa que oitenta caracteres para ver o corte do resumo.", a.Completo);
         Assert.True(a.ForaDoApp);
         Assert.True(a.Texto.Length <= 80);
+    }
+
+    [Fact]
+    public void UserPromptSubmit_vira_Comecou_sem_ler_a_transcricao()
+    {
+        var a = AvisoClaude.DeGancho("""{"hook_event_name":"UserPromptSubmit","cwd":"C:/p/vitral","session_id":"s1","transcript_path":"C:/t.jsonl","prompt":"oi"}""",
+            _ => throw new InvalidOperationException("não lê"))!;
+        Assert.Equal(TipoAviso.Comecou, a.Tipo);
+        Assert.Equal("C:/t.jsonl", a.Transcricao);
+        Assert.Equal("s1", a.ChaveSessao);
+        Assert.Equal("vitral", a.Sessao);
+        Assert.Equal("", a.Texto);
+    }
+
+    [Fact]
+    public void Sem_session_id_a_chave_e_a_pasta()
+    {
+        var a = AvisoClaude.DeGancho("""{"hook_event_name":"UserPromptSubmit","cwd":"C:/p/vitral"}""", _ => null)!;
+        Assert.Equal("vitral", a.ChaveSessao);
+    }
+
+    [Fact]
+    public void Notification_guarda_o_tipo()
+    {
+        var a = AvisoClaude.DeGancho("""{"hook_event_name":"Notification","cwd":"C:/p/x","message":"oi","notification_type":"idle_prompt"}""", _ => null)!;
+        Assert.Equal("idle_prompt", a.TipoNotificacao);
+    }
+
+    [Fact]
+    public void Linha_de_ida_e_volta_leva_Transcricao_e_TipoNotificacao()
+    {
+        var a = new AvisoClaude(TipoAviso.Comecou, "x", "") { Transcricao = @"C:/t.jsonl", TipoNotificacao = "permission_prompt", SessaoId = "s" };
+        var b = AvisoClaude.DeLinha(a.ParaLinha())!;
+        Assert.Equal(TipoAviso.Comecou, b.Tipo);
+        Assert.Equal(a.Transcricao, b.Transcricao);
+        Assert.Equal("permission_prompt", b.TipoNotificacao);
+    }
+
+    [Fact]
+    public void Interrompido_ve_a_marca_no_fim()
+    {
+        const string marca = """{"type":"user","message":{"role":"user","content":[{"type":"text","text":"[Request interrupted by user]"}]}}""";
+        const string marcaTexto = """{"type":"user","message":{"role":"user","content":"[Request interrupted by user for tool use]"}}""";
+        Assert.True(TurnoClaude.Interrompido(Usuario + "\n" + Assistente + "\n" + marca + "\n"));
+        Assert.True(TurnoClaude.Interrompido(Usuario + "\n" + marcaTexto));
+        Assert.False(TurnoClaude.Interrompido(marca + "\n" + Assistente));
+        Assert.False(TurnoClaude.Interrompido(Usuario + "\n" + Assistente));
+        Assert.False(TurnoClaude.Interrompido(""));
     }
 }

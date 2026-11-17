@@ -242,6 +242,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     /// versão nova, que só vem uma vez, espera o notch voltar (tela cheia, barra desligada).
     public void Avisar(Vitral.Core.Claude.AvisoClaude aviso)
     {
+        if (aviso.Tipo == Vitral.Core.Claude.TipoAviso.Comecou) return; // só conta a sessão (notch fechado, R1)
         if (_relogio is { IsVisible: true } notch) notch.Avisar(aviso);
         else if (aviso.Tipo == Vitral.Core.Claude.TipoAviso.Atualizacao) _atualizacaoGuardada = aviso;
     }

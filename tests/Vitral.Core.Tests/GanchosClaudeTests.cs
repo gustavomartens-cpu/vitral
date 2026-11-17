@@ -210,4 +210,31 @@ public sealed class GanchosClaudeTests
 
     [Fact]
     public void Desligar_tira_os_tres() => Assert.Null(Raiz(GanchosClaude.Desligar(GanchosClaude.Ligar("{}", Comando)))["hooks"]);
+
+    [Fact]
+    public void Ligar_poe_UserPromptSubmit_assincrono()
+    {
+        var texto = GanchosClaude.Ligar("{}", Comando);
+        var item = Raiz(texto)["hooks"]!["UserPromptSubmit"]![0]!["hooks"]![0]!;
+        Assert.True((bool)item["async"]!);
+        Assert.Equal(Comando, (string?)item["command"]);
+        Assert.True(GanchosClaude.EstaLigado(texto));
+    }
+
+    [Fact]
+    public void Sem_UserPromptSubmit_nao_esta_ligado_e_Atualizar_completa()
+    {
+        var raiz = Raiz(GanchosClaude.Ligar("{}", Comando)).AsObject();
+        raiz["hooks"]!.AsObject().Remove("UserPromptSubmit"); // os três ganchos da 0.18
+        var antigo = raiz.ToJsonString();
+        Assert.False(GanchosClaude.EstaLigado(antigo));
+        var novo = GanchosClaude.Atualizar(antigo)!;
+        Assert.True(GanchosClaude.EstaLigado(novo));
+        Assert.Equal(1, Nossos(novo, "UserPromptSubmit"));
+        Assert.Equal(1, Nossos(novo, "Stop"));
+    }
+
+    [Fact]
+    public void Desligar_tira_o_UserPromptSubmit() =>
+        Assert.Null(Raiz(GanchosClaude.Desligar(GanchosClaude.Ligar("{}", Comando)))["hooks"]?["UserPromptSubmit"]);
 }

@@ -43,6 +43,35 @@ public sealed record TurnoClaude(string Origem, string Mensagem)
         return null;
     }
 
+    /// O Ctrl+C não dispara o Stop (R1): o Claude Code grava uma mensagem do usuário "[Request interrupted by user…]".
+    /// Verdadeiro quando a última mensagem (de usuário ou do assistente) do trecho é essa marca.
+    public static bool Interrompido(string trechoJsonl)
+    {
+        var linhas = trechoJsonl.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        for (int i = linhas.Length - 1; i >= 0; i--)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(linhas[i]);
+                var raiz = doc.RootElement;
+                if (raiz.ValueKind != JsonValueKind.Object) continue;
+                var tipo = Texto(raiz, "type");
+                if (tipo == "assistant") return false;
+                if (tipo != "user" || !raiz.TryGetProperty("message", out var msg) || msg.ValueKind != JsonValueKind.Object
+                    || !msg.TryGetProperty("content", out var conteudo)) continue;
+                if (conteudo.ValueKind == JsonValueKind.String) return EhMarca(conteudo.GetString());
+                if (conteudo.ValueKind != JsonValueKind.Array) continue;
+                foreach (var bloco in conteudo.EnumerateArray())
+                    if (bloco.ValueKind == JsonValueKind.Object && Texto(bloco, "type") == "text") return EhMarca(Texto(bloco, "text"));
+                return false; // resultado de ferramenta: o turno seguia
+            }
+            catch (JsonException) { /* linha cortada ou estranha: segue */ }
+        }
+        return false;
+    }
+
+    private static bool EhMarca(string? texto) => texto?.StartsWith("[Request interrupted by user", StringComparison.Ordinal) == true;
+
     private static string? Texto(JsonElement e, string nome) =>
         e.TryGetProperty(nome, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 }
