@@ -201,6 +201,16 @@ public sealed class AtividadeClaudeTests
         Assert.True(a.PrecisaConferir);
     }
 
+    [Fact]
+    public void Do_gancho_ate_a_contagem_pelo_canal()
+    {
+        static AvisoClaude PeloCanal(string json) => AvisoClaude.DeLinha(AvisoClaude.DeGancho(json, _ => null)!.ParaLinha())!;
+        var a = Criar();
+        a.Chegou(PeloCanal("""{"hook_event_name":"UserPromptSubmit","cwd":"G:/dev/demo","session_id":"demo1"}"""));
+        a.Chegou(PeloCanal("""{"hook_event_name":"Notification","cwd":"G:/dev/demo","session_id":"demo1","message":"x","notification_type":"permission_prompt"}"""));
+        Assert.Equal(new ResumoAtividade(0, 1, false), a.Resumo);
+    }
+
     // Os lados do notch fechado (R8: ordem fixa)
 
     private static readonly EstadoMidia Musica = new("Lo-fi", "Lofi Girl", "Spotify", true, null);
@@ -214,15 +224,19 @@ public sealed class AtividadeClaudeTests
         Assert.Equal(new Lados(LadoEsquerdo.Rodando, 2, true), LadosNotch.Decidir(new(2, 0, false), Musica, true));
 
     [Fact]
-    public void So_musica_mostra_capa() =>
-        Assert.Equal(new Lados(LadoEsquerdo.Capa, 0, true), LadosNotch.Decidir(new(0, 0, false), Musica, true));
+    public void So_musica_deixa_a_esquerda_vazia() // a capa fica à direita, com as barras (Gustavo, 16/11/2026)
+    {
+        var lados = LadosNotch.Decidir(new(0, 0, false), Musica, true);
+        Assert.Equal(new Lados(LadoEsquerdo.Nada, 0, true), lados);
+        Assert.True(lados.Algum);
+    }
 
     [Fact]
     public void Musica_desligada_no_perfil() =>
         Assert.Equal(new Lados(LadoEsquerdo.Nada, 0, false), LadosNotch.Decidir(new(0, 0, false), Musica, false));
 
     [Fact]
-    public void Terminou_ganha_da_capa() =>
+    public void Terminou_com_musica() =>
         Assert.Equal(new Lados(LadoEsquerdo.Terminou, 0, true), LadosNotch.Decidir(new(0, 0, true), Musica, true));
 
     [Fact]

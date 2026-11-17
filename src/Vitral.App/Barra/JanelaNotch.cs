@@ -134,6 +134,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         AplicarFormasNoRelogio();
         _linhaRelogio.Children.Add(_relogio);
         _linhaRelogio.Children.Add(_ponto);
+        MontarLados();
         MontarAviso();
         _esquerda = MontarEsquerda();
         _direita = MontarDireita();
@@ -610,6 +611,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     {
         var modo = _estado.Modo;
         bool laterais = _estado.Laterais && modo is ModoNotch.Normal or ModoNotch.Lembrete;
+        AtualizarLados();
         double largura, altura, raio;
         if (modo == ModoNotch.Permissao) _fichaDePergunta = _estado.PedidoAtual is { } atual ? EhPergunta(atual) : _fichaDePergunta;
         bool pergunta = modo == ModoNotch.Permissao && _fichaDePergunta;
@@ -652,7 +654,8 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         else
         {
             largura = LarguraNormal + (modo == ModoNotch.Lembrete ? NotchMedidas.ExtraLembrete : 0)
-                + (laterais ? 2 * NotchMedidas.LarguraLateral : 0);
+                + (laterais ? 2 * NotchMedidas.LarguraLateral : 0)
+                + (LadosVisiveis ? 2 * LadosNotch.LarguraLado : 0);
             altura = Formas.Altura;
             raio = Formas.Raio;
         }

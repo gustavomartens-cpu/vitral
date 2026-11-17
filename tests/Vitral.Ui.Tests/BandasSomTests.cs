@@ -95,3 +95,52 @@ public sealed class BandasSomTests
     public void Clarear_mantem_cor_clara() =>
         Assert.Equal(((byte)230, (byte)180, (byte)120), CorDaCapa.Clarear((230, 180, 120)));
 }
+
+/// Sem som saindo do PC (música tocando noutro aparelho, como o Echo Dot), as barras dançam num ritmo próprio
+/// (Gustavo, 16/11/2026).
+public sealed class SomOuDancaTests
+{
+    private DateTime _agora = new(2026, 11, 16, 22, 0, 0);
+    private static readonly double[] Silencio = [0, 0, 0, 0, 0];
+    private static readonly double[] Som = [0.2, 0.9, 0.5, 0.3, 0.1];
+
+    [Fact]
+    public void Com_som_segue_o_som()
+    {
+        var s = new SomOuDanca();
+        Assert.Equal(Som, s.Proximos(Som, _agora));
+    }
+
+    [Fact]
+    public void Silencio_curto_segue_o_som() // uma pausa entre faixas não vira dança
+    {
+        var s = new SomOuDanca();
+        s.Proximos(Som, _agora);
+        _agora = _agora.AddSeconds(1.4);
+        Assert.Equal(Silencio, s.Proximos(Silencio, _agora));
+    }
+
+    [Fact]
+    public void Silencio_longo_danca()
+    {
+        var s = new SomOuDanca();
+        s.Proximos(Silencio, _agora);
+        _agora = _agora.AddSeconds(1.6);
+        var a = s.Proximos(Silencio, _agora);
+        _agora = _agora.AddSeconds(0.2);
+        var b = s.Proximos(Silencio, _agora);
+        Assert.All(a.Concat(b), v => Assert.InRange(v, 0.15, 1));
+        Assert.NotEqual(a, b); // mexe com o tempo
+        Assert.True(a.Distinct().Count() > 1); // cada barra no seu passo
+    }
+
+    [Fact]
+    public void Som_de_volta_para_a_danca()
+    {
+        var s = new SomOuDanca();
+        s.Proximos(Silencio, _agora);
+        _agora = _agora.AddSeconds(3);
+        s.Proximos(Silencio, _agora);
+        Assert.Equal(Som, s.Proximos(Som, _agora.AddMilliseconds(30)));
+    }
+}

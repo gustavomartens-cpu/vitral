@@ -20,6 +20,12 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     private IlhaStatusViewModel? _vmStatus;
     private BarraTopoPerfil _estado = BarraTopoPerfil.Desligada;
 
+    // O Claude trabalhando no notch fechado (spec do notch fechado §3.1): vive com a barra, não com a janela do notch,
+    // e confere as transcrições a cada 10 s enquanto há sessão aberta ou o check aceso.
+    private readonly AtividadeClaude _atividade = new(() => DateTime.Now);
+    private readonly System.Windows.Threading.DispatcherTimer _tiqueAtividade = new() { Interval = TimeSpan.FromSeconds(10) };
+    private bool _atividadeLigada;
+
     // Painéis próprios (spec v2): um por vez, decidido pelo coordenador; as janelas nascem na primeira abertura.
     private readonly CoordenadorPaineis _coordenador = new();
     private readonly PassarMouse _passar = new(() => DateTime.Now);
@@ -119,6 +125,22 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
         _midia = Ajustar(_midia, _vmMidia, "Mídia", () => new IlhaMidia());
         _relogio = AjustarNotch(_relogio, _vmRelogio);
+        if (!_atividadeLigada)
+        {
+            _atividadeLigada = true;
+            _atividade.Mudou += () => { if (_atividade.PrecisaConferir) _tiqueAtividade.Start(); };
+            _tiqueAtividade.Tick += (_, _) =>
+            {
+                _atividade.Conferir(LerTranscricao);
+                if (!_atividade.PrecisaConferir) _tiqueAtividade.Stop();
+            };
+        }
+        if (_relogio is not null)
+        {
+            _relogio.Atividade = _atividade;
+            _relogio.Midia = _fontes.Midia;
+            _relogio.MidiaLigada = ilhas.Midia;
+        }
         _notificacoes?.Sincronizar(); // com o notch na tela (ou sem ele), o balão do Windows calado (ou de volta)
         _status = Ajustar(_status, _vmStatus, "Status", () => new IlhaStatus());
         AtualizarVisibilidadeMidia();
@@ -183,15 +205,24 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     }
 
     /// Pedido de permissão do Claude (spec das permissões §3.5): vai para a ficha do notch; sem notch visível, sem resposta.
-    public Task<Vitral.Core.Claude.RespostaPedido?> Pedir(Vitral.Core.Claude.PedidoPermissao pedido)
+    public async Task<Vitral.Core.Claude.RespostaPedido?> Pedir(Vitral.Core.Claude.PedidoPermissao pedido)
     {
-        return _relogio is { IsVisible: true } notch ? notch.Pedir(pedido) : Task.FromResult<Vitral.Core.Claude.RespostaPedido?>(null);
+        if (_relogio is not { IsVisible: true } notch) return null;
+        // A sessão espera o Gustavo enquanto o pedido está no notch (âmbar no notch fechado, R1).
+        var chave = pedido.SessaoId ?? pedido.Sessao;
+        _atividade.PedidoAbriu(chave);
+        try { return await notch.Pedir(pedido); }
+        finally { _atividade.PedidoSaiu(chave); }
     }
 
     /// Uma sessão terminou fora do app (spec da resposta §4.3): vai para a ficha de resposta; sem notch visível, vai
     /// direto para as pendências e a sessão é solta na hora.
     public Task<string?> Responder(Vitral.Core.Claude.PedidoResposta pedido)
     {
+        // O Stop que segura a resposta não manda o aviso de fim: o turno do Gustavo terminou (o check, R1).
+        _atividade.Chegou(new Vitral.Core.Claude.AvisoClaude(Vitral.Core.Claude.TipoAviso.Terminou, pedido.Sessao, "")
+            { SessaoId = pedido.SessaoId, Origem = Vitral.Core.Claude.TurnoClaude.Humano });
+        if (_atividade.PrecisaConferir) _tiqueAtividade.Start();
         if (_relogio is { IsVisible: true } notch) return notch.Responder(pedido);
         _relogio?.SemNotch(pedido);
         return Task.FromResult<string?>(null);
@@ -242,6 +273,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     /// versão nova, que só vem uma vez, espera o notch voltar (tela cheia, barra desligada).
     public void Avisar(Vitral.Core.Claude.AvisoClaude aviso)
     {
+        _atividade.Chegou(aviso); // conta mesmo com o notch escondido (tela cheia)
+        if (_atividade.PrecisaConferir) _tiqueAtividade.Start(); // o check se apaga sozinho
         if (aviso.Tipo == Vitral.Core.Claude.TipoAviso.Comecou) return; // só conta a sessão (notch fechado, R1)
         if (_relogio is { IsVisible: true } notch) notch.Avisar(aviso);
         else if (aviso.Tipo == Vitral.Core.Claude.TipoAviso.Atualizacao) _atualizacaoGuardada = aviso;
@@ -254,6 +287,25 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     public void SumiuDaAgenda(string idCompromisso) => _relogio?.SumiuDaAgenda(idCompromisso);
 
     private Vitral.Core.Claude.AvisoClaude? _atualizacaoGuardada;
+
+    /// A data da última escrita da transcrição e se o fim dela é um Ctrl+C (os últimos 8 KB). Null se não deu para ler.
+    private static LeituraTranscricao? LerTranscricao(string caminho)
+    {
+        try
+        {
+            var info = new System.IO.FileInfo(caminho);
+            if (!info.Exists) return null;
+            using var arquivo = new System.IO.FileStream(caminho, System.IO.FileMode.Open, System.IO.FileAccess.Read,
+                System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete);
+            long inicio = Math.Max(0, arquivo.Length - 8192);
+            arquivo.Seek(inicio, System.IO.SeekOrigin.Begin);
+            var bytes = new byte[arquivo.Length - inicio];
+            arquivo.ReadExactly(bytes);
+            var fim = System.Text.Encoding.UTF8.GetString(bytes);
+            return new(info.LastWriteTime, Vitral.Core.Claude.TurnoClaude.Interrompido(fim));
+        }
+        catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { return null; }
+    }
 
     private void AoMudarMidia(object? s, PropertyChangedEventArgs e)
     {
