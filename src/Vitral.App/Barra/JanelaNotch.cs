@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Vitral.App.Tema;
@@ -134,6 +135,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         AplicarFormasNoRelogio();
         _linhaRelogio.Children.Add(_relogio);
         _linhaRelogio.Children.Add(_ponto);
+        MontarLados();
         MontarAviso();
         _esquerda = MontarEsquerda();
         _direita = MontarDireita();
@@ -157,6 +159,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _conteudo.Children.Add(_esquerda);
         _conteudo.Children.Add(_meio);
         _conteudo.Children.Add(_direita);
+        MontarMidia();
 
         // A forma ocupa a largura total (corpo + orelhas) a partir da borda da tela; o pedaço acima da borda (fora da
         // tela) também é pintado, para a costura com a borda não aparecer.
@@ -639,6 +642,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
     {
         var modo = _estado.Modo;
         bool laterais = _estado.Laterais && modo is ModoNotch.Normal or ModoNotch.Lembrete;
+        AtualizarLados();
         double largura, altura, raio;
         if (modo == ModoNotch.Permissao) _fichaDePergunta = _estado.PedidoAtual is { } atual ? EhPergunta(atual) : _fichaDePergunta;
         bool pergunta = modo == ModoNotch.Permissao && _fichaDePergunta;
@@ -681,9 +685,12 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         else
         {
             largura = LarguraNormal + (modo == ModoNotch.Lembrete ? NotchMedidas.ExtraLembrete : 0)
-                + (laterais ? 2 * NotchMedidas.LarguraLateral : 0);
-            altura = Formas.Altura;
-            raio = Formas.Raio;
+                + (laterais ? 2 * NotchMedidas.LarguraLateral : 0)
+                + (LadosVisiveis ? 2 * LadosNotch.LarguraLado : 0);
+            // Com música, o notch desce com ela embaixo das laterais (spec do notch fechado §2.2).
+            bool cartao = laterais && CartaoVisivel;
+            altura = Formas.Altura + (cartao ? NotchMedidas.AlturaLinhaMidia : 0);
+            raio = cartao ? NotchMedidas.RaioAviso : Formas.Raio;
         }
         largura = Math.Min(largura, NotchMedidas.LarguraMaxCorpo);
 
@@ -698,6 +705,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         Trocar(_linhaRelogio, mostrar: modo is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta), animar);
         Trocar(_esquerda, mostrar: laterais, animar);
         Trocar(_direita, mostrar: laterais, animar);
+        Trocar(_linhaMidia, mostrar: laterais && CartaoVisivel, animar);
 
         Mover(largura, altura, raio, animar);
     }

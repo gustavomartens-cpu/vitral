@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prévia do notch fechado</title>
+<style>
+:root{--fundo:#f4f3ef;--texto:#1f1e1b;--sec:#5f5e5a}
+@media (prefers-color-scheme: dark){:root{--fundo:#1b1b1a;--texto:#ecebe6;--sec:#a9a79f}}
+body{margin:0;padding:24px 16px;background:var(--fundo);color:var(--texto);font-family:"Segoe UI",system-ui,sans-serif;max-width:760px;margin:0 auto}
+h1{font-size:20px;font-weight:600;margin:0 0 20px}
+h2{font-size:16px;font-weight:600;margin:28px 0 8px}
+p{font-size:14px;color:var(--sec);margin:6px 0 0;line-height:1.5}
+.tela{background:linear-gradient(135deg,#2b3a55,#3b2f4a);border-radius:12px;height:80px;position:relative;overflow:hidden}
+.ilha{position:absolute;top:10px;height:30px;border-radius:15px;background:rgba(18,18,22,.75);color:#e8e6e1;font-size:12px;display:flex;align-items:center;gap:7px;padding:0 12px}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);height:36px;background:#000;border-radius:0 0 16px 16px;color:#f2f0ea;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;font-size:13px;font-weight:600;transition:width .45s cubic-bezier(.3,1.4,.5,1);white-space:nowrap;box-sizing:border-box}
+.capa{width:18px;height:18px;border-radius:4px;background:linear-gradient(135deg,#d98a57,#8a3f6a);flex:none}
+.barras{display:flex;gap:2px;align-items:center;height:16px}
+.barras i{display:block;width:3px;border-radius:2px;background:#e4a679;height:6px;transition:height .1s}
+.spin{color:#D97757;font-size:16px;width:14px;text-align:center}
+.cont{color:#D97757;font-size:12px}
+.lado{display:flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+<h1>Proposta nova: sem a ilha da mídia</h1>
+
+<h2>Fechado (Claude rodando + música)</h2>
+<div class="tela">
+  <div class="notch" style="width:190px"><span class="lado"><span class="spin"></span><span class="cont">2</span></span><span>14:32</span><span class="barras"><i></i><i></i><i></i><i></i><i></i></span></div>
+  <div class="ilha" style="right:12px">📶 🔊 🔋</div>
+</div>
+<p>A ilha da esquerda some. Sem o Claude, a capa ocupa o lado esquerdo do relógio.</p>
+
+<h2>Mouse em cima: o notch desce</h2>
+<div class="tela" style="height:150px">
+  <div class="notch" style="width:420px;height:120px;border-radius:0 0 24px 24px;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:10px 18px;gap:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+      <span class="lado"><span class="spin"></span><span style="font-weight:400">2 sessões rodando</span></span>
+      <span>14:32</span>
+      <span style="font-weight:400">🔔 3</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="capa" style="width:46px;height:46px;border-radius:8px"></span>
+      <div style="flex:1;min-width:0"><div style="font-size:14px">Lo-fi beats to relax</div><div style="font-size:12px;font-weight:400;color:#aaa">Lofi Girl · Spotify</div></div>
+      <span class="barras"><i></i><i></i><i></i><i></i><i></i></span>
+      <span style="font-size:16px;letter-spacing:10px;margin-left:8px">⏮⏸⏭</span>
+    </div>
+  </div>
+  <div class="ilha" style="right:12px">📶 🔊 🔋</div>
+</div>
+<p>Em cima ficam as laterais de hoje (Claude à esquerda, sino à direita). Embaixo vem a música, com capa, nome, artista e os botões que estavam na ilha.</p>
+
+<h1 style="margin-top:40px">As opções anteriores</h1>
+
+<h2>A) Um de cada vez</h2>
+<div class="tela">
+  <div class="ilha" style="left:12px"><span class="capa"></span>Lo-fi beats · ⏸</div>
+  <div class="notch" style="width:150px"><span class="spin"></span><span>14:32</span><span class="cont">2</span></div>
+  <div class="ilha" style="right:12px">📶 🔊 🔋</div>
+</div>
+<p>O Claude ganha e ocupa os dois lados. A música fica só na ilha da esquerda e volta ao notch quando o Claude para.</p>
+
+<h2>B) Dividido</h2>
+<div class="tela">
+  <div class="ilha" style="left:12px"><span class="capa"></span>Lo-fi beats · ⏸</div>
+  <div class="notch" style="width:190px"><span class="lado"><span class="spin"></span><span class="cont">2</span></span><span>14:32</span><span class="barras"><i></i><i></i><i></i><i></i><i></i></span></div>
+  <div class="ilha" style="right:12px">📶 🔊 🔋</div>
+</div>
+<p>O Claude fica à esquerda (spinner e número) e as barras do som à direita. Sem o Claude, a capa ocupa a esquerda.</p>
+
+<h2>C) Revezando</h2>
+<div class="tela">
+  <div class="ilha" style="left:12px"><span class="capa"></span>Lo-fi beats · ⏸</div>
+  <div class="notch" id="nC" style="width:150px"></div>
+  <div class="ilha" style="right:12px">📶 🔊 🔋</div>
+</div>
+<p>Alterna entre os dois a cada ~5 s (aqui, 2,5 s para dar para ver).</p>
+
+<h2>Só a música (vale para todos)</h2>
+<div class="tela">
+  <div class="ilha" style="left:12px"><span class="capa"></span>Lo-fi beats · ⏸</div>
+  <div class="notch" style="width:170px"><span class="capa"></span><span>14:32</span><span class="barras"><i></i><i></i><i></i><i></i><i></i></span></div>
+  <div class="ilha" style="right:12px">📶 🔊 🔋</div>
+</div>
+<p>Capa à esquerda e barras tingidas pela cor da capa à direita.</p>
+
+<h2>Estados do Claude (vale para todos)</h2>
+<div class="tela" style="height:60px">
+  <div class="notch" style="left:18%;width:140px"><span class="spin"></span><span>14:32</span><span class="cont">1</span></div>
+  <div class="notch" style="left:50%;width:140px"><span style="color:#EF9F27">●</span><span>14:32</span><span style="color:#EF9F27;font-size:12px">1</span></div>
+  <div class="notch" style="left:82%;width:140px"><span style="color:#97C459">✓</span><span>14:32</span><span></span></div>
+</div>
+<p>Rodando (spinner na cor do Claude) · esperando você (âmbar) · terminou (check que some sozinho em ~3 s).</p>
+
+<script>
+const g=['·','✢','✳','✻','✽','✻','✳','✢'];let k=0;
+const claude='<span class="spin"></span><span>14:32</span><span class="cont">2</span>';
+const midia='<span class="capa"></span><span>14:32</span><span class="barras"><i></i><i></i><i></i><i></i><i></i></span>';
+const nC=document.getElementById('nC');let vez=0;nC.innerHTML=claude;
+setInterval(()=>{vez^=1;nC.innerHTML=vez?midia:claude;nC.style.width=vez?'170px':'150px'},2500);
+setInterval(()=>{k=(k+1)%g.length;document.querySelectorAll('.spin').forEach(s=>s.textContent=g[k]);
+document.querySelectorAll('.barras i').forEach(b=>b.style.height=(4+Math.random()*12).toFixed(0)+'px')},120);
+</script>
+</body>
+</html>

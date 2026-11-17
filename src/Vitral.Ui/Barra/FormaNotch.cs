@@ -7,6 +7,8 @@ public static class NotchMedidas
 {
     public const double AlturaNormal = 34, AlturaAviso = 52, LarguraMaxAviso = 360, RaioNormal = 16, RaioAviso = 22, ExtraLembrete = 14;
     public const double LarguraLateral = 130, LarguraMaxCorpo = 460;
+    /// A linha da música que desce com as laterais (spec do notch fechado §2.2): capa de 46 px e o respiro de baixo.
+    public const double AlturaLinhaMidia = 64;
     public const double AlturaPermissao = 112, LarguraMaxPermissao = 420, RaioPermissao = 24;
     /// Ficha de resposta (spec da resposta §4.2): largura fixa; a altura acompanha a mensagem, até o máximo.
     public const double LarguraResposta = 460, AlturaMaxResposta = 300;

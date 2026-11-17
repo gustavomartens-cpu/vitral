@@ -11,7 +11,10 @@ public static class GanchosClaude
     /// Um item é nosso quando algum comando dele tem este trecho.
     public const string Marca = "Vitral.exe\" --aviso";
 
-    private static readonly string[] Eventos = ["Stop", "Notification", "PermissionRequest"];
+    private static readonly string[] Eventos = ["Stop", "Notification", "PermissionRequest", "UserPromptSubmit"];
+
+    /// Os ganchos da 0.18 e anteriores (sem o UserPromptSubmit, que marca o Claude rodando no notch fechado, R1).
+    private static readonly string[] EventosAntigos = ["Stop", "Notification", "PermissionRequest"];
 
     /// O pedido de permissão espera o notch por até 30 s, e a pergunta do Claude por até 5 min (spec das perguntas §4):
     /// o Claude não pode cortar antes.
@@ -52,6 +55,7 @@ public static class GanchosClaude
             var item = new JsonObject { ["type"] = "command", ["command"] = comando };
             if (evento == "PermissionRequest") item["timeout"] = TempoPermissao;
             if (evento == "Stop") item["timeout"] = TempoResposta;
+            if (evento == "UserPromptSubmit") item["async"] = true; // não atrasa o envio da mensagem
             lista.Add(new JsonObject { ["hooks"] = new JsonArray(item) });
         }
         return raiz.ToJsonString(Escrita);
@@ -67,10 +71,14 @@ public static class GanchosClaude
             var raiz = Ler(texto);
             // Só a diferença de uma versão anterior: os três eventos nossos, com o Stop em dia e a permissão com o tempo
             // antigo. Um evento tirado ou um tempo escolhido à mão é do usuário e fica como está.
-            if (EstaLigado(texto) || !Eventos.All(e => Lista(raiz, e)?.Any(EhNosso) == true)
-                || !Lista(raiz, "Stop")!.Any(i => EhNosso(i) && TemTempo(i, TempoResposta))
-                || !Lista(raiz, "PermissionRequest")!.Any(i => EhNosso(i) && TemTempo(i, TempoPermissaoAntigo))) return null;
-            var comando = Eventos.SelectMany(e => Lista(raiz, e) ?? []).Where(EhNosso)
+            // Também a falta do UserPromptSubmit, que a 0.19 trouxe (com os três de antes nossos e em dia).
+            if (EstaLigado(texto) || !EventosAntigos.All(e => Lista(raiz, e)?.Any(EhNosso) == true)
+                || !Lista(raiz, "Stop")!.Any(i => EhNosso(i) && TemTempo(i, TempoResposta))) return null;
+            bool tempoAntigo = Lista(raiz, "PermissionRequest")!.Any(i => EhNosso(i) && TemTempo(i, TempoPermissaoAntigo));
+            bool semComeco = Lista(raiz, "UserPromptSubmit")?.Any(EhNosso) != true
+                && Lista(raiz, "PermissionRequest")!.Any(i => EhNosso(i) && TemTempo(i, TempoPermissao));
+            if (!tempoAntigo && !semComeco) return null;
+            var comando = EventosAntigos.SelectMany(e => Lista(raiz, e) ?? []).Where(EhNosso)
                 .SelectMany(i => i!["hooks"]!.AsArray()).Select(c => c?["command"] is JsonValue v && v.TryGetValue<string>(out var s) ? s : null)
                 .FirstOrDefault(s => s?.Contains(Marca, StringComparison.OrdinalIgnoreCase) == true);
             return comando is null ? null : Ligar(texto, comando);
