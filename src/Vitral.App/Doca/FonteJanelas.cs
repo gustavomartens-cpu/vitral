@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Runtime.InteropServices;
 using System.ComponentModel;
 using System.Windows.Threading;
 using ManagedShell.WindowsTasks;
@@ -9,7 +10,7 @@ namespace Vitral.App.Doca;
 
 /// Janelas da doca (spec da doca §5): a lista filtrada da ManagedShell (Tasks.GroupedWindows, as mesmas regras da
 /// barra do Windows: ilhas, doca e painéis do Vitral ficam de fora por serem janelas de ferramenta). Avisa uma vez por rodada de mudanças, na thread da interface.
-internal sealed class FonteJanelas : IFonteJanelas, IDisposable
+internal sealed partial class FonteJanelas : IFonteJanelas, IDisposable
 {
     private readonly FonteBandeja _bandeja;
     private readonly Dispatcher _ui;
@@ -108,6 +109,22 @@ internal sealed class FonteJanelas : IFonteJanelas, IDisposable
         if (j.IsMinimized) j.Restore();
         j.BringToFront();
     }, "FonteJanelas.Ativar");
+
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool ShowWindow(IntPtr h, int comando);
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool SetWindowPos(IntPtr h, IntPtr depoisDe, int x, int y, int l, int a, uint flags);
+    private const int SwMostrarSemAtivar = 4; // SW_SHOWNOACTIVATE: desminimiza sem ativar
+    private const uint SemMover = 0x2, SemTamanho = 0x1, SemAtivar = 0x10;
+    private static readonly IntPtr AcimaDeTodas = -1, VoltaAoNormal = -2;
+
+    /// Sobe a janela por cima das outras sem ativá-la. Durante um arraste o Windows não deixa outro programa tomar o
+    /// foco (o Ativar não faria nada), e para soltar o arquivo basta a janela estar por cima. Põe e tira o "sempre
+    /// visível": é o jeito que o Windows aceita de subir a janela de outro programa sem ser o da frente.
+    public void TrazerSemFoco(IntPtr janela) => Com(janela, j =>
+    {
+        if (j.IsMinimized) ShowWindow(j.Handle, SwMostrarSemAtivar);
+        SetWindowPos(j.Handle, AcimaDeTodas, 0, 0, 0, 0, SemMover | SemTamanho | SemAtivar);
+        SetWindowPos(j.Handle, VoltaAoNormal, 0, 0, 0, 0, SemMover | SemTamanho | SemAtivar);
+    }, "FonteJanelas.TrazerSemFoco");
 
     public void Minimizar(IntPtr janela) => Com(janela, j => j.Minimize(), "FonteJanelas.Minimizar");
 

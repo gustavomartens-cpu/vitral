@@ -42,6 +42,7 @@
                 <DataTemplate>
                     <Grid x:Name="Raiz" Width="{DynamicResource DocaBotaoLargura}" Height="{DynamicResource DocaBotaoAltura}" ToolTip="{Binding Nome}" Background="Transparent" AllowDrop="True"
                           PreviewMouseLeftButtonDown="Botao_Apertou" PreviewMouseMove="Botao_Moveu" Drop="Botao_Soltou"
+                          DragEnter="Botao_ArrasteEntrou" DragOver="Botao_ArrastePassou" DragLeave="Botao_ArrasteSaiu"
                           MouseRightButtonUp="Botao_Direito" MouseUp="Botao_Meio"
                           MouseEnter="Botao_Entrou" MouseLeave="Botao_Saiu">
                         <Button Style="{StaticResource BotaoDoca}" VerticalAlignment="Top" Margin="0,2,0,0"

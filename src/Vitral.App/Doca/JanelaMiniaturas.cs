@@ -43,6 +43,11 @@ internal sealed partial class JanelaMiniaturas : Window
     private readonly List<(FrameworkElement Lugar, IntPtr Miniatura)> _miniaturas = [];
     private IntPtr _handle;
 
+    /// Quanto um arquivo arrastado fica parado sobre um botão da doca ou uma miniatura até a janela vir para a frente.
+    public static readonly TimeSpan EsperaArquivo = TimeSpan.FromMilliseconds(500);
+    private readonly System.Windows.Threading.DispatcherTimer _arquivo = new() { Interval = EsperaArquivo };
+    private Action? _aoParar;
+
     /// O botão cujas janelas estão na tela (null quando escondida).
     public BotaoAppViewModel? Botao { get; private set; }
 
@@ -75,6 +80,11 @@ internal sealed partial class JanelaMiniaturas : Window
             _handle = new WindowInteropHelper(this).Handle;
             SetLong(_handle, GwlExStyle, (IntPtr)((long)GetLong(_handle, GwlExStyle) | WsExToolWindow | WsExNoActivate));
         };
+        _arquivo.Tick += (_, _) => { _arquivo.Stop(); _aoParar?.Invoke(); _aoParar = null; };
+        // A janela toda aceita o arraste (o WPF só recebe arquivos de fora numa janela que aceita), mas só as células
+        // reagem; fora delas, nada a soltar.
+        AllowDrop = true;
+        DragOver += (_, e) => { e.Effects = DragDropEffects.None; e.Handled = true; };
         LayoutUpdated += (_, _) => AtualizarMiniaturas();
         Closed += (_, _) => Liberar();
     }
@@ -106,6 +116,8 @@ internal sealed partial class JanelaMiniaturas : Window
 
     public void Esconder()
     {
+        _arquivo.Stop();
+        _aoParar = null;
         Liberar();
         Hide();
     }
@@ -158,6 +170,25 @@ internal sealed partial class JanelaMiniaturas : Window
             if (e.OriginalSource is DependencyObject o && EhDentro(o, fechar)) return;
             vm.EscolherJanelaCommand.Execute(j);
             Esconder();
+        };
+        // Arquivo arrastado parado sobre a miniatura: essa janela vem para a frente, para soltar o arquivo nela.
+        celula.AllowDrop = true;
+        celula.DragEnter += (_, e) =>
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+            celula.Background = (Brush)celula.FindResource("SuperficieHover");
+            _aoParar = () => { vm.ArquivoParadoNaJanela(j); Esconder(); };
+            _arquivo.Stop();
+            _arquivo.Start();
+        };
+        celula.DragOver += (_, e) => { e.Effects = DragDropEffects.None; e.Handled = true; };
+        celula.DragLeave += (_, e) =>
+        {
+            var p = e.GetPosition(celula);
+            if (p.X >= 0 && p.Y >= 0 && p.X < celula.ActualWidth && p.Y < celula.ActualHeight) return; // ainda dentro
+            celula.Background = Brushes.Transparent;
+            _arquivo.Stop();
+            _aoParar = null;
         };
         return celula;
     }
