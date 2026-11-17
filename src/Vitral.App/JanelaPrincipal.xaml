@@ -377,7 +377,7 @@
                                     </Style>
                                 </StackPanel.Style>
                                 <TextBlock Text="Ilhas" Margin="0,0,0,8" />
-                                <CheckBox Content="Mídia tocando" IsChecked="{Binding Midia}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
+                                <CheckBox Content="Música no notch" IsChecked="{Binding Midia}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
                                 <CheckBox Content="Relógio" IsChecked="{Binding Relogio}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
                                 <CheckBox Content="Status (rede, volume, bateria)" IsChecked="{Binding Status}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />
                                 <CheckBox Content="CPU e memória" IsChecked="{Binding Desempenho}" Foreground="{StaticResource Texto}" FocusVisualStyle="{StaticResource FocoVitral}" Margin="0,4" />

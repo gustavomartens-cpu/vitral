@@ -32,9 +32,9 @@ public static class PosicaoIlhas
             ? new(monitor.X, monitor.Y + monitor.Altura - doca.Altura, monitor.Largura, doca.Altura)
             : new(monitor.X + (monitor.Largura - largura) / 2, monitor.Y + monitor.Altura - doca.Folga - doca.Altura, largura, doca.Altura);
 
-    /// Barra única: o fundo de lado a lado só aparece com mídia ou status ligados; sem nenhum dos dois ficaria uma faixa
-    /// vazia com o notch no meio (revisão final da 0.11.0).
-    public static bool ComFundo(bool barraUnica, bool temMidia, bool temStatus) => barraUnica && (temMidia || temStatus);
+    /// Barra única: o fundo de lado a lado só aparece com a ilha de status; sem ela ficaria uma faixa vazia com o notch no
+    /// meio (revisão final da 0.11.0). A mídia mora no notch desde a 0.19 (spec do notch fechado §2.3).
+    public static bool ComFundo(bool barraUnica, bool temStatus) => barraUnica && temStatus;
 
     /// As formas de hoje (tudo nulo).
     public static Core.Formas.ValoresFormas Padrao { get; } = Core.Formas.ResolverFormas.Resolver(null, Core.Perfis.CantosParte.Redondos);

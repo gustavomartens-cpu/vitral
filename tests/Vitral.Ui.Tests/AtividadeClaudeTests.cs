@@ -224,11 +224,20 @@ public sealed class AtividadeClaudeTests
         Assert.Equal(new Lados(LadoEsquerdo.Rodando, 2, true), LadosNotch.Decidir(new(2, 0, false), Musica, true));
 
     [Fact]
-    public void So_musica_deixa_a_esquerda_vazia() // a capa fica à direita, com as barras (Gustavo, 16/11/2026)
+    public void So_musica_capa_a_esquerda() // sem o Claude, a capa equilibra as barras (Gustavo, 16/11/2026)
     {
         var lados = LadosNotch.Decidir(new(0, 0, false), Musica, true);
-        Assert.Equal(new Lados(LadoEsquerdo.Nada, 0, true), lados);
+        Assert.Equal(new Lados(LadoEsquerdo.Capa, 0, true), lados);
+        Assert.False(lados.CapaADireita);
         Assert.True(lados.Algum);
+    }
+
+    [Fact]
+    public void Com_o_Claude_a_capa_vai_para_a_direita() // junto das barras (Gustavo, 16/11/2026)
+    {
+        Assert.True(LadosNotch.Decidir(new(1, 0, false), Musica, true).CapaADireita);
+        Assert.True(LadosNotch.Decidir(new(0, 0, true), Musica, true).CapaADireita);
+        Assert.False(LadosNotch.Decidir(new(1, 0, false), null, true).CapaADireita);
     }
 
     [Fact]

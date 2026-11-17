@@ -12,11 +12,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 {
     private ReservaFaixa? _reserva;
     private Fontes? _fontes;
-    private JanelaIlha? _midia, _status;
+    private JanelaIlha? _status; // a mídia mora no notch (spec do notch fechado §2.3)
     private JanelaNotch? _relogio; // o notch vivo (spec do notch vivo §3)
     private JanelaFundoBarra? _fundo; // barra única (spec das formas §5.2)
-    private IlhaMidiaViewModel? _vmMidia;
     private IlhaRelogioViewModel? _vmRelogio;
+    private PainelMidiaViewModel? _vmCartaoMidia; // a música no notch (spec do notch fechado §2.2)
     private IlhaStatusViewModel? _vmStatus;
     private BarraTopoPerfil _estado = BarraTopoPerfil.Desligada;
 
@@ -28,8 +28,6 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
     // Painéis próprios (spec v2): um por vez, decidido pelo coordenador; as janelas nascem na primeira abertura.
     private readonly CoordenadorPaineis _coordenador = new();
-    private readonly PassarMouse _passar = new(() => DateTime.Now);
-    private readonly System.Windows.Threading.DispatcherTimer _tiquePassar = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly Dictionary<Painel, JanelaPainel> _paineis = [];
     private CalendarioViewModel? _vmCalendario;
 
@@ -105,8 +103,6 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         if (!_coordenadorLigado)
         {
             _coordenador.PropertyChanged += AoMudarPainel;
-            _coordenador.Fixou += AoFixarPainel;
-            _tiquePassar.Tick += (_, _) => TiquePassar();
             _coordenadorLigado = true;
             bandeja.Mudou += AoMudarBandeja;
         }
@@ -114,16 +110,10 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
         // Conteúdo refeito a cada aplicação: as ilhas (e CPU/MEM) podem ter mudado no perfil.
         DescartarViewModels();
-        if (ilhas.Midia)
-        {
-            _vmMidia = new IlhaMidiaViewModel(_fontes.Midia);
-            _vmMidia.PropertyChanged += AoMudarMidia;
-        }
         if (ilhas.Relogio) _vmRelogio = new IlhaRelogioViewModel(_fontes.Agora, new RelogioWpf());
         if (ilhas.Status)
             _vmStatus = new IlhaStatusViewModel(_fontes.Desempenho, _fontes.Volume, _fontes.Rede, _fontes.Bateria, new RelogioWpf(), ilhas);
 
-        _midia = Ajustar(_midia, _vmMidia, "Mídia", () => new IlhaMidia());
         _relogio = AjustarNotch(_relogio, _vmRelogio);
         if (!_atividadeLigada)
         {
@@ -140,6 +130,8 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             _relogio.Atividade = _atividade;
             _relogio.Midia = _fontes.Midia;
             _relogio.MidiaLigada = ilhas.Midia;
+            _vmCartaoMidia ??= new PainelMidiaViewModel(_fontes.Midia, new RelogioWpf(), _fontes.Agora);
+            _relogio.CartaoMidia = _vmCartaoMidia;
         }
         _notificacoes?.Sincronizar(); // com o notch na tela (ou sem ele), o balão do Windows calado (ou de volta)
         _status = Ajustar(_status, _vmStatus, "Status", () => new IlhaStatus());
@@ -159,7 +151,6 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             var conteudo = criar();
             if (conteudo is IPedePainel pede) pede.Pediu += p => _coordenador.Alternar(p, DateTime.Now);
             if (conteudo is IlhaStatus status) { _conteudoStatus = status; status.MostrarSetinha(bandeja.Disponivel); }
-            if (conteudo is IlhaMidia midia) midia.MouseNoTitulo += dentro => MouseNaMidia(painel: false, dentro);
             janela = new JanelaIlha(nome, presaNaBorda: nome == "Relógio") { Conteudo = conteudo };
             janela.SizeChanged += (_, _) => PosicionarAgrupado.Pedir();
             janela.DpiChanged += (_, _) => ReajustarAgrupado.Pedir(); // troca de escala nem sempre manda WM_DISPLAYCHANGE
@@ -307,15 +298,6 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException) { return null; }
     }
 
-    private void AoMudarMidia(object? s, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName != nameof(IlhaMidiaViewModel.Visivel)) return;
-        // Nada mais tocando: a ilha some e o painel da mídia, se aberto, não pode ficar flutuando sem ela.
-        if (_vmMidia?.Visivel != true && _coordenador.Aberto == Painel.Midia) _coordenador.FecharTodos();
-        AtualizarVisibilidadeMidia();
-        if (_status is null) Posicionar(); // barra única só com a mídia: a faixa aparece e some com a música
-    }
-
     private bool _telaCheia;
 
     /// A ilha de mídia some quando nada toca; todas somem com um app em tela cheia.
@@ -323,7 +305,6 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     {
         bool fundoNovo = _fundo is not null && !_fundo.IsVisible && !_telaCheia;
         Mostrar(_fundo, !_telaCheia); // primeiro o fundo, para as ilhas e o notch ficarem na frente dele
-        Mostrar(_midia, !_telaCheia && _vmMidia?.Visivel == true);
         Mostrar(_relogio, !_telaCheia);
         Mostrar(_status, !_telaCheia);
         if (fundoNovo) TrazerIlhasParaFrente();
@@ -349,13 +330,12 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         try
         {
             var aberto = _coordenador.Aberto;
-            if (aberto != Painel.Midia) _passar.Fechou(); // fechou ou foi trocado: o passar larga a mídia
             foreach (var (painel, janela) in _paineis)
                 if (painel != aberto && janela.IsVisible) janela.Hide();
             if (aberto == Painel.Nenhum) return;
 
             var janelaPainel = JanelaDoPainel(aberto);
-            Window? ilha = aberto switch { Painel.Calendario or Painel.Pendencias or Painel.Notificacoes => _relogio, Painel.Midia => _midia, _ => _status };
+            Window? ilha = aberto switch { Painel.Calendario or Painel.Pendencias or Painel.Notificacoes => _relogio, _ => _status };
             if (janelaPainel is null || ilha is null)
             {
                 _coordenador.FecharTodos(); // painel ainda não existe nesta versão
@@ -364,7 +344,6 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             var alinhamento = aberto switch
             {
                 Painel.Calendario or Painel.Pendencias or Painel.Notificacoes => AlinhamentoPainel.Centro,
-                Painel.Midia => AlinhamentoPainel.Esquerda,
                 _ => AlinhamentoPainel.Direita,
             };
             var p = MonitorPrincipal.Ler();
@@ -430,50 +409,12 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             case Painel.Icones:
                 nova = new JanelaPainel("Ícones", 280) { Conteudo = new PainelIcones(), DataContext = Guardar(new PainelIconesViewModel(bandeja)) };
                 break;
-            case Painel.Midia when _fontes is not null:
-                nova = new JanelaPainel("Mídia", 260)
-                {
-                    Conteudo = new PainelMidia(),
-                    DataContext = Guardar(new PainelMidiaViewModel(_fontes.Midia, new RelogioWpf(), _fontes.Agora)),
-                };
-                nova.MouseEnter += (_, _) => MouseNaMidia(painel: true, dentro: true);
-                nova.MouseLeave += (_, _) => MouseNaMidia(painel: true, dentro: false);
-                nova.Activated += (_, _) => _coordenador.Fixar(); // clicou dentro do painel aberto pelo mouse
-                break;
         }
         if (nova is null) return null;
         nova.PerdeuFoco += () => _coordenador.FecharPorFoco(painel, DateTime.Now);
         nova.PediuFechar += _coordenador.FecharTodos;
         _paineis[painel] = nova;
         return nova;
-    }
-
-    /// O mouse na capa e no título da mídia, ou no painel dela (ver <see cref="PassarMouse"/>).
-    private void MouseNaMidia(bool painel, bool dentro)
-    {
-        if (dentro) _passar.Entrou(painel); else _passar.Saiu(painel);
-        if (!_tiquePassar.IsEnabled && !_passar.Ocioso) _tiquePassar.Start();
-    }
-
-    private void TiquePassar()
-    {
-        switch (_passar.Tique())
-        {
-            case AcaoPassar.Abrir:
-                if (!_coordenador.AbrirSemFoco(Painel.Midia)) _passar.Fechou(); // outro painel em uso: não toma o lugar
-                break;
-            case AcaoPassar.Fechar:
-                _coordenador.FecharSemFoco(Painel.Midia);
-                break;
-        }
-        if (_passar.Ocioso) _tiquePassar.Stop();
-    }
-
-    /// Fixado pelo clique (no título ou dentro do painel): o painel ganha o foco e passa a fechar como os outros.
-    private void AoFixarPainel()
-    {
-        _passar.Fixou();
-        if (_coordenador.Aberto is var p && _paineis.TryGetValue(p, out var janela) && janela.IsVisible && !janela.IsActive) janela.Activate();
     }
 
     private T Guardar<T>(T vm) where T : IDisposable
@@ -484,7 +425,6 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
     private void FecharPaineis()
     {
-        _tiquePassar.Stop();
         _coordenador.FecharTodos();
         foreach (var janela in _paineis.Values) janela.Close();
         _paineis.Clear();
@@ -513,15 +453,12 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             var p = MonitorPrincipal.Ler(); // as ilhas ficam no principal: DIPs pela escala atual dele
             var monitor = PosicaoIlhas.ParaDips(p.X, p.Y, p.Largura, p.Altura, p.Dpi);
             var formas = Tema.ServicoFormas.Instancia.Atual;
-            _midia?.AplicarCantosRetos(formas.Ilhas.CantosRetos);
             _status?.AplicarCantosRetos(formas.Ilhas.CantosRetos);
             bool unica = formas.Ilhas.Disposicao == Core.Perfis.DisposicaoIlhas.BarraUnica;
-            _midia?.AplicarSemVidro(unica);
             _status?.AplicarSemVidro(unica);
-            AjustarFundo(PosicaoIlhas.ComFundo(unica, _vmMidia?.Visivel == true, _status is not null), PosicaoIlhas.Barra(monitor, formas.Ilhas), formas.Ilhas.CantosRetos, p.Dpi);
-            var (m, r, s) = PosicaoIlhas.Calcular(monitor, _midia?.ActualWidth ?? 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0,
+            AjustarFundo(PosicaoIlhas.ComFundo(unica, _status is not null), PosicaoIlhas.Barra(monitor, formas.Ilhas), formas.Ilhas.CantosRetos, p.Dpi);
+            var (_, r, s) = PosicaoIlhas.Calcular(monitor, 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0,
                 formas.Ilhas, formas.Notch);
-            if (_midia is not null) PosicaoNativa.Colocar(_midia, m.X, m.Y, p.Dpi);
             _relogio?.Colocar(r, p.Dpi);
             if (_status is not null) PosicaoNativa.Colocar(_status, s.X + s.Largura, s.Y, p.Dpi, ancora: 1);
         }
@@ -546,7 +483,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
     private void TrazerIlhasParaFrente()
     {
-        foreach (var janela in new Window?[] { _midia, _status, _relogio })
+        foreach (var janela in new Window?[] { _status, _relogio })
             if (janela?.IsVisible == true) PosicaoNativa.TrazerParaFrente(janela);
     }
 
@@ -572,12 +509,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
 
     private void DescartarViewModels()
     {
-        if (_vmMidia is not null) _vmMidia.PropertyChanged -= AoMudarMidia;
-        _vmMidia?.Dispose();
         _vmRelogio?.Dispose();
         _vmStatus?.Dispose();
-        _vmMidia = null;
         _vmRelogio = null;
+        _vmCartaoMidia?.Dispose();
+        _vmCartaoMidia = null;
         _vmStatus = null;
     }
 
@@ -587,12 +523,11 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         try
         {
             FecharPaineis();
-            _midia?.Close();
             _relogio?.Close();
             _fundo?.Close();
             _fundo = null;
             _status?.Close();
-            _midia = _status = null;
+            _status = null;
             _relogio = null;
             _notificacoes?.Sincronizar(); // sem o notch, o balão do Windows volta
             DescartarViewModels();

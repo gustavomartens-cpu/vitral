@@ -65,12 +65,11 @@ public sealed class AcertosAparenciaUiTests : IDisposable
         Assert.True(retos < suaves && suaves < redondos, $"retos {retos}, suaves {suaves}, redondos {redondos}");
     }
 
+    // A mídia mora no notch desde a 0.19 (spec do notch fechado §2.3): só a ilha de status pede a faixa.
     [Theory]
-    [InlineData(true, true, true, true)]
-    [InlineData(true, true, false, true)]
-    [InlineData(true, false, true, true)]
-    [InlineData(true, false, false, false)]
-    [InlineData(false, true, true, false)]
-    public void Barra_unica_so_tem_fundo_com_alguma_ilha_do_lado(bool unica, bool midia, bool status, bool esperado) =>
-        Assert.Equal(esperado, PosicaoIlhas.ComFundo(unica, midia, status));
+    [InlineData(true, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    public void Barra_unica_so_tem_fundo_com_a_ilha_de_status(bool unica, bool status, bool esperado) =>
+        Assert.Equal(esperado, PosicaoIlhas.ComFundo(unica, status));
 }

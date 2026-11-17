@@ -12,8 +12,9 @@ using Vitral.Ui.Tema;
 namespace Vitral.App.Barra;
 
 /// O notch fechado com atividades (spec do notch fechado §2.1, R1, R3, R8): à esquerda do relógio o Claude trabalhando
-/// (spinner e número), esperando (âmbar) ou que acabou de terminar (check); à direita a música, com a capa pequena e as
-/// barras do som que sai (ou dançando sozinhas, quando o som toca noutro aparelho). Os dois lados têm a mesma largura, para o relógio ficar no centro.
+/// (spinner e número), esperando (âmbar) ou que acabou de terminar (check), ou, sem ele, a capa da música; à direita as
+/// barras do som que sai (ou dançando sozinhas, quando o som toca noutro aparelho), com a capa ao lado quando o Claude
+/// ocupa a esquerda. Os dois lados têm a mesma largura, para o relógio ficar no centro.
 internal sealed partial class JanelaNotch
 {
     // O ✳ (U+2733) sai como emoji com moldura no Windows; o ✶ ocupa o lugar dele. Fonte de símbolos, nunca a de emoji.
@@ -27,6 +28,7 @@ internal sealed partial class JanelaNotch
     private readonly TextBlock _numero = new() { FontSize = 11, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3, 0, 0, 0) };
     private readonly Ellipse _pontoEspera = new() { Width = 7, Height = 7, VerticalAlignment = VerticalAlignment.Center };
     private readonly TextBlock _check = new() { Text = "✓", FontSize = 14, FontWeight = FontWeights.Bold, Foreground = VerdeCheck, VerticalAlignment = VerticalAlignment.Center };
+    private readonly Border _capaEsquerda = new() { Width = 18, Height = 18, CornerRadius = new CornerRadius(4), VerticalAlignment = VerticalAlignment.Center };
     private readonly Border _capaPequena = new() { Width = 18, Height = 18, CornerRadius = new CornerRadius(4), VerticalAlignment = VerticalAlignment.Center };
     private readonly Rectangle[] _barras = new Rectangle[5];
     private readonly DispatcherTimer _tiqueSpinner = new() { Interval = TimeSpan.FromMilliseconds(120) };
@@ -83,6 +85,7 @@ internal sealed partial class JanelaNotch
         esquerda.Children.Add(_spinner);
         esquerda.Children.Add(_pontoEspera);
         esquerda.Children.Add(_check);
+        esquerda.Children.Add(_capaEsquerda);
         esquerda.Children.Add(_numero);
         _ladoEsquerdo.Children.Add(esquerda);
 
@@ -114,7 +117,7 @@ internal sealed partial class JanelaNotch
         if (!IsLoaded) return;
         var antes = _lados;
         AtualizarLados();
-        if (antes.Algum != _lados.Algum) Ajustar(animar: true);
+        if (antes.Algum != _lados.Algum || antes.Musica != _lados.Musica) Ajustar(animar: true);
     }
 
     /// Os lados mostrados agora (escondidos com as laterais abertas ou fora do modo normal).
@@ -142,13 +145,16 @@ internal sealed partial class JanelaNotch
         else { _tiqueSpinner.Stop(); _spinner.Text = "✻"; }
 
         LerCapa(midia?.Capa);
-        _capaPequena.Visibility = _lados.Musica && _imagemCapa is not null ? Visibility.Visible : Visibility.Collapsed;
-        _capaPequena.Background = _imagemCapa is null ? null : new ImageBrush(_imagemCapa) { Stretch = Stretch.UniformToFill };
+        var fundoCapa = _imagemCapa is null ? null : new ImageBrush(_imagemCapa) { Stretch = Stretch.UniformToFill };
+        _capaPequena.Background = _capaEsquerda.Background = fundoCapa;
+        _capaPequena.Visibility = _lados.CapaADireita && fundoCapa is not null ? Visibility.Visible : Visibility.Collapsed;
+        _capaEsquerda.Visibility = lado == LadoEsquerdo.Capa && fundoCapa is not null ? Visibility.Visible : Visibility.Collapsed;
         foreach (var b in _barras)
         {
             b.Fill = _corBarras;
             b.Visibility = _lados.Musica ? Visibility.Visible : Visibility.Hidden; // o lado fica, para o relógio seguir no centro
         }
+        AtualizarCartao();
         AtualizarCaptura();
     }
 
@@ -169,14 +175,14 @@ internal sealed partial class JanelaNotch
         }
         _captura?.Desligar();
         double parada = tocando ? BarraParada : BarraMinima; // pausada: baixas; sem movimento: no meio
-        foreach (var b in _barras) b.Height = parada;
+        foreach (var b in _barras.Concat(_barrasCartao)) b.Height = parada;
     }
 
     private void MostrarBandas(IReadOnlyList<double> bandas)
     {
         var valores = _somOuDanca.Proximos(bandas, DateTime.Now);
         for (int i = 0; i < _barras.Length && i < valores.Count; i++)
-            _barras[i].Height = BarraMinima + valores[i] * (BarraMaxima - BarraMinima);
+            _barras[i].Height = _barrasCartao[i].Height = BarraMinima + valores[i] * (BarraMaxima - BarraMinima);
     }
 
     /// A capa e a cor média dela (lidas uma vez por capa).

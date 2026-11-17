@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Vitral.App.Tema;
@@ -158,6 +159,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         _conteudo.Children.Add(_esquerda);
         _conteudo.Children.Add(_meio);
         _conteudo.Children.Add(_direita);
+        MontarMidia();
 
         // A forma ocupa a largura total (corpo + orelhas) a partir da borda da tela; o pedaço acima da borda (fora da
         // tela) também é pintado, para a costura com a borda não aparecer.
@@ -222,13 +224,36 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             imagem.StreamSource = new System.IO.MemoryStream(bytes);
             imagem.EndInit();
             imagem.Freeze();
-            return imagem;
+            return SemMargem(imagem);
         }
         catch (Exception e) when (e is not OutOfMemoryException)
         {
             LogBarra.Erro("JanelaNotch.LogoDoClaude", e); // sem o app do Claude: o símbolo desenhado
             return null;
         }
+    }
+
+    /// O logo do app vem com uma margem transparente larga e ficava pequeno no notch (Gustavo, 16/11/2026): recorta o
+    /// quadrado em volta do desenho.
+    private static BitmapSource SemMargem(BitmapSource imagem)
+    {
+        var bgra = new FormatConvertedBitmap(imagem, PixelFormats.Bgra32, null, 0);
+        int w = bgra.PixelWidth, h = bgra.PixelHeight;
+        var pixels = new byte[w * h * 4];
+        bgra.CopyPixels(pixels, w * 4, 0);
+        int x0 = w, y0 = h, x1 = -1, y1 = -1;
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                if (pixels[(y * w + x) * 4 + 3] > 16) { x0 = Math.Min(x0, x); y0 = Math.Min(y0, y); x1 = Math.Max(x1, x); y1 = Math.Max(y1, y); }
+        if (x1 < 0) return imagem;
+        int lado = Math.Max(x1 - x0, y1 - y0) + 1;
+        int cx = (x0 + x1 + 1) / 2, cy = (y0 + y1 + 1) / 2;
+        lado = Math.Min(lado, Math.Min(w, h));
+        if (lado >= Math.Min(w, h) - 2) return imagem; // já sem margem
+        int esquerda = Math.Clamp(cx - lado / 2, 0, w - lado), topo = Math.Clamp(cy - lado / 2, 0, h - lado);
+        var recorte = new CroppedBitmap(bgra, new Int32Rect(esquerda, topo, lado, lado));
+        recorte.Freeze();
+        return recorte;
     }
 
     private static DrawingImage CriarSimbolo()
@@ -656,8 +681,10 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
             largura = LarguraNormal + (modo == ModoNotch.Lembrete ? NotchMedidas.ExtraLembrete : 0)
                 + (laterais ? 2 * NotchMedidas.LarguraLateral : 0)
                 + (LadosVisiveis ? 2 * LadosNotch.LarguraLado : 0);
-            altura = Formas.Altura;
-            raio = Formas.Raio;
+            // Com música, o notch desce com ela embaixo das laterais (spec do notch fechado §2.2).
+            bool cartao = laterais && CartaoVisivel;
+            altura = Formas.Altura + (cartao ? NotchMedidas.AlturaLinhaMidia : 0);
+            raio = cartao ? NotchMedidas.RaioAviso : Formas.Raio;
         }
         largura = Math.Min(largura, NotchMedidas.LarguraMaxCorpo);
 
@@ -672,6 +699,7 @@ internal sealed partial class JanelaNotch : Window, IPedePainel
         Trocar(_linhaRelogio, mostrar: modo is not (ModoNotch.Aviso or ModoNotch.Permissao or ModoNotch.Resposta), animar);
         Trocar(_esquerda, mostrar: laterais, animar);
         Trocar(_direita, mostrar: laterais, animar);
+        Trocar(_linhaMidia, mostrar: laterais && CartaoVisivel, animar);
 
         Mover(largura, altura, raio, animar);
     }
