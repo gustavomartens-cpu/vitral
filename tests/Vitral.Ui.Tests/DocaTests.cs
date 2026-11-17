@@ -11,6 +11,7 @@ internal sealed class JanelasFalsas : IFonteJanelas
     public event Action? Mudou;
     public List<string> Acoes { get; } = [];
     public void Ativar(IntPtr h) => Acoes.Add($"ativar:{h}");
+    public void TrazerSemFoco(IntPtr h) => Acoes.Add($"trazer:{h}");
     public void Minimizar(IntPtr h) => Acoes.Add($"minimizar:{h}");
     public void Fechar(IntPtr h) => Acoes.Add($"fechar:{h}");
     public void Disparar() => Mudou?.Invoke();
@@ -33,6 +34,96 @@ internal sealed class AtalhosFalsos : IAtalhosDoca
     public void Pesquisar() => Chamadas.Add("pesquisar");
     public void Abrir(Fixado f) => Chamadas.Add($"abrir:{f.Nome}");
     public void NovaJanela(string executavel) => Chamadas.Add($"nova:{executavel}");
+    public void AbrirCom(string executavel, IReadOnlyList<string> arquivos) => Chamadas.Add($"abrircom:{executavel}:{string.Join("|", arquivos)}");
+}
+
+public sealed class DocaArquivoArrastadoTests
+{
+    private static JanelaApp J(int h, string appId, string exe) => new(h, "t", appId, exe, false, false, null);
+
+    private readonly JanelasFalsas _janelas = new();
+    private readonly FixadosFalsos _fixados = new();
+    private readonly AtalhosFalsos _atalhos = new();
+
+    private DocaViewModel Criar() => new(_janelas, _fixados, _atalhos, new DialogosFalsos());
+
+    [Fact]
+    public void Parado_sobre_app_com_uma_janela_traz_ela_para_a_frente()
+    {
+        _janelas.Janelas = [J(5, "Chrome", @"C:\c\chrome.exe")];
+        var vm = Criar();
+        vm.ArquivoParado(vm.Botoes[0]);
+        Assert.Equal(["trazer:5"], _janelas.Acoes);
+    }
+
+    [Fact]
+    public void Parado_sobre_a_janela_ja_ativa_so_sobe_sem_minimizar()
+    {
+        _janelas.Janelas = [J(5, "Chrome", @"C:\c\chrome.exe")];
+        _janelas.Ativa = 5;
+        var vm = Criar();
+        vm.ArquivoParado(vm.Botoes[0]);
+        Assert.Equal(["trazer:5"], _janelas.Acoes);
+    }
+
+    [Fact]
+    public void Parado_sobre_a_miniatura_sobe_aquela_janela()
+    {
+        _janelas.Janelas = [J(5, "Chrome", @"C:\c\chrome.exe"), J(6, "Chrome", @"C:\c\chrome.exe")];
+        var vm = Criar();
+        vm.ArquivoParadoNaJanela(_janelas.Janelas[1]);
+        Assert.Equal(["trazer:6"], _janelas.Acoes);
+    }
+
+    [Fact]
+    public void Parado_sobre_app_com_varias_janelas_pede_as_miniaturas()
+    {
+        _janelas.Janelas = [J(5, "Chrome", @"C:\c\chrome.exe"), J(6, "Chrome", @"C:\c\chrome.exe")];
+        var vm = Criar();
+        BotaoAppViewModel? pedido = null;
+        vm.PediuEscolha += b => pedido = b;
+        vm.ArquivoParado(vm.Botoes[0]);
+        Assert.Same(vm.Botoes[0], pedido);
+        Assert.Empty(_janelas.Acoes);
+    }
+
+    [Fact]
+    public void Parado_sobre_fixado_fechado_abre_o_app()
+    {
+        _fixados.Lista = [new(@"C:\l\Chrome.lnk", "Chrome", "Chrome", @"C:\c\chrome.exe")];
+        var vm = Criar();
+        vm.ArquivoParado(vm.Botoes[0]);
+        Assert.Equal(["abrir:Chrome"], _atalhos.Chamadas);
+    }
+
+    [Fact]
+    public void Solto_no_fixado_abre_com_o_alvo_do_atalho()
+    {
+        _fixados.Lista = [new(@"C:\l\Chrome.lnk", "Chrome", "Chrome", @"C:\c\chrome.exe")];
+        var vm = Criar();
+        Assert.True(vm.AbrirArquivos(vm.Botoes[0], [@"C:\f\a b.png", @"C:\f\v.mp4"]));
+        Assert.Equal([@"abrircom:C:\c\chrome.exe:C:\f\a b.png|C:\f\v.mp4"], _atalhos.Chamadas);
+    }
+
+    [Fact]
+    public void Solto_em_app_aberto_nao_fixado_abre_com_o_executavel_da_janela()
+    {
+        _janelas.Janelas = [J(7, "janela:notepad", @"C:\w\notepad.exe")];
+        var vm = Criar();
+        Assert.True(vm.AbrirArquivos(vm.Botoes[0], [@"C:\f\n.txt"]));
+        Assert.Equal([@"abrircom:C:\w\notepad.exe:C:\f\n.txt"], _atalhos.Chamadas);
+    }
+
+    [Fact]
+    public void App_da_loja_nao_abre_arquivo_solto()
+    {
+        _fixados.Lista = [new(@"shell:AppsFolder\Microsoft.WindowsCalculator_8wekyb3d8bbwe!App", "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App", "Calculadora")];
+        _janelas.Janelas = [J(8, "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App", @"C:\Windows\ApplicationFrameHost.exe")];
+        var vm = Criar();
+        Assert.Null(vm.ProgramaParaArquivos(vm.Botoes[0]));
+        Assert.False(vm.AbrirArquivos(vm.Botoes[0], [@"C:\f\a.png"]));
+        Assert.Empty(_atalhos.Chamadas);
+    }
 }
 
 public sealed class DocaTests

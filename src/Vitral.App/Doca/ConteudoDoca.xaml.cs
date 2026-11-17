@@ -15,6 +15,8 @@ public partial class ConteudoDoca : UserControl
 
     private readonly DispatcherTimer _passar = new() { Interval = EsperaMiniaturas };
     private readonly DispatcherTimer _sair = new() { Interval = EsperaSair };
+    private readonly DispatcherTimer _arquivo = new() { Interval = JanelaMiniaturas.EsperaArquivo };
+    private BotaoAppViewModel? _arquivoSobre;
     private JanelaMiniaturas? _miniaturas;
     private FrameworkElement? _sobre;
     private DocaViewModel? _vm;
@@ -25,6 +27,7 @@ public partial class ConteudoDoca : UserControl
         InitializeComponent();
         _passar.Tick += (_, _) => { _passar.Stop(); if (_sobre is not null) MostrarMiniaturas(_sobre); };
         _sair.Tick += (_, _) => { _sair.Stop(); if (!IsMouseOver && _miniaturas?.IsMouseOver != true) EsconderMiniaturas(); };
+        _arquivo.Tick += (_, _) => { _arquivo.Stop(); _vm?.ArquivoParado(_arquivoSobre); };
         MouseLeave += (_, _) => _sair.Start();
         DataContextChanged += (_, _) =>
         {
@@ -145,8 +148,47 @@ public partial class ConteudoDoca : UserControl
         DragDrop.DoDragDrop((DependencyObject)sender, botao, DragDropEffects.Move);
     }
 
+    // Arquivo de fora (Explorer): parado sobre o botão, o app vem para a frente; solto, o app abre o arquivo
+    // (DocaViewModel.ArquivoParado e AbrirArquivos).
+    private static bool TemArquivos(DragEventArgs e) => e.Data.GetDataPresent(DataFormats.FileDrop);
+
+    private void Botao_ArrasteEntrou(object sender, DragEventArgs e)
+    {
+        if (!TemArquivos(e) || BotaoDe(sender) is not { } botao) return;
+        Botao_ArrastePassou(sender, e);
+        if (ReferenceEquals(botao, _arquivoSobre)) return; // de um pedaço do botão para outro
+        _arquivoSobre = botao;
+        _arquivo.Stop();
+        _arquivo.Start();
+        if (_miniaturas?.Botao is { } aberto && !ReferenceEquals(aberto, botao)) EsconderMiniaturas();
+    }
+
+    private void Botao_ArrastePassou(object sender, DragEventArgs e)
+    {
+        if (!TemArquivos(e)) return; // arrastar para reordenar segue o padrão
+        e.Effects = _vm is not null && BotaoDe(sender) is { } b && _vm.ProgramaParaArquivos(b) is not null ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void Botao_ArrasteSaiu(object sender, DragEventArgs e)
+    {
+        if (sender is not FrameworkElement f || !ReferenceEquals(f.DataContext, _arquivoSobre)) return;
+        var p = e.GetPosition(f);
+        if (p.X >= 0 && p.Y >= 0 && p.X < f.ActualWidth && p.Y < f.ActualHeight) return; // ainda dentro, só trocou de pedaço
+        _arquivo.Stop();
+        _arquivoSobre = null;
+    }
+
     private void Botao_Soltou(object sender, DragEventArgs e)
     {
+        if (TemArquivos(e))
+        {
+            _arquivo.Stop();
+            _arquivoSobre = null;
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] arquivos) _vm?.AbrirArquivos(BotaoDe(sender), arquivos);
+            e.Handled = true;
+            return;
+        }
         if (_vm is null || e.Data.GetData(typeof(BotaoAppViewModel)) is not BotaoAppViewModel arrastado || BotaoDe(sender) is not { } alvo) return;
         _vm.Mover(_vm.Botoes.IndexOf(arrastado), _vm.Botoes.IndexOf(alvo));
     }

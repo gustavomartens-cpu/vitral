@@ -14,6 +14,8 @@ public interface IFonteJanelas
     IntPtr Ativa { get; }
     event Action? Mudou;
     void Ativar(IntPtr janela);
+    /// Por cima das outras sem tirar o foco (durante um arraste de arquivo o Windows não deixa ativar).
+    void TrazerSemFoco(IntPtr janela);
     void Minimizar(IntPtr janela);
     void Fechar(IntPtr janela);
 }
@@ -33,6 +35,8 @@ public interface IAtalhosDoca
     void Pesquisar();
     void Abrir(Fixado fixado);
     void NovaJanela(string executavel);
+    /// Abre os arquivos com o programa (arquivo solto no botão da doca).
+    void AbrirCom(string executavel, IReadOnlyList<string> arquivos);
 }
 
 /// Sem fixados (até a Task 5 trazer a lista real).

@@ -153,6 +153,41 @@ public sealed partial class DocaViewModel : ObservableObject, IDisposable
         else if (b is not null && ExecutavelDe(b) is { } exe) _atalhos.NovaJanela(exe);
     }
 
+    // Arquivo arrastado de fora (Explorer): como na barra de tarefas do Windows, parado sobre o botão traz o app para a
+    // frente, para soltar o arquivo dentro dele; solto no botão, o app abre o arquivo.
+
+    /// Arquivo parado sobre o botão: uma janela vem para a frente; várias, as miniaturas (para escolher do mesmo jeito);
+    /// nenhuma, o fixado abre.
+    public void ArquivoParado(BotaoAppViewModel? botao)
+    {
+        if (botao is null) return;
+        if (botao.Janelas.Count > 1) PediuEscolha?.Invoke(botao);
+        else if (botao.Janelas.Count == 1) _janelas.TrazerSemFoco(botao.Janelas[0].Handle);
+        else if (botao.Fixado is { } f && botao.AtalhoExiste) _atalhos.Abrir(f);
+    }
+
+    /// Arquivo parado sobre uma miniatura: essa janela sobe, para soltar o arquivo nela.
+    public void ArquivoParadoNaJanela(JanelaApp? j) { if (j is not null) _janelas.TrazerSemFoco(j.Handle); }
+
+    /// O programa que abre arquivos soltos no botão: o executável alvo do fixado, senão o da janela. App da loja (sem
+    /// executável próprio) fica sem: o shell não o abre com arquivos pela linha de comando.
+    public string? ProgramaParaArquivos(BotaoAppViewModel botao)
+    {
+        static bool Exe(string? c) => c is { Length: > 0 } && c.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            && !c.EndsWith("ApplicationFrameHost.exe", StringComparison.OrdinalIgnoreCase);
+        if (Exe(botao.Fixado?.Alvo)) return botao.Fixado!.Alvo;
+        if (ExecutavelDe(botao) is { } exe && Exe(exe)) return exe;
+        return Exe(botao.Fixado?.Caminho) ? botao.Fixado!.Caminho : null;
+    }
+
+    /// Arquivos soltos no botão. Falso se o app não abre arquivos assim.
+    public bool AbrirArquivos(BotaoAppViewModel? botao, IReadOnlyList<string> arquivos)
+    {
+        if (botao is null || arquivos.Count == 0 || ProgramaParaArquivos(botao) is not { } exe) return false;
+        _atalhos.AbrirCom(exe, arquivos);
+        return true;
+    }
+
     [RelayCommand] private void FecharJanela(JanelaApp? j) { if (j is not null) _janelas.Fechar(j.Handle); }
 
     [RelayCommand]

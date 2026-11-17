@@ -16,6 +16,17 @@ internal sealed class AtalhosDoca : IAtalhosDoca
 
     public void NovaJanela(string executavel) => Executar(executavel, "AtalhosDoca.NovaJanela");
 
+    public void AbrirCom(string executavel, IReadOnlyList<string> arquivos)
+    {
+        try
+        {
+            var info = new ProcessStartInfo(executavel) { UseShellExecute = false, WorkingDirectory = System.IO.Path.GetDirectoryName(executavel) ?? "" };
+            foreach (var a in arquivos) info.ArgumentList.Add(a);
+            Process.Start(info)?.Dispose();
+        }
+        catch (Exception e) { LogBarra.Erro("AtalhosDoca.AbrirCom", e); }
+    }
+
     private static void Executar(string caminho, string onde)
     {
         try { Process.Start(new ProcessStartInfo(caminho) { UseShellExecute = true }); }
