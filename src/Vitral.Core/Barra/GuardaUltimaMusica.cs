@@ -43,10 +43,19 @@ public sealed class GuardaUltimaMusica(string pasta) : IGuardaUltimaMusica
         try
         {
             Directory.CreateDirectory(pasta);
-            if (musica.Capa is { Length: > 0 } capa) File.WriteAllBytes(CaminhoCapa, capa);
+            // Cada arquivo vai para um .tmp e é trocado de uma vez: uma queda no meio não deixa o JSON truncado.
+            if (musica.Capa is { Length: > 0 } capa) Trocar(CaminhoCapa, t => File.WriteAllBytes(t, capa));
             else if (File.Exists(CaminhoCapa)) File.Delete(CaminhoCapa);
-            File.WriteAllText(CaminhoJson, JsonSerializer.Serialize(new Dados(musica.Titulo, musica.Artista, musica.Escondida), Opcoes));
+            var json = JsonSerializer.Serialize(new Dados(musica.Titulo, musica.Artista, musica.Escondida), Opcoes);
+            Trocar(CaminhoJson, t => File.WriteAllText(t, json));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { } // a prévia é opcional
+    }
+
+    private static void Trocar(string destino, Action<string> escrever)
+    {
+        string tmp = destino + ".tmp";
+        escrever(tmp);
+        File.Move(tmp, destino, overwrite: true);
     }
 }

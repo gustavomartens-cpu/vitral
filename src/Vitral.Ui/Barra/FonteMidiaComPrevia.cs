@@ -8,8 +8,9 @@ public interface IAbridorSpotify
     /// Só abre (o clique no título da prévia).
     void Abrir();
 
-    /// Abre e manda tocar quando a sessão do Spotify aparecer; false se não tocou no prazo. Termina na thread da interface.
-    Task<bool> AbrirETocarAsync();
+    /// Abre e manda tocar quando a sessão do Spotify aparecer; false se não tocou no prazo ou foi cancelado (o × ou
+    /// um comando na sessão real). Termina na thread da interface.
+    Task<bool> AbrirETocarAsync(CancellationToken cancelar);
 }
 
 /// A música do Windows com a prévia do Spotify (spec da prévia do Spotify): com sessão, repassa a fonte real (e guarda a
@@ -24,6 +25,8 @@ public sealed class FonteMidiaComPrevia : IFonteMidia, IDisposable
     private readonly IAbridorSpotify _abridor;
     private UltimaMusica? _ultima;
     private bool _abrindo;
+    private bool _realPublicou; // antes da primeira leitura do Windows, null não quer dizer "nada tocando"
+    private CancellationTokenSource? _abertura;
     private EstadoMidia? _previa; // a mesma instância (e a mesma capa) enquanto nada muda: o notch lê a capa uma vez
 
     public EstadoMidia? Atual { get; private set; }
@@ -45,6 +48,7 @@ public sealed class FonteMidiaComPrevia : IFonteMidia, IDisposable
     private void AoMudarReal()
     {
         var m = _real.Atual;
+        _realPublicou = true;
         Guardar(m);
         if (m is not null) _abrindo = false; // a sessão apareceu: dali em diante vale a real
         Publicar();
@@ -53,7 +57,7 @@ public sealed class FonteMidiaComPrevia : IFonteMidia, IDisposable
     /// Guarda a música do Spotify quando ela muda; tocar desfaz o ×.
     private void Guardar(EstadoMidia? m)
     {
-        if (m is not { NomeApp: NomeSpotify } || string.IsNullOrWhiteSpace(m.Titulo)) return;
+        if (m is not { NomeApp: NomeSpotify } || string.IsNullOrWhiteSpace(m.Titulo) || EhAnuncio(m)) return;
         bool mesma = _ultima is { } u && u.Titulo == m.Titulo && u.Artista == m.Artista;
         var capa = m.Capa is { Length: > 0 } ? m.Capa : mesma ? _ultima!.Capa : null; // a capa costuma chegar depois
         bool escondida = _ultima?.Escondida == true && !m.Tocando;
@@ -61,6 +65,10 @@ public sealed class FonteMidiaComPrevia : IFonteMidia, IDisposable
         _ultima = new UltimaMusica(m.Titulo, m.Artista, capa, escondida);
         _guarda.Gravar(_ultima);
     }
+
+    /// O Spotify Free publica os anúncios como faixa ("Advertisement", "Spotify"), em geral sem artista.
+    private static bool EhAnuncio(EstadoMidia m) =>
+        string.IsNullOrWhiteSpace(m.Artista) || m.Titulo is "Advertisement" or "Anúncio" or NomeSpotify;
 
     private static bool MesmaCapa(byte[]? a, byte[]? b) =>
         ReferenceEquals(a, b) || (a is not null && b is not null && a.AsSpan().SequenceEqual(b));
@@ -72,7 +80,7 @@ public sealed class FonteMidiaComPrevia : IFonteMidia, IDisposable
             Atual = real;
             return;
         }
-        if (_ultima is not { Escondida: false } u)
+        if (!_realPublicou || _ultima is not { Escondida: false } u)
         {
             Atual = _previa = null;
             return;
@@ -91,12 +99,16 @@ public sealed class FonteMidiaComPrevia : IFonteMidia, IDisposable
 
     public void Anterior()
     {
-        if (!EmPrevia) _real.Anterior();
+        if (EmPrevia) return;
+        CancelarAbertura();
+        _real.Anterior();
     }
 
     public void Proxima()
     {
-        if (!EmPrevia) _real.Proxima();
+        if (EmPrevia) return;
+        CancelarAbertura();
+        _real.Proxima();
     }
 
     public void TrazerApp()
@@ -109,6 +121,7 @@ public sealed class FonteMidiaComPrevia : IFonteMidia, IDisposable
     {
         if (!EmPrevia)
         {
+            CancelarAbertura(); // o usuário mandou na sessão real: a abertura não insiste no play
             _real.TocarPausar();
             return;
         }
@@ -118,14 +131,27 @@ public sealed class FonteMidiaComPrevia : IFonteMidia, IDisposable
 
     private async Task AbrirETocarAsync()
     {
+        CancelarAbertura();
+        var abertura = _abertura = new CancellationTokenSource();
         _abrindo = true;
         Publicar();
         bool tocou;
-        try { tocou = await _abridor.AbrirETocarAsync(); }
+        try { tocou = await _abridor.AbrirETocarAsync(abertura.Token); }
         catch (Exception) { tocou = false; } // contrato das fontes: nunca lançam
-        if (tocou || !_abrindo) return;
-        _abrindo = false;
-        Publicar();
+        if (!ReferenceEquals(abertura, _abertura)) return; // cancelada (o ×, um comando, o Dispose)
+        _abertura = null;
+        abertura.Dispose();
+        if (!_abrindo) return; // a sessão real já apareceu
+        _abrindo = false; // tocou: a sessão real assume na publicação seguinte; não tocou: volta o play
+        if (!tocou) Publicar();
+    }
+
+    private void CancelarAbertura()
+    {
+        if (_abertura is not { } a) return;
+        _abertura = null;
+        a.Cancel();
+        a.Dispose();
     }
 
     public void EsconderPrevia()
@@ -133,9 +159,14 @@ public sealed class FonteMidiaComPrevia : IFonteMidia, IDisposable
         if (_ultima is null || _ultima.Escondida) return;
         _ultima = _ultima with { Escondida = true };
         _guarda.Gravar(_ultima);
+        CancelarAbertura(); // o × no meio da abertura: o Spotify não começa a tocar contra ele
         _abrindo = false;
         Publicar();
     }
 
-    public void Dispose() => _real.Mudou -= AoMudarReal;
+    public void Dispose()
+    {
+        CancelarAbertura();
+        _real.Mudou -= AoMudarReal;
+    }
 }

@@ -14,12 +14,16 @@ internal sealed class AbridorSpotify : IAbridorSpotify
     private static readonly TimeSpan Prazo = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan Intervalo = TimeSpan.FromMilliseconds(500);
 
-    public void Abrir() => Lancar();
+    public void Abrir() => _ = Task.Run(Lancar); // o ShellExecute pode segurar a interface
 
-    public async Task<bool> AbrirETocarAsync()
+    public async Task<bool> AbrirETocarAsync(CancellationToken cancelar)
     {
-        if (!Lancar()) return false;
-        try { return await Task.Run(EsperarETocarAsync); } // volta à thread da interface (quem chamou)
+        try
+        {
+            // Fora da thread da interface (o ShellExecute pode segurá-la); o await volta a ela.
+            return await Task.Run(async () => Lancar() && await EsperarETocarAsync(cancelar), cancelar);
+        }
+        catch (OperationCanceledException) { return false; }
         catch (Exception e) { LogBarra.Erro("Spotify.Tocar", e); return false; }
     }
 
@@ -42,12 +46,13 @@ internal sealed class AbridorSpotify : IAbridorSpotify
     }
 
     /// Procura a sessão do Spotify entre todas (a atual do Windows pode ser outra) e manda tocar até ela tocar.
-    private static async Task<bool> EsperarETocarAsync()
+    private static async Task<bool> EsperarETocarAsync(CancellationToken cancelar)
     {
         var gerente = await Gerente.RequestAsync();
         var fim = DateTime.UtcNow + Prazo;
         while (DateTime.UtcNow < fim)
         {
+            cancelar.ThrowIfCancellationRequested();
             try
             {
                 var sessao = gerente.GetSessions().FirstOrDefault(s =>
@@ -60,7 +65,7 @@ internal sealed class AbridorSpotify : IAbridorSpotify
                 }
             }
             catch (Exception e) { LogBarra.Erro("Spotify.Sessao", e); }
-            await Task.Delay(Intervalo);
+            await Task.Delay(Intervalo, cancelar);
         }
         return false;
     }

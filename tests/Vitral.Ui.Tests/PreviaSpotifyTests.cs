@@ -17,7 +17,8 @@ internal sealed class AbridorFalso : IAbridorSpotify
     public int Tocadas { get; private set; }
     public TaskCompletionSource<bool> Resultado { get; set; } = new();
     public void Abrir() => Aberturas++;
-    public Task<bool> AbrirETocarAsync() { Tocadas++; return Resultado.Task; }
+    public CancellationToken Token { get; private set; }
+    public Task<bool> AbrirETocarAsync(CancellationToken cancelar) { Tocadas++; Token = cancelar; return Resultado.Task; }
 }
 
 public sealed class PreviaSpotifyTests
@@ -26,7 +27,13 @@ public sealed class PreviaSpotifyTests
     private readonly GuardaFalsa _guarda = new();
     private readonly AbridorFalso _abridor = new();
 
-    private FonteMidiaComPrevia Criar() => new(_real, _guarda, _abridor);
+    /// Cria e simula a primeira leitura do Windows (antes dela, null não quer dizer "nada tocando").
+    private FonteMidiaComPrevia Criar()
+    {
+        var fonte = new FonteMidiaComPrevia(_real, _guarda, _abridor);
+        _real.Atual = _real.Atual;
+        return fonte;
+    }
 
     private static EstadoMidia Spotify(string titulo = "Blinding Lights", bool tocando = true, byte[]? capa = null) =>
         new(titulo, "The Weeknd", "Spotify", tocando, capa);
@@ -195,6 +202,73 @@ public sealed class PreviaSpotifyTests
         fonte.TrazerApp();
         Assert.Equal(["anterior", "tocarPausar", "proxima", "trazerApp"], _real.Comandos);
         Assert.Equal(0, _abridor.Tocadas + _abridor.Aberturas);
+    }
+
+    [Fact]
+    public void Antes_da_primeira_leitura_nao_mostra_previa() // a prévia não pisca na partida (revisão)
+    {
+        _guarda.Guardada = new UltimaMusica("Antiga", "X", null, false);
+        using var fonte = new FonteMidiaComPrevia(_real, _guarda, _abridor);
+        Assert.Null(fonte.Atual);
+        _real.Atual = null;
+        Assert.True(fonte.Atual?.Previa);
+    }
+
+    [Fact]
+    public void X_durante_a_abertura_cancela_o_play() // revisão: o Spotify não toca contra o ×
+    {
+        _guarda.Guardada = new UltimaMusica("Antiga", "X", null, false);
+        using var fonte = Criar();
+        fonte.TocarPausar();
+        Assert.False(_abridor.Token.IsCancellationRequested);
+        fonte.EsconderPrevia();
+        Assert.True(_abridor.Token.IsCancellationRequested);
+        Assert.Null(fonte.Atual);
+    }
+
+    [Fact]
+    public void Comando_na_sessao_real_cancela_a_abertura() // revisão: a pausa do usuário vale
+    {
+        _guarda.Guardada = new UltimaMusica("Antiga", "X", null, false);
+        using var fonte = Criar();
+        fonte.TocarPausar();
+        _real.Atual = Spotify("Antiga", tocando: false);
+        fonte.TocarPausar();
+        Assert.True(_abridor.Token.IsCancellationRequested);
+        Assert.Equal(["tocarPausar"], _real.Comandos);
+    }
+
+    [Fact]
+    public void Dispose_cancela_a_abertura()
+    {
+        _guarda.Guardada = new UltimaMusica("Antiga", "X", null, false);
+        var fonte = Criar();
+        fonte.TocarPausar();
+        fonte.Dispose();
+        Assert.True(_abridor.Token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void Tocou_sem_sessao_nao_trava_o_play() // revisão: sem publicação real, o play volta a funcionar
+    {
+        _guarda.Guardada = new UltimaMusica("Antiga", "X", null, false);
+        using var fonte = Criar();
+        _abridor.Resultado.SetResult(true);
+        fonte.TocarPausar();
+        fonte.TocarPausar();
+        Assert.Equal(2, _abridor.Tocadas);
+    }
+
+    [Theory]
+    [InlineData("Advertisement", "Spotify")]
+    [InlineData("Spotify", "")]
+    [InlineData("Anúncio", null)]
+    [InlineData("Uma faixa", null)]
+    public void Anuncio_nao_vira_ultima_musica(string titulo, string? artista)
+    {
+        using var fonte = Criar();
+        _real.Atual = new EstadoMidia(titulo, artista, "Spotify", true, null);
+        Assert.Null(_guarda.Guardada);
     }
 
     [Fact]
