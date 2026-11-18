@@ -126,7 +126,7 @@ internal sealed partial class ControleDoca(BarraDoWindows barraWindows, FonteBan
             var monitorPx = new Retangulo(p.X, p.Y, p.Largura, p.Altura);
             double e = p.Dpi / 96.0;
             var docaPx = new Retangulo(_alvo.X * e, _alvo.Y * e, _alvo.Largura * e, _alvo.Altura * e);
-            bool travada = _janela.Conteudo is ConteudoDoca conteudo && conteudo.Ocupada;
+            bool travada = _janela.Conteudo is ConteudoDoca conteudo && conteudo.Ocupada();
             var acao = _auto.Conferir(DateTime.UtcNow, AutoOcultarDoca.NaBorda(c.X, c.Y, monitorPx),
                 AutoOcultarDoca.SobreDoca(c.X, c.Y, docaPx, monitorPx), travada, _telaCheia);
             if (acao == AcaoDoca.Mostrar) Subir();
@@ -151,7 +151,11 @@ internal sealed partial class ControleDoca(BarraDoWindows barraWindows, FonteBan
         Deslizar(0);
     }
 
-    private void Descer() => Deslizar(DescidaTotal);
+    private void Descer()
+    {
+        (_janela?.Conteudo as ConteudoDoca)?.AoEsconder();
+        Deslizar(DescidaTotal);
+    }
 
     /// Desliza até a descida pedida (~150 ms, desacelerando); sem "Efeitos de animação" do Windows, vai direto.
     /// Na descida total, a janela se esconde no fim: nada invisível fica pegando cliques na borda.

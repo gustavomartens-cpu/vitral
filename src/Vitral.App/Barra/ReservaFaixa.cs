@@ -120,12 +120,12 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
     private static bool TelaCheiaDeVerdade(bool registrar)
     {
         var m = MonitorPrincipal.Ler();
-        var janelas = new List<(string Classe, Ui.Barra.Retangulo Janela)>();
+        var janelas = new List<(string Classe, Ui.Barra.Retangulo Janela, bool Maximizada)>();
         uint proprio = (uint)Environment.ProcessId;
         EnumWindows((h, _) =>
         {
             if (Conta(h, proprio) && GetWindowRect(h, out var r))
-                janelas.Add((NomeDaClasse(h), new Ui.Barra.Retangulo(r.Esq, r.Topo, r.Dir - r.Esq, r.Base - r.Topo)));
+                janelas.Add((NomeDaClasse(h), new Ui.Barra.Retangulo(r.Esq, r.Topo, r.Dir - r.Esq, r.Base - r.Topo), IsZoomed(h)));
             return true;
         }, IntPtr.Zero);
         bool real = Ui.Barra.TelaCheia.NoPrincipal(janelas, new Ui.Barra.Retangulo(m.X, m.Y, m.Largura, m.Altura));
@@ -152,6 +152,7 @@ internal sealed partial class ReservaFaixa : Ui.Barra.IAppBar, IDisposable
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool EnumWindows(Visitar v, IntPtr l);
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool IsWindowVisible(IntPtr h);
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool IsIconic(IntPtr h);
+    [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool IsZoomed(IntPtr h);
     [LibraryImport("user32.dll")] private static partial uint GetWindowThreadProcessId(IntPtr h, out uint processo);
     [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static partial long GetWindowLongPtr(IntPtr h, int i);
     [LibraryImport("dwmapi.dll")] private static partial int DwmGetWindowAttribute(IntPtr h, int atributo, out int valor, int tamanho);

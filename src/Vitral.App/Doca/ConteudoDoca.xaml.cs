@@ -24,9 +24,49 @@ public partial class ConteudoDoca : UserControl
     private ContextMenu? _menu;
     private bool _arrastando;
 
-    /// Menu aberto, miniaturas à mostra ou arraste em andamento (de botão ou de arquivo): a doca que se esconde
-    /// sozinha não pode sumir no meio disso (spec de 17/11/2026 §3).
-    public bool Ocupada => _menu?.IsOpen == true || _miniaturas?.IsVisible == true || _arrastando || _arquivoSobre is not null;
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct Ponto { public int X, Y; }
+    [System.Runtime.InteropServices.LibraryImport("user32.dll")]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static partial bool GetCursorPos(out Ponto p);
+
+    /// Menu aberto, miniaturas com o mouse nelas ou arraste em andamento (de botão ou de arquivo sobre um botão): a doca
+    /// que se esconde sozinha não pode sumir no meio disso (spec de 17/11/2026 §3). Chamado a cada 50 ms com a opção
+    /// ligada. Nada aqui pode prender a doca à mostra (revisão final, C1 e I2):
+    /// - um arquivo solto sobre um app que não o abre, ou cancelado com Esc, termina com DragLeave "dentro" do botão e
+    ///   sem Drop; sem botão do mouse apertado, o arraste acabou;
+    /// - as miniaturas abertas por um arquivo parado ficam sem MouseLeave (o arraste é de outro processo): só contam
+    ///   com o cursor em cima delas.
+    public bool Ocupada()
+    {
+        if (_arquivoSobre is not null && !MenuDoca.AlgumBotao())
+        {
+            _arquivo.Stop();
+            _arquivoSobre = null;
+        }
+        bool miniaturas = _miniaturas?.IsVisible == true && (_miniaturas.IsMouseOver || CursorSobre(_miniaturas));
+        return _menu?.IsOpen == true || miniaturas || _arrastando || _arquivoSobre is not null;
+    }
+
+    /// A doca desceu: nada dela fica flutuando na tela.
+    public void AoEsconder()
+    {
+        _passar.Stop();
+        EsconderMiniaturas();
+        if (_menu is not null) _menu.IsOpen = false;
+    }
+
+    private static bool CursorSobre(Window janela)
+    {
+        if (!GetCursorPos(out var p)) return false;
+        try
+        {
+            var canto = janela.PointToScreen(new Point(0, 0));
+            var outro = janela.PointToScreen(new Point(janela.ActualWidth, janela.ActualHeight));
+            return p.X >= canto.X && p.X < outro.X && p.Y >= canto.Y && p.Y < outro.Y;
+        }
+        catch (InvalidOperationException) { return false; } // ainda sem janela
+    }
 
     public ConteudoDoca()
     {

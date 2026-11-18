@@ -97,7 +97,7 @@ public sealed class DocaTests : IDisposable
         Salvar("D", Ligada);
         _servico.IniciarTeste("D");
         _servico.CancelarTeste();
-        Assert.Equal(BarraBaixoPerfil.Desligada, _doca.Atual());
+        Assert.False(_doca.Atual().Visivel); // a escolha de esconder fica guardada (revisão final, M3)
         Assert.Contains("mostrar", _windows.Chamadas);
         Assert.False(_windows.Ocultar);
     }
@@ -203,6 +203,16 @@ public sealed class DocaTests : IDisposable
         _doca.Aplicar(new BarraBaixoPerfil(true, true));
         Assert.Equal(new BarraBaixoPerfil(true, true), _controle.Chamadas[^1]);
         Assert.Equal(guardado, _config.Ler().OcultarAutomaticoAntesDaDoca);
+    }
+
+    [Fact]
+    public void Desligar_guarda_o_esconder_para_a_proxima_vez()
+    {
+        _doca.Aplicar(new BarraBaixoPerfil(true, true));
+        _doca.Aplicar(BarraBaixoPerfil.Desligada);
+        Assert.False(_doca.Atual().Visivel);
+        _doca.Aplicar(new BarraBaixoPerfil(true));
+        Assert.Equal(new BarraBaixoPerfil(true, true), _controle.Chamadas[^1]);
     }
 
     private sealed class ControleDocaFalso : IControleDoca

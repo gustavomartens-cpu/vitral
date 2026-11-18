@@ -28,4 +28,18 @@ public sealed class TelaCheiaMonitoresTests
     [Fact]
     public void Area_de_trabalho_no_topo_nao_conta() =>
         Assert.False(TelaCheia.NoPrincipal([("WorkerW", Principal)], Principal));
+
+    // Doca que se esconde sem a barra do topo (revisão final, I1): nada reserva espaço e a janela maximizada, com a
+    // borda invisível, passa da tela. Isso não é tela cheia; um jogo maximizado sem moldura (cabe exato) continua sendo.
+    [Fact]
+    public void Janela_maximizada_com_borda_invisivel_nao_e_tela_cheia() =>
+        Assert.False(TelaCheia.NoPrincipal([("Notepad", new Retangulo(-8, -8, 2576, 1456), true)], Principal));
+
+    [Fact]
+    public void Maximizada_que_cabe_exata_continua_tela_cheia() =>
+        Assert.True(TelaCheia.NoPrincipal([("UnityWndClass", Jogo, true)], Principal));
+
+    [Fact]
+    public void Nao_maximizada_cobrindo_tudo_continua_tela_cheia() =>
+        Assert.True(TelaCheia.NoPrincipal([("Chrome_WidgetWin_1", new Retangulo(-8, -8, 2576, 1456), false)], Principal));
 }

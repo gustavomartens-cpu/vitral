@@ -61,7 +61,7 @@ internal static partial class MenuDoca
         if (PresentationSource.FromVisual(menu) is System.Windows.Interop.HwndSource fonte) SetForegroundWindow(fonte.Handle);
     }
 
-    private static bool AlgumBotao() =>
+    internal static bool AlgumBotao() =>
         (GetAsyncKeyState(0x01) & 0x8000) != 0 || (GetAsyncKeyState(0x02) & 0x8000) != 0 || (GetAsyncKeyState(0x04) & 0x8000) != 0;
 
     private static bool CursorNoMenu(ContextMenu menu)

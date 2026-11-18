@@ -11,17 +11,28 @@ public static class TelaCheia
     /// numa janela do outro monitor não tira a tela cheia do app que cobre o principal (Gustavo, 02/11). Vale a primeira
     /// janela que está mais da metade no monitor principal: uma janela maximizada no vizinho tem a borda invisível
     /// avançando uns 8 px no principal, e isso não pode contar.
-    public static bool NoPrincipal(IEnumerable<(string Classe, Retangulo Janela)> deCimaParaBaixo, Retangulo monitorPrincipal)
+    public static bool NoPrincipal(IEnumerable<(string Classe, Retangulo Janela)> deCimaParaBaixo, Retangulo monitorPrincipal) =>
+        NoPrincipal(deCimaParaBaixo.Select(j => (j.Classe, j.Janela, false)), monitorPrincipal);
+
+    /// Com o "maximizada" de cada janela (IsZoomed): sem reserva embaixo (doca que se esconde) nem em cima (sem a barra
+    /// do topo), uma janela maximizada comum cobre o monitor com a borda invisível passando da tela, e não é tela cheia
+    /// (revisão final da doca que se esconde, I1). Maximizada que cabe exata (jogo sem moldura) continua sendo.
+    public static bool NoPrincipal(IEnumerable<(string Classe, Retangulo Janela, bool Maximizada)> deCimaParaBaixo, Retangulo monitorPrincipal)
     {
-        foreach (var (classe, janela) in deCimaParaBaixo)
+        foreach (var (classe, janela, maximizada) in deCimaParaBaixo)
         {
             double largura = Math.Min(janela.X + janela.Largura, monitorPrincipal.X + monitorPrincipal.Largura) - Math.Max(janela.X, monitorPrincipal.X);
             double altura = Math.Min(janela.Y + janela.Altura, monitorPrincipal.Y + monitorPrincipal.Altura) - Math.Max(janela.Y, monitorPrincipal.Y);
             double dentro = Math.Max(0, largura) * Math.Max(0, altura);
-            if (dentro > 0 && dentro * 2 >= janela.Largura * janela.Altura) return EhDeVerdade(classe, janela, monitorPrincipal);
+            if (dentro > 0 && dentro * 2 >= janela.Largura * janela.Altura)
+                return EhDeVerdade(classe, janela, monitorPrincipal) && !(maximizada && PassaDaTela(janela, monitorPrincipal));
         }
         return false;
     }
+
+    private static bool PassaDaTela(Retangulo janela, Retangulo monitor) =>
+        janela.X < monitor.X || janela.Y < monitor.Y
+        || janela.X + janela.Largura > monitor.X + monitor.Largura || janela.Y + janela.Altura > monitor.Y + monitor.Altura;
 
     public static bool EhDeVerdade(string classeDaJanela, Retangulo janela, Retangulo monitorPrincipal) =>
         !AreaDeTrabalho.Contains(classeDaJanela)

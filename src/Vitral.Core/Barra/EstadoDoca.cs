@@ -17,7 +17,8 @@ public sealed class EstadoDoca(IControleDoca controle, IBarraDoWindows barraWind
         var atual = Atual();
         bool estava = atual.Visivel;
         // "Esconder automaticamente" nulo mantém o aplicado (spec de 17/11/2026 §5); o controle recebe sempre o valor.
-        if (estado.Visivel) estado = estado with { EsconderAutomatico = estado.EsconderAutomatico ?? atual.EsconderAutomatico ?? false };
+        // Desligada, guarda a escolha para a próxima vez que um perfil ligar a doca com "não mexer" (revisão final, M3).
+        estado = estado with { EsconderAutomatico = estado.EsconderAutomatico ?? atual.EsconderAutomatico ?? (estado.Visivel ? false : null) };
         if (estado.Visivel) Ligar(guardar: !estava, estado);
         else if (estava) Desligar();
         else controle.Aplicar(estado);
