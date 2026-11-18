@@ -99,4 +99,22 @@ public sealed class FormasTests
         var ilha = R(new FormasPerfil(Notch: new FormasNotch(FormatoNotch.Ilha))).Notch;
         Assert.Equal(0, ResolverFormas.OrelhaNaAltura(ilha, 112));
     }
+
+    [Fact]
+    public void Cor_dos_icones_padrao_e_originais() => Assert.Equal(CorIconesDoca.Originais, R(null).Doca.CorIcones);
+
+    [Fact]
+    public void Cor_dos_icones_preto_e_branco() =>
+        Assert.Equal(CorIconesDoca.PretoEBranco, R(new FormasPerfil(new FormasDoca(CorIcones: CorIconesDoca.PretoEBranco))).Doca.CorIcones);
+
+    [Fact]
+    public void Mesclar_mantem_cor_dos_icones_de_baixo()
+    {
+        var embaixo = new FormasPerfil(new FormasDoca(CorIcones: CorIconesDoca.PretoEBranco));
+        var m = ResolverFormas.Mesclar(embaixo, new FormasPerfil(new FormasDoca(Formato: FormatoDoca.Corrida)));
+        Assert.Equal(CorIconesDoca.PretoEBranco, m.Doca!.CorIcones);
+        Assert.Equal(FormatoDoca.Corrida, m.Doca.Formato);
+        Assert.Equal(CorIconesDoca.Originais,
+            ResolverFormas.Mesclar(embaixo, new FormasPerfil(new FormasDoca(CorIcones: CorIconesDoca.Originais))).Doca!.CorIcones);
+    }
 }

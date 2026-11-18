@@ -128,4 +128,22 @@ public class PerfilJsonTests
     {
         Assert.Throws<PerfilInvalidoException>(() => PerfilJson.Ler("""{ "esquema": 1 }"""));
     }
+
+    [Fact]
+    public void Cor_dos_icones_ida_e_volta()
+    {
+        var p = PerfilJson.Ler(ExemploSpec) with { Formas = new FormasPerfil(new FormasDoca(CorIcones: CorIconesDoca.PretoEBranco)) };
+        var json = PerfilJson.Escrever(p);
+        Assert.Contains("\"corIcones\": \"pretoEBranco\"", json);
+        Assert.Equal(CorIconesDoca.PretoEBranco, PerfilJson.Ler(json).Formas!.Doca!.CorIcones);
+    }
+
+    [Fact]
+    public void Cor_dos_icones_desconhecida_vira_nulo()
+    {
+        var p = PerfilJson.Ler("""{ "esquema": 4, "nome": "x", "formas": { "doca": { "formato": "corrida", "corIcones": "umTom" } } }""");
+        Assert.Null(p.Formas!.Doca!.CorIcones);
+        Assert.Equal(FormatoDoca.Corrida, p.Formas.Doca.Formato);
+        Assert.Equal("x", p.Nome);
+    }
 }
