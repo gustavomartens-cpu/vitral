@@ -22,6 +22,9 @@ nele, com um play que abre o Spotify e retoma a música. Hoje, ao fechar o Spoti
   `%APPDATA%\Spotify\Spotify.exe`) e espera até 20 s a sessão do Spotify aparecer nos controles de mídia do Windows
   (GSMTC); quando aparece, manda tocar (`TryPlayAsync`), tentando de novo até ela tocar ou o prazo acabar. O Spotify
   restaura sozinho a última faixa pausada; o Windows não expõe o ID da faixa, então "retomar a última" é isso.
+  **Abre minimizado** (Gustavo, 17/11/2026): se foi o play que abriu o Spotify, a janela é minimizada quando aparece
+  e vigiada por 5 s (o Spotify a restaura sozinho ao terminar de carregar). Já aberto, ou pelo clique no título, a
+  janela fica como está. O × ou um comando na sessão real durante a abertura cancelam o play.
   Enquanto abre, o botão mostra pausa (resposta imediata ao clique); se der o prazo sem tocar, volta ao play.
 - **×:** esconde a prévia até o Spotify **tocar** de novo (tocando, não só aberto). Guardado em disco: sobrevive a
   reiniciar o Vitral. Quando o Spotify toca, o × é esquecido e tudo volta como hoje.
