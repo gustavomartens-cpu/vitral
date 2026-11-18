@@ -52,10 +52,37 @@ public sealed class EditorFormasTests
     [Fact]
     public void Opcoes_das_formas_com_nao_mexer_primeiro()
     {
-        Assert.All([Opcoes.FormatosDoca, Opcoes.IconesDoca, Opcoes.Ampliacoes, Opcoes.FormatosNotch, Opcoes.TamanhosNotch,
+        Assert.All([Opcoes.FormatosDoca, Opcoes.IconesDoca, Opcoes.Ampliacoes, Opcoes.CoresIconesDoca, Opcoes.FormatosNotch, Opcoes.TamanhosNotch,
             Opcoes.DisposicoesIlhas, Opcoes.DistanciasIlhas], l => Assert.Same(Opcoes.Nulo, l[0].Valor));
         Assert.Equal(["Não mexer", "Encaixado", "Sem orelhas", "Ilha"], Opcoes.FormatosNotch.Select(o => o.Rotulo));
         Assert.Equal(["Não mexer", "Separadas", "Barra única"], Opcoes.DisposicoesIlhas.Select(o => o.Rotulo));
         Assert.Equal(["Não mexer", "Ligada", "Desligada"], Opcoes.Ampliacoes.Select(o => o.Rotulo));
     }
+
+    [Fact]
+    public void Cor_dos_icones_ida_e_volta()
+    {
+        var e = new EditorFormasViewModel();
+        e.Carregar(new FormasPerfil(new FormasDoca(CorIcones: CorIconesDoca.PretoEBranco)));
+        Assert.Equal(CorIconesDoca.PretoEBranco, e.CorIconesDoca);
+        Assert.Equal(CorIconesDoca.PretoEBranco, e.ParaPerfil()!.Doca!.CorIcones);
+    }
+
+    [Fact]
+    public void So_cor_dos_icones_gera_secao_da_doca()
+    {
+        var e = new EditorFormasViewModel { CorIconesDoca = CorIconesDoca.PretoEBranco };
+        Assert.Equal(new FormasPerfil(new FormasDoca(CorIcones: CorIconesDoca.PretoEBranco)), e.ParaPerfil());
+    }
+
+    [Fact]
+    public void Previa_reflete_cor_dos_icones()
+    {
+        var e = new EditorFormasViewModel { CorIconesDoca = CorIconesDoca.PretoEBranco };
+        Assert.Equal(CorIconesDoca.PretoEBranco, e.Previa.Doca.CorIcones);
+    }
+
+    [Fact]
+    public void Opcoes_da_cor_dos_icones() =>
+        Assert.Equal(["Não mexer", "Originais", "Preto e branco"], Opcoes.CoresIconesDoca.Select(o => o.Rotulo));
 }

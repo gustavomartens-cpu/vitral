@@ -75,6 +75,9 @@ public static class Opcoes
 
     public static IReadOnlyList<Opcao<object>> Ampliacoes { get; } = [new("Não mexer", Nulo), new("Ligada", true), new("Desligada", false)];
 
+    public static IReadOnlyList<Opcao<object>> CoresIconesDoca { get; } =
+        [new("Não mexer", Nulo), new("Originais", Core.Perfis.CorIconesDoca.Originais), new("Preto e branco", Core.Perfis.CorIconesDoca.PretoEBranco)];
+
     public static IReadOnlyList<Opcao<object>> FormatosNotch { get; } =
     [
         new("Não mexer", Nulo), new("Encaixado", Core.Perfis.FormatoNotch.Encaixado), new("Sem orelhas", Core.Perfis.FormatoNotch.SemOrelhas),

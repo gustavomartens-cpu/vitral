@@ -12,6 +12,7 @@ public sealed partial class EditorFormasViewModel : ObservableObject
     [ObservableProperty] private FormatoDoca? _formatoDoca;
     [ObservableProperty] private TamanhoIcones? _iconesDoca;
     [ObservableProperty] private bool? _ampliacaoDoca;
+    [ObservableProperty] private CorIconesDoca? _corIconesDoca;
     [ObservableProperty] private FormatoNotch? _formatoNotch;
     [ObservableProperty] private TamanhoNotch? _tamanhoNotch;
     [ObservableProperty] private DisposicaoIlhas? _disposicaoIlhas;
@@ -30,6 +31,7 @@ public sealed partial class EditorFormasViewModel : ObservableObject
         FormatoDoca = f?.Doca?.Formato;
         IconesDoca = f?.Doca?.Icones;
         AmpliacaoDoca = f?.Doca?.Ampliacao;
+        CorIconesDoca = f?.Doca?.CorIcones;
         FormatoNotch = f?.Notch?.Formato;
         TamanhoNotch = f?.Notch?.Tamanho;
         DisposicaoIlhas = f?.Ilhas?.Disposicao;
@@ -39,7 +41,8 @@ public sealed partial class EditorFormasViewModel : ObservableObject
     /// Nulo quando nada foi escolhido; cada parte, nula quando nada dela foi escolhido.
     public FormasPerfil? ParaPerfil()
     {
-        var doca = FormatoDoca is null && IconesDoca is null && AmpliacaoDoca is null ? null : new FormasDoca(FormatoDoca, IconesDoca, AmpliacaoDoca);
+        var doca = FormatoDoca is null && IconesDoca is null && AmpliacaoDoca is null && CorIconesDoca is null ? null
+            : new FormasDoca(FormatoDoca, IconesDoca, AmpliacaoDoca, CorIconesDoca);
         var notch = FormatoNotch is null && TamanhoNotch is null ? null : new FormasNotch(FormatoNotch, TamanhoNotch);
         var ilhas = DisposicaoIlhas is null && DistanciaIlhas is null ? null : new FormasIlhas(DisposicaoIlhas, DistanciaIlhas);
         return doca is null && notch is null && ilhas is null ? null : new FormasPerfil(doca, notch, ilhas);
