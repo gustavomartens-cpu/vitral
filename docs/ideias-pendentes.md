@@ -96,6 +96,15 @@ mesmos arquivos ao mesmo tempo:
 - Retrato antigo (sem o campo) com a doca ligada: "Voltar" mantém o esconder como está (nulo = não mexer).
 - Mostrar a doca ao abrir o Menu Iniciar ou por atalho; tempos configuráveis.
 
+## Ícones da doca em preto e branco: sobras da revisão final (17/11/2026)
+
+- Ícone vetorial (DrawingImage) é rasterizado a 96 DPI no tamanho em DIP: em 150% ou com a lupa, a cópia cinza sai
+  mais borrada. Hoje os ícones da doca são bitmaps, então é teórico; rasterizar em tamanho × DPI ou num fixo de 64 px.
+- Desenho com limites enormes geraria um bitmap gigante (o catch não pega falta de memória). Teórico; limitar a 256 px.
+- O conversor do App não tem teste automatizado (o App não tem projeto de teste STA); a conta e a regra das camadas
+  estão testadas no Core.
+- Durante um arraste, ou com o mouse nas miniaturas, o ícone fica cinza (o "mouse em cima" é só sobre o botão).
+
 ## Testes a fundo pendentes
 
 As opções do perfil têm testes da regra, mas nunca foram conferidas de ponta a ponta no Windows: cores e tema, barra

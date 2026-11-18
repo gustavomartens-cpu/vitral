@@ -5,7 +5,7 @@ namespace Vitral.Core.Formas;
 /// A doca em números. <paramref name="Icone"/> é a área do ícone (que a lupa amplia), <paramref name="Imagem"/> o desenho
 /// dentro dela; <paramref name="Folga"/> é a distância até a borda de baixo.
 public sealed record ValoresDoca(FormatoDoca Formato, double Icone, double Imagem, double BotaoLargura, double BotaoAltura,
-    double Altura, double Folga, double Reserva, bool Ampliacao, bool CantosRetos);
+    double Altura, double Folga, double Reserva, bool Ampliacao, bool CantosRetos, CorIconesDoca CorIcones = CorIconesDoca.Originais);
 
 /// O notch em repouso. <paramref name="Sobra"/>: px pintados acima da borda da tela (a costura com a borda);
 /// <paramref name="Afastamento"/>: distância da borda até o topo visível (no formato Ilha).
@@ -32,7 +32,8 @@ public static class ResolverFormas
     /// "Não mexer" campo a campo (decisão do Gustavo, 27/10): o que vem por cima vale onde não for nulo; o resto fica
     /// como está embaixo.
     public static FormasPerfil Mesclar(FormasPerfil? embaixo, FormasPerfil? cima) => new(
-        cima?.Doca is { } d ? new FormasDoca(d.Formato ?? embaixo?.Doca?.Formato, d.Icones ?? embaixo?.Doca?.Icones, d.Ampliacao ?? embaixo?.Doca?.Ampliacao)
+        cima?.Doca is { } d ? new FormasDoca(d.Formato ?? embaixo?.Doca?.Formato, d.Icones ?? embaixo?.Doca?.Icones, d.Ampliacao ?? embaixo?.Doca?.Ampliacao,
+                d.CorIcones ?? embaixo?.Doca?.CorIcones)
             : embaixo?.Doca,
         cima?.Notch is { } n ? new FormasNotch(n.Formato ?? embaixo?.Notch?.Formato, n.Tamanho ?? embaixo?.Notch?.Tamanho) : embaixo?.Notch,
         cima?.Ilhas is { } i ? new FormasIlhas(i.Disposicao ?? embaixo?.Ilhas?.Disposicao, i.Distancia ?? embaixo?.Ilhas?.Distancia) : embaixo?.Ilhas);
@@ -50,7 +51,8 @@ public static class ResolverFormas
         double folga = corrida ? 0 : 8;
         // Imagem inteira (fracionária borra) e botão dentro da borda de 1 px de cada lado.
         return new ValoresDoca(formato, icone, Math.Round(icone * 0.8), icone + 10, Math.Min(icone + 14, altura - 2), altura, folga,
-            corrida ? altura : altura + 2 * folga, f?.Ampliacao ?? true, corrida);
+            corrida ? altura : altura + 2 * folga, f?.Ampliacao ?? true, corrida,
+            f?.CorIcones ?? CorIconesDoca.Originais);
     }
 
     private static ValoresNotch Notch(FormasNotch? f, CantosParte cantos)

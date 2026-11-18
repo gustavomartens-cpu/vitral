@@ -259,7 +259,7 @@
                             <Border Style="{StaticResource CartaoVidro}" DataContext="{Binding DataContext.EditorFormas, RelativeSource={RelativeSource AncestorType=Window}}">
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                    <Grid.RowDefinitions><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
                                     <TextBlock Text="Formato da doca" VerticalAlignment="Center" />
                                     <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.FormatosDoca}"
                                              SelectedValue="{Binding FormatoDoca, Converter={StaticResource NuloComoMarca}}" />
@@ -269,6 +269,10 @@
                                     <TextBlock Grid.Row="2" Text="Ampliação ao passar o mouse" VerticalAlignment="Center" Margin="0,12,0,0" />
                                     <ListBox Grid.Row="2" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.Ampliacoes}"
                                              SelectedValue="{Binding AmpliacaoDoca, Converter={StaticResource NuloComoMarca}}" />
+                                    <!-- Cor dos ícones (spec dos ícones em preto e branco, 17/11/2026) -->
+                                    <TextBlock Grid.Row="3" Text="Cor dos ícones" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                    <ListBox Grid.Row="3" Grid.Column="1" Style="{StaticResource SeletorPilula}" Margin="0,12,0,0" ItemsSource="{x:Static ui:Opcoes.CoresIconesDoca}"
+                                             SelectedValue="{Binding CorIconesDoca, Converter={StaticResource NuloComoMarca}}" />
                                 </Grid>
                             </Border>
 
