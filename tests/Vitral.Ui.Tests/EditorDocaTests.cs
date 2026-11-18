@@ -14,7 +14,8 @@ public sealed class EditorDocaTests : IDisposable
     private void Salvar(string nome, BarraBaixoPerfil? doca) =>
         _amb.Perfis.Salvar(new Perfil(4, nome, null, new AjustesNativosPerfil(null, null, null, null, null, null, null, null), BarraBaixo: doca));
 
-    public static TheoryData<BarraBaixoPerfil?> Estados => new() { null, new BarraBaixoPerfil(true), BarraBaixoPerfil.Desligada };
+    public static TheoryData<BarraBaixoPerfil?> Estados => new()
+        { null, new BarraBaixoPerfil(true), BarraBaixoPerfil.Desligada, new BarraBaixoPerfil(true, true), new BarraBaixoPerfil(true, false) };
 
     [Theory]
     [MemberData(nameof(Estados))]
@@ -73,5 +74,28 @@ public sealed class EditorDocaTests : IDisposable
         e.PropertyChanged += (_, a) => mudou.Add(a.PropertyName);
         e.Doca = Escolha.Sim;
         Assert.Contains(nameof(EditorDocaViewModel.SubstituiBarraDoWindows), mudou);
+    }
+
+    [Fact]
+    public void Esconder_so_vale_com_a_doca_ligada()
+    {
+        var e = new EditorDocaViewModel { Doca = Escolha.Nao, Esconder = Escolha.Sim };
+        Assert.False(e.PodeEsconder);
+        Assert.Equal(BarraBaixoPerfil.Desligada, e.ParaPerfil());
+
+        e.Doca = Escolha.Sim;
+        e.Esconder = Escolha.NaoMexer;
+        Assert.True(e.PodeEsconder);
+        Assert.Equal(new BarraBaixoPerfil(true), e.ParaPerfil());
+    }
+
+    [Fact]
+    public void PodeEsconder_avisa_quando_a_doca_muda()
+    {
+        var e = new EditorDocaViewModel();
+        var mudou = new List<string?>();
+        e.PropertyChanged += (_, a) => mudou.Add(a.PropertyName);
+        e.Doca = Escolha.Sim;
+        Assert.Contains(nameof(EditorDocaViewModel.PodeEsconder), mudou);
     }
 }

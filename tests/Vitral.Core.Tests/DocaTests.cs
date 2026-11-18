@@ -22,7 +22,7 @@ public sealed class DocaTests : IDisposable
     private readonly RegistroEmMemoria _registro = new();
     private readonly NotificadorNulo _notificador = new();
 
-    private static readonly BarraBaixoPerfil Ligada = new(true);
+    private static readonly BarraBaixoPerfil Ligada = new(true, false);
 
     public DocaTests()
     {
@@ -97,7 +97,7 @@ public sealed class DocaTests : IDisposable
         Salvar("D", Ligada);
         _servico.IniciarTeste("D");
         _servico.CancelarTeste();
-        Assert.Equal(BarraBaixoPerfil.Desligada, _doca.Atual());
+        Assert.False(_doca.Atual().Visivel); // a escolha de esconder fica guardada (revisão final, M3)
         Assert.Contains("mostrar", _windows.Chamadas);
         Assert.False(_windows.Ocultar);
     }
@@ -168,6 +168,51 @@ public sealed class DocaTests : IDisposable
 
         Assert.True(_windows.Ocultar);
         Assert.DoesNotContain(false, _notificador.Ocultar);
+    }
+
+    [Fact]
+    public void Esconder_ida_e_volta_no_json()
+    {
+        var p = new Perfil(4, "D", null, null, BarraBaixo: new(true, true));
+        string json = PerfilJson.Escrever(p);
+        Assert.Contains("\"esconderAutomatico\": true", json);
+        Assert.Equal(p, PerfilJson.Ler(json));
+    }
+
+    [Fact]
+    public void Esconder_nulo_mantem_o_aplicado()
+    {
+        _doca.Aplicar(new BarraBaixoPerfil(true, true));
+        _doca.Aplicar(new BarraBaixoPerfil(true));
+        Assert.Equal(new BarraBaixoPerfil(true, true), _doca.Atual());
+        Assert.Equal(new BarraBaixoPerfil(true, true), _controle.Chamadas[^1]);
+    }
+
+    [Fact]
+    public void Primeira_vez_sem_esconder_resolve_para_falso()
+    {
+        _doca.Aplicar(new BarraBaixoPerfil(true));
+        Assert.Equal([new BarraBaixoPerfil(true, false)], _controle.Chamadas);
+    }
+
+    [Fact]
+    public void Esconder_muda_sem_religar_a_barra()
+    {
+        _doca.Aplicar(new BarraBaixoPerfil(true, false));
+        var guardado = _config.Ler().OcultarAutomaticoAntesDaDoca;
+        _doca.Aplicar(new BarraBaixoPerfil(true, true));
+        Assert.Equal(new BarraBaixoPerfil(true, true), _controle.Chamadas[^1]);
+        Assert.Equal(guardado, _config.Ler().OcultarAutomaticoAntesDaDoca);
+    }
+
+    [Fact]
+    public void Desligar_guarda_o_esconder_para_a_proxima_vez()
+    {
+        _doca.Aplicar(new BarraBaixoPerfil(true, true));
+        _doca.Aplicar(BarraBaixoPerfil.Desligada);
+        Assert.False(_doca.Atual().Visivel);
+        _doca.Aplicar(new BarraBaixoPerfil(true));
+        Assert.Equal(new BarraBaixoPerfil(true, true), _controle.Chamadas[^1]);
     }
 
     private sealed class ControleDocaFalso : IControleDoca

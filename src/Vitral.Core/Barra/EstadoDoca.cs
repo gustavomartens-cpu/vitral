@@ -14,8 +14,12 @@ public sealed class EstadoDoca(IControleDoca controle, IBarraDoWindows barraWind
     public void Aplicar(BarraBaixoPerfil? estado)
     {
         if (estado is null) return;
-        bool estava = Atual().Visivel;
-        if (estado.Visivel) Ligar(guardar: !estava);
+        var atual = Atual();
+        bool estava = atual.Visivel;
+        // "Esconder automaticamente" nulo mantém o aplicado (spec de 17/11/2026 §5); o controle recebe sempre o valor.
+        // Desligada, guarda a escolha para a próxima vez que um perfil ligar a doca com "não mexer" (revisão final, M3).
+        estado = estado with { EsconderAutomatico = estado.EsconderAutomatico ?? atual.EsconderAutomatico ?? (estado.Visivel ? false : null) };
+        if (estado.Visivel) Ligar(guardar: !estava, estado);
         else if (estava) Desligar();
         else controle.Aplicar(estado);
         config.Gravar(config.Ler() with { BarraBaixo = estado });
@@ -34,7 +38,12 @@ public sealed class EstadoDoca(IControleDoca controle, IBarraDoWindows barraWind
     /// Ao abrir o App: liga se estava ligada; senão garante a barra do Windows (e desfaz o que um travamento deixou).
     public void AoIniciar()
     {
-        if (Atual().Visivel) { Ligar(guardar: config.Ler().OcultarAutomaticoAntesDaDoca is null); return; }
+        var atual = Atual();
+        if (atual.Visivel)
+        {
+            Ligar(guardar: config.Ler().OcultarAutomaticoAntesDaDoca is null, atual with { EsconderAutomatico = atual.EsconderAutomatico ?? false });
+            return;
+        }
         barraWindows.Mostrar();
         Restaurar();
     }
@@ -46,7 +55,7 @@ public sealed class EstadoDoca(IControleDoca controle, IBarraDoWindows barraWind
         Desligar();
     }
 
-    private void Ligar(bool guardar)
+    private void Ligar(bool guardar, BarraBaixoPerfil estado)
     {
         if (guardar)
         {
@@ -54,7 +63,7 @@ public sealed class EstadoDoca(IControleDoca controle, IBarraDoWindows barraWind
             barraWindows.DefinirOcultarAutomatico(true);
         }
         barraWindows.Esconder();
-        controle.Aplicar(new BarraBaixoPerfil(true));
+        controle.Aplicar(estado);
     }
 
     private void Desligar()

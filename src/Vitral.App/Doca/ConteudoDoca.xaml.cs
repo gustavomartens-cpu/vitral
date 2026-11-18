@@ -21,6 +21,52 @@ public partial class ConteudoDoca : UserControl
     private FrameworkElement? _sobre;
     private DocaViewModel? _vm;
     private Point? _inicio;
+    private ContextMenu? _menu;
+    private bool _arrastando;
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct Ponto { public int X, Y; }
+    [System.Runtime.InteropServices.LibraryImport("user32.dll")]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+    private static partial bool GetCursorPos(out Ponto p);
+
+    /// Menu aberto, miniaturas com o mouse nelas ou arraste em andamento (de botão ou de arquivo sobre um botão): a doca
+    /// que se esconde sozinha não pode sumir no meio disso (spec de 17/11/2026 §3). Chamado a cada 50 ms com a opção
+    /// ligada. Nada aqui pode prender a doca à mostra (revisão final, C1 e I2):
+    /// - um arquivo solto sobre um app que não o abre, ou cancelado com Esc, termina com DragLeave "dentro" do botão e
+    ///   sem Drop; sem botão do mouse apertado, o arraste acabou;
+    /// - as miniaturas abertas por um arquivo parado ficam sem MouseLeave (o arraste é de outro processo): só contam
+    ///   com o cursor em cima delas.
+    public bool Ocupada()
+    {
+        if (_arquivoSobre is not null && !MenuDoca.AlgumBotao())
+        {
+            _arquivo.Stop();
+            _arquivoSobre = null;
+        }
+        bool miniaturas = _miniaturas?.IsVisible == true && (_miniaturas.IsMouseOver || CursorSobre(_miniaturas));
+        return _menu?.IsOpen == true || miniaturas || _arrastando || _arquivoSobre is not null;
+    }
+
+    /// A doca desceu: nada dela fica flutuando na tela.
+    public void AoEsconder()
+    {
+        _passar.Stop();
+        EsconderMiniaturas();
+        if (_menu is not null) _menu.IsOpen = false;
+    }
+
+    private static bool CursorSobre(Window janela)
+    {
+        if (!GetCursorPos(out var p)) return false;
+        try
+        {
+            var canto = janela.PointToScreen(new Point(0, 0));
+            var outro = janela.PointToScreen(new Point(janela.ActualWidth, janela.ActualHeight));
+            return p.X >= canto.X && p.X < outro.X && p.Y >= canto.Y && p.Y < outro.Y;
+        }
+        catch (InvalidOperationException) { return false; } // ainda sem janela
+    }
 
     public ConteudoDoca()
     {
@@ -45,7 +91,7 @@ public partial class ConteudoDoca : UserControl
     {
         if (_vm is null || BotaoDe(sender) is not { } botao) return;
         EsconderMiniaturas();
-        MenuDoca.Abrir((UIElement)sender, _vm.Menu(botao));
+        _menu = MenuDoca.Abrir((UIElement)sender, _vm.Menu(botao));
         e.Handled = true;
     }
 
@@ -145,7 +191,9 @@ public partial class ConteudoDoca : UserControl
         var d = e.GetPosition(this) - inicio;
         if (Math.Abs(d.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(d.Y) < SystemParameters.MinimumVerticalDragDistance) return;
         _inicio = null;
-        DragDrop.DoDragDrop((DependencyObject)sender, botao, DragDropEffects.Move);
+        _arrastando = true;
+        try { DragDrop.DoDragDrop((DependencyObject)sender, botao, DragDropEffects.Move); }
+        finally { _arrastando = false; }
     }
 
     // Arquivo de fora (Explorer): parado sobre o botão, o app vem para a frente; solto, o app abre o arquivo

@@ -83,6 +83,16 @@ mesmos arquivos ao mesmo tempo:
   cobertura do Claude conta a borda invisível do DWM e a parte fora da tela; testes do Importar sem conflito com
   Cancelar/Descartar, conflito com Salvar/Descartar, arquivo inexistente com pendência e bordas da cobertura.
 
+## Doca que se esconde: sobras da revisão final (17/11/2026)
+
+- A tela cheia é conferida a cada 1,5 s; sem a faixa registrada, o aviso do Windows não chega, e a doca à mostra pelo
+  mouse pode ficar até 1,5 s por cima de um jogo que acabou de abrir. Encurtar a conferência com a opção ligada.
+- Com um monitor logo abaixo do principal, o deslize aparece alguns quadros nele (e a borda de baixo não é borda
+  física: o mouse passa direto). Esconder sem animar nesse caso.
+- Arraste de arquivo pelo vão ou acima da doca (fora de um botão) não trava o sumiço; só sobre um botão.
+- Retrato antigo (sem o campo) com a doca ligada: "Voltar" mantém o esconder como está (nulo = não mexer).
+- Mostrar a doca ao abrir o Menu Iniciar ou por atalho; tempos configuráveis.
+
 ## Testes a fundo pendentes
 
 As opções do perfil têm testes da regra, mas nunca foram conferidas de ponta a ponta no Windows: cores e tema, barra

@@ -238,6 +238,20 @@
                                     </Grid>
                                     <TextBlock Text="Esconde a barra do Windows e mostra a doca do Vitral. Os ícones dos apps passam para a setinha da barra do topo."
                                                FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                    <!-- Esconder automaticamente (spec de 17/11/2026): só vale com a doca ligada no perfil -->
+                                    <Grid Margin="0,12,0,0" IsEnabled="{Binding PodeEsconder}">
+                                        <Grid.Style>
+                                            <Style TargetType="Grid">
+                                                <Style.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.45" /></Trigger></Style.Triggers>
+                                            </Style>
+                                        </Grid.Style>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
+                                        <TextBlock Text="Esconder automaticamente" VerticalAlignment="Center" />
+                                        <ListBox Grid.Column="1" Style="{StaticResource SeletorPilula}" ItemsSource="{x:Static ui:Opcoes.Escolhas}" SelectedValue="{Binding Esconder}" />
+                                        <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="A doca some quando o mouse sai e volta ao encostar na borda de baixo; as janelas maximizadas usam a tela até embaixo."
+                                                   FontSize="11" Foreground="{StaticResource TextoSecundario}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                    </Grid>
                                 </StackPanel>
                             </Border>
 
