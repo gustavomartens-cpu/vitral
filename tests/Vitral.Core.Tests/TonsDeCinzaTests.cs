@@ -2,7 +2,8 @@ using Vitral.Core.Formas;
 
 namespace Vitral.Core.Tests;
 
-/// A conta dos ícones da doca em preto e branco (spec de 17/11/2026): BGRA pré-multiplicado, alfa intacto.
+/// A conta dos ícones da doca em preto e branco (spec de 17/11/2026; alto contraste escolhido pelo Gustavo na prévia):
+/// BGRA pré-multiplicado, alfa intacto, escuros puxados para o preto e claros para o branco.
 public sealed class TonsDeCinzaTests
 {
     private static byte[] C(params byte[] bgra)
@@ -12,13 +13,13 @@ public sealed class TonsDeCinzaTests
     }
 
     [Fact]
-    public void Vermelho_puro_opaco() => Assert.Equal([76, 76, 76, 255], C(0, 0, 255, 255));
+    public void Vermelho_puro_opaco_fica_quase_preto() => Assert.Equal([20, 20, 20, 255], C(0, 0, 255, 255));
 
     [Fact]
     public void Verde_e_azul_puros()
     {
-        Assert.Equal([150, 150, 150, 255], C(0, 255, 0, 255));
-        Assert.Equal([29, 29, 29, 255], C(255, 0, 0, 255));
+        Assert.Equal([190, 190, 190, 255], C(0, 255, 0, 255));
+        Assert.Equal([2, 2, 2, 255], C(255, 0, 0, 255));
     }
 
     [Fact]
@@ -34,14 +35,27 @@ public sealed class TonsDeCinzaTests
     [Fact]
     public void Semitransparente_mantem_alfa_e_nao_passa_do_alfa()
     {
-        Assert.Equal([38, 38, 38, 128], C(0, 0, 128, 128));
+        Assert.Equal([10, 10, 10, 128], C(0, 0, 128, 128));
         var p = C(10, 20, 30, 30);
         Assert.Equal(30, p[3]);
         Assert.True(p[0] <= 30 && p[1] <= 30 && p[2] <= 30);
     }
 
     [Fact]
-    public void Varios_pixels() => Assert.Equal([76, 76, 76, 255, 150, 150, 150, 255], C(0, 0, 255, 255, 0, 255, 0, 255));
+    public void Varios_pixels() => Assert.Equal([20, 20, 20, 255, 190, 190, 190, 255], C(0, 0, 255, 255, 0, 255, 0, 255));
+
+    [Fact]
+    public void Meio_tom_fica_no_meio_e_a_curva_sobe()
+    {
+        Assert.Equal(129, C(128, 128, 128, 255)[0]);
+        int anterior = -1;
+        for (int v = 0; v <= 255; v++)
+        {
+            int c = C((byte)v, (byte)v, (byte)v, 255)[0];
+            Assert.True(c >= anterior, $"a curva desceu em {v}");
+            anterior = c;
+        }
+    }
 
     [Fact]
     public void Tamanho_invalido_lanca() => Assert.Throws<ArgumentException>(() => TonsDeCinza.Converter(new byte[6]));

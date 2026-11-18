@@ -47,9 +47,12 @@ originais: desligar a opção devolve tudo como era. É a primeira etapa de "mud
   passando por `ResolverFormas.Mesclar`/`Doca` como Formato, Ícones e Ampliação; `ValoresDoca` leva o valor resolvido
   (padrão Originais). Enum, não bool, para a etapa 2 poder acrescentar valores. O JSON do perfil lê valores
   desconhecidos com tolerância, como os outros enums (`EnumTolerante`).
-- **Conta do cinza (Core, testável):** função pura sobre pixels BGRA pré-multiplicados (o formato que o WPF entrega),
-  `cinza = 0,299·R + 0,587·G + 0,114·B` em cada pixel, alfa intacto. Como a mistura é linear, funciona direto sobre
-  valores pré-multiplicados.
+- **Conta do preto e branco (Core, testável):** função pura sobre pixels BGRA pré-multiplicados (o formato que o WPF
+  entrega). A luminância (`0,299·R + 0,587·G + 0,114·B`) passa por uma curva em S (inclinação 12, normalizada para
+  0→0 e 255→255) que puxa os escuros para o preto e os claros para o branco; a curva vale sobre a luminância sem o
+  alfa e o resultado volta multiplicado por ele (nunca passa do alfa). Alfa intacto. **Mudança de 17/11/2026:** o
+  cinza simples ficou "cinza demais"; numa prévia com os ícones reais, o Gustavo escolheu este alto contraste (entre
+  alto contraste, branco com traços e branco liso).
 - **No App:** um conversor que recebe o `ImageSource` do ícone, rasteriza (o ícone pode ser `BitmapSource` ou não),
   aplica a conta, devolve um `BitmapSource` congelado e guarda o resultado num cache fraco por instância de ícone
   (`ConditionalWeakTable`), para não converter de novo nem segurar ícones de janelas fechadas. Falha na conversão
