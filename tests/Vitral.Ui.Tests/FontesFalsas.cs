@@ -12,6 +12,7 @@ internal sealed class MidiaFalsa : IFonteMidia
     public void TocarPausar() => Comandos.Add("tocarPausar");
     public void Proxima() => Comandos.Add("proxima");
     public void TrazerApp() => Comandos.Add("trazerApp");
+    public void EsconderPrevia() => Comandos.Add("esconder");
 }
 
 internal sealed class VolumeFalso : IFonteVolume

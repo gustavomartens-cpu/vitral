@@ -96,4 +96,18 @@ public sealed class PainelMidiaTests
         vm.TocarPausarCommand.Execute(null);
         Assert.Equal(["trazerApp", "tocarPausar"], _midia.Comandos);
     }
+
+    [Fact]
+    public void Previa_sem_progresso_e_com_x() // spec da prévia do Spotify §2
+    {
+        _midia.Atual = new EstadoMidia("Blinding Lights", "The Weeknd", "Spotify", false, null, null, Previa: true);
+        using var vm = Criar();
+        Assert.True(vm.Previa);
+        Assert.False(vm.MostrarProgresso);
+        Assert.Equal("The Weeknd · Spotify", vm.Subtitulo);
+        vm.EsconderCommand.Execute(null);
+        Assert.Contains("esconder", _midia.Comandos);
+        _midia.Atual = Estado(true, M(0, 1), M(3, 0));
+        Assert.False(vm.Previa);
+    }
 }

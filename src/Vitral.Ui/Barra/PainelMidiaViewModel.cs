@@ -15,6 +15,7 @@ public sealed partial class PainelMidiaViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _subtitulo = "";
     [ObservableProperty] private byte[]? _capa;
     [ObservableProperty] private bool _tocando;
+    [ObservableProperty] private bool _previa; // o Spotify fechado: play e ×, sem anterior, próxima e progresso
     [ObservableProperty] private bool _mostrarProgresso;
     [ObservableProperty] private double _fracao;
     [ObservableProperty] private string _decorrido = "";
@@ -36,6 +37,7 @@ public sealed partial class PainelMidiaViewModel : ObservableObject, IDisposable
         Subtitulo = m is null ? "" : string.IsNullOrWhiteSpace(m.Artista) ? m.NomeApp : $"{m.Artista} · {m.NomeApp}";
         Capa = m?.Capa;
         Tocando = m?.Tocando ?? false;
+        Previa = m?.Previa ?? false;
         AtualizarProgresso();
     }
 
@@ -63,6 +65,7 @@ public sealed partial class PainelMidiaViewModel : ObservableObject, IDisposable
     [RelayCommand] private void TocarPausar() => _fonte.TocarPausar();
     [RelayCommand] private void Proxima() => _fonte.Proxima();
     [RelayCommand] private void AbrirApp() => _fonte.TrazerApp();
+    [RelayCommand] private void Esconder() => _fonte.EsconderPrevia();
 
     public void Dispose()
     {

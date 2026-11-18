@@ -54,7 +54,10 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
     /// As fontes vivem enquanto a barra está ligada (COM e WinRT são soltos ao desligar).
     private sealed class Fontes : IDisposable
     {
-        public FonteMidiaWindows Midia { get; } = new(Application.Current.Dispatcher);
+        public FonteMidiaWindows MidiaWindows { get; } = new(Application.Current.Dispatcher);
+        // A música com a prévia do Spotify fechado (spec da prévia do Spotify): é esta que o notch e o cartão leem.
+        public FonteMidiaComPrevia Midia { get; }
+        public Fontes() => Midia = new(MidiaWindows, new Core.Barra.GuardaUltimaMusica(Core.Windows.Pastas.Raiz), new AbridorSpotify());
         public FonteVolumeWindows Volume { get; } = new(Application.Current.Dispatcher);
         public FonteVolumeWindows Microfone { get; } = new(Application.Current.Dispatcher, CoreAudio.Entrada);
         public FonteRedeWindows Rede { get; } = new(Application.Current.Dispatcher);
@@ -68,6 +71,7 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
         public void Dispose()
         {
             Midia.Dispose();
+            MidiaWindows.Dispose();
             Volume.Dispose();
             Microfone.Dispose();
             Rede.Dispose();

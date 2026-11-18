@@ -3,7 +3,9 @@ namespace Vitral.Ui.Barra;
 // Fontes de dados das ilhas da barra do topo. O App implementa com APIs do Windows; os testes usam falsas.
 // Contrato das implementações: nunca lançam (falha vira null e log) e disparam Mudou na thread da interface.
 
-public sealed record EstadoMidia(string? Titulo, string? Artista, string NomeApp, bool Tocando, byte[]? Capa, LinhaDoTempo? Tempo = null);
+/// Previa: o Spotify está fechado e isto é a última música dele (spec da prévia do Spotify); Tocando = abrindo.
+public sealed record EstadoMidia(string? Titulo, string? Artista, string NomeApp, bool Tocando, byte[]? Capa, LinhaDoTempo? Tempo = null,
+    bool Previa = false);
 
 /// Posição e duração da faixa, lidas em LidaEm (hora local); enquanto toca, a posição real é estimada a partir daí.
 public sealed record LinhaDoTempo(TimeSpan Posicao, TimeSpan Duracao, DateTime LidaEm);
@@ -17,6 +19,9 @@ public interface IFonteMidia
     void TocarPausar();
     void Proxima();
     void TrazerApp();
+
+    /// O × da prévia do Spotify: esconde até ele tocar de novo. Só a fonte com prévia faz algo.
+    void EsconderPrevia() { }
 }
 
 public interface IFonteVolume
