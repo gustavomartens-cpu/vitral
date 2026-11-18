@@ -16,3 +16,11 @@ public static class TonsDeCinza
         }
     }
 }
+
+/// As duas camadas do ícone em preto e branco (revisão final, I1): a colorida fica escondida enquanto a cinza está
+/// inteira por cima (senão a cor vaza nas bordas semitransparentes) e aparece inteira assim que a cinza começa a sumir,
+/// para o ícone não ficar transparente no meio do fade.
+public static class CamadasIcone
+{
+    public static double OpacidadeOriginal(bool temCinza, double opacidadeCinza) => temCinza && opacidadeCinza >= 1 ? 0 : 1;
+}

@@ -6,6 +6,7 @@
     <!-- A doca (spec da doca §5). O DataContext é o DocaViewModel. -->
     <UserControl.Resources>
         <local:IconeCinza x:Key="ParaCinza" />
+        <local:OpacidadeOriginal x:Key="OpacidadeOriginal" />
         <Style x:Key="BotaoDoca" TargetType="Button">
             <Setter Property="tema:Efeitos.Afundar" Value="True" />
             <Setter Property="Foreground" Value="{DynamicResource Texto}" />
@@ -56,7 +57,15 @@
                                 <TextBlock x:Name="SemIcone" Text="&#xE737;" FontFamily="{StaticResource FonteIcones}" FontSize="18"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
                                 <Image Source="{Binding Icone}" Width="{DynamicResource DocaImagem}" Height="{DynamicResource DocaImagem}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                                       RenderOptions.BitmapScalingMode="HighQuality">
+                                    <!-- Escondida com a cinza inteira por cima: a cor não vaza nas bordas (revisão final, I1) -->
+                                    <Image.Opacity>
+                                        <MultiBinding Converter="{StaticResource OpacidadeOriginal}">
+                                            <Binding ElementName="Cinza" Path="Source" />
+                                            <Binding ElementName="Cinza" Path="Opacity" />
+                                        </MultiBinding>
+                                    </Image.Opacity>
+                                </Image>
                                 <!-- Preto e branco (spec de 17/11/2026): a cópia cinza por cima; some com o mouse em cima -->
                                 <Image x:Name="Cinza" Width="{DynamicResource DocaImagem}" Height="{DynamicResource DocaImagem}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                        RenderOptions.BitmapScalingMode="HighQuality">

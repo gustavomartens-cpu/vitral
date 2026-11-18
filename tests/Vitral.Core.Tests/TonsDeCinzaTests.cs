@@ -46,3 +46,16 @@ public sealed class TonsDeCinzaTests
     [Fact]
     public void Tamanho_invalido_lanca() => Assert.Throws<ArgumentException>(() => TonsDeCinza.Converter(new byte[6]));
 }
+
+/// A imagem colorida por baixo da cinza (revisão final, I1): escondida com a cinza inteira por cima, senão a cor vaza
+/// nas bordas semitransparentes; à mostra durante o fade e com a opção desligada.
+public sealed class CamadasIconeTests
+{
+    [Theory]
+    [InlineData(false, 1.0, 1.0)]  // opção desligada: sem cinza, a colorida aparece
+    [InlineData(true, 1.0, 0.0)]   // em repouso: só a cinza
+    [InlineData(true, 0.5, 1.0)]   // no meio do fade: a colorida inteira por baixo, sem o ícone ficar transparente
+    [InlineData(true, 0.0, 1.0)]   // mouse em cima: só a colorida
+    public void Opacidade_da_original(bool temCinza, double opacidadeCinza, double esperada) =>
+        Assert.Equal(esperada, CamadasIcone.OpacidadeOriginal(temCinza, opacidadeCinza));
+}

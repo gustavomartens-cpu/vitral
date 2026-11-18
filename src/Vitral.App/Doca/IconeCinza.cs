@@ -63,3 +63,12 @@ internal sealed class IconeCinza : IMultiValueConverter
         return rt;
     }
 }
+
+/// A opacidade da imagem colorida: valores = a fonte da camada cinza e a opacidade dela (CamadasIcone).
+internal sealed class OpacidadeOriginal : IMultiValueConverter
+{
+    public object Convert(object[] valores, Type alvo, object? parametro, CultureInfo cultura) =>
+        CamadasIcone.OpacidadeOriginal(valores.Length > 0 && valores[0] is ImageSource, valores.Length > 1 && valores[1] is double o ? o : 1);
+
+    public object[] ConvertBack(object? valor, Type[] alvos, object? parametro, CultureInfo cultura) => throw new NotSupportedException();
+}
