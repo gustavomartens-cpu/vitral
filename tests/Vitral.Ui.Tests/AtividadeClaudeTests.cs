@@ -276,6 +276,19 @@ public sealed class AtividadeClaudeTests
     }
 
     [Fact]
+    public void Previa_do_Spotify_tem_capa_sem_barras() // spec da prévia do Spotify §2
+    {
+        var previa = Musica with { Tocando = false, Previa = true };
+        var lados = LadosNotch.Decidir(new(0, 0, false), previa, true);
+        Assert.Equal(LadoEsquerdo.Capa, lados.Esquerdo);
+        Assert.True(lados.Musica);
+        Assert.False(lados.Barras);
+        Assert.True(LadosNotch.Decidir(new(0, 0, false), Musica, true).Barras);
+        Assert.True(LadosNotch.Decidir(new(1, 0, false), previa, true).CapaADireita);
+        Assert.False(LadosNotch.Decidir(new(0, 0, false), previa, false).Musica);
+    }
+
+    [Fact]
     public void Musica_desligada_no_perfil() =>
         Assert.Equal(new Lados(LadoEsquerdo.Nada, 0, false), LadosNotch.Decidir(new(0, 0, false), Musica, false));
 

@@ -16,6 +16,9 @@ mesmos arquivos ao mesmo tempo:
    0.19.0, com a ilha da mídia retirada (a música mora no notch). Ficou para depois: ordem configurável nas
    Configurações (R8 virou ordem fixa), nome da música no notch fechado, e apagar o `IlhaMidiaViewModel` que ficou
    sem uso.
+   **Prévia do Spotify fechado** (0.21.0), sobras da revisão: quando uma sessão fecha, o Windows pode publicar um
+   "nada tocando" passageiro, e a prévia aparece por um instante (um atraso de ~300 ms antes de trocar resolveria);
+   com o Spotify desinstalado a prévia continua e o play só volta sem tocar (o × resolve).
 4. **Depois:** R6 atalhos nas fichas, R9 cota do Claude, R10 bandeja de arquivos, R11 notch no monitor certo.
 
 ## Próximos projetos (escolhidos pelo Gustavo em 27/10/2026)

@@ -21,6 +21,8 @@ internal sealed partial class JanelaNotch
     private readonly ScaleTransform _fracaoMidia = new(0, 1);
     private readonly TextBlock _botaoTocar = new() { HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private readonly Rectangle[] _barrasCartao = new Rectangle[5];
+    private readonly StackPanel _barrasLinha = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(14, 0, 14, 0) };
+    private Border? _botaoAnterior, _botaoProxima, _botaoEsconder; // na prévia do Spotify: play e ×, sem anterior e próxima
     private PainelMidiaViewModel? _cartao;
 
     /// Título, artista, capa, posição e comandos da música (vive no ControleBarra, com as fontes).
@@ -53,7 +55,8 @@ internal sealed partial class JanelaNotch
         textos.Children.Add(_subtituloMidia);
         textos.Children.Add(_tempoMidia);
 
-        var barras = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Height = BarraMaxima, Margin = new Thickness(14, 0, 14, 0) };
+        var barras = _barrasLinha;
+        barras.Height = BarraMaxima;
         for (int i = 0; i < _barrasCartao.Length; i++)
         {
             _barrasCartao[i] = new Rectangle { Width = 3, Height = BarraMinima, RadiusX = 1.5, RadiusY = 1.5, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(i == 0 ? 0 : 2, 0, 0, 0) };
@@ -61,7 +64,8 @@ internal sealed partial class JanelaNotch
         }
 
         var botoes = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        botoes.Children.Add(BotaoMidia("", "Anterior", () => _cartao?.AnteriorCommand.Execute(null)));
+        _botaoAnterior = BotaoMidia("", "Anterior", () => _cartao?.AnteriorCommand.Execute(null));
+        botoes.Children.Add(_botaoAnterior);
         var tocar = BotaoMidia("", "Tocar ou pausar", () => _cartao?.TocarPausarCommand.Execute(null));
         _botaoTocar.Text = "";
         tocar.Child = _botaoTocar;
@@ -69,7 +73,11 @@ internal sealed partial class JanelaNotch
         _botaoTocar.FontSize = 16;
         _botaoTocar.SetResourceReference(TextBlock.ForegroundProperty, "Ambar");
         botoes.Children.Add(tocar);
-        botoes.Children.Add(BotaoMidia("", "Próxima", () => _cartao?.ProximaCommand.Execute(null)));
+        _botaoProxima = BotaoMidia("", "Próxima", () => _cartao?.ProximaCommand.Execute(null));
+        botoes.Children.Add(_botaoProxima);
+        _botaoEsconder = BotaoMidia("", "Tirar até o Spotify tocar de novo", () => _cartao?.EsconderCommand.Execute(null));
+        _botaoEsconder.Visibility = Visibility.Collapsed;
+        botoes.Children.Add(_botaoEsconder);
 
         var linha = new DockPanel { LastChildFill = true };
         DockPanel.SetDock(_capaCartao, Dock.Left);
@@ -119,5 +127,11 @@ internal sealed partial class JanelaNotch
         _fracaoMidia.ScaleX = Math.Clamp(c.Fracao, 0, 1);
         _capaCartao.Background = _imagemCapa is null ? null : new ImageBrush(_imagemCapa) { Stretch = Stretch.UniformToFill };
         foreach (var b in _barrasCartao) b.Fill = _corBarras;
+        var normal = c.Previa ? Visibility.Collapsed : Visibility.Visible;
+        if (_botaoAnterior is not null) _botaoAnterior.Visibility = normal;
+        if (_botaoProxima is not null) _botaoProxima.Visibility = normal;
+        if (_botaoEsconder is not null) _botaoEsconder.Visibility = c.Previa ? Visibility.Visible : Visibility.Collapsed;
+        _barrasLinha.Visibility = c.Previa ? Visibility.Hidden : Visibility.Visible; // o lugar fica: a linha não pula
+        _tituloMidia.ToolTip = c.Previa ? "Abrir o Spotify" : "Abrir o app";
     }
 }

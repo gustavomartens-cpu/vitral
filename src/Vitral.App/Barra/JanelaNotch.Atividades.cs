@@ -152,7 +152,7 @@ internal sealed partial class JanelaNotch
         foreach (var b in _barras)
         {
             b.Fill = _corBarras;
-            b.Visibility = _lados.Musica ? Visibility.Visible : Visibility.Hidden; // o lado fica, para o relógio seguir no centro
+            b.Visibility = _lados.Barras ? Visibility.Visible : Visibility.Hidden; // o lado fica, para o relógio seguir no centro
         }
         AtualizarCartao();
         AtualizarCaptura();
@@ -162,7 +162,7 @@ internal sealed partial class JanelaNotch
     private void AtualizarCaptura()
     {
         bool tocando = _midia?.Atual?.Tocando == true;
-        bool capturar = IsVisible && _lados.Musica && tocando && Movimento.Ligado;
+        bool capturar = IsVisible && _lados.Barras && tocando && Movimento.Ligado; // na prévia do Spotify, sem barras
         if (capturar)
         {
             if (_captura is null)
