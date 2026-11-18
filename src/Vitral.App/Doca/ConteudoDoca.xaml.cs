@@ -21,6 +21,12 @@ public partial class ConteudoDoca : UserControl
     private FrameworkElement? _sobre;
     private DocaViewModel? _vm;
     private Point? _inicio;
+    private ContextMenu? _menu;
+    private bool _arrastando;
+
+    /// Menu aberto, miniaturas à mostra ou arraste em andamento (de botão ou de arquivo): a doca que se esconde
+    /// sozinha não pode sumir no meio disso (spec de 17/11/2026 §3).
+    public bool Ocupada => _menu?.IsOpen == true || _miniaturas?.IsVisible == true || _arrastando || _arquivoSobre is not null;
 
     public ConteudoDoca()
     {
@@ -45,7 +51,7 @@ public partial class ConteudoDoca : UserControl
     {
         if (_vm is null || BotaoDe(sender) is not { } botao) return;
         EsconderMiniaturas();
-        MenuDoca.Abrir((UIElement)sender, _vm.Menu(botao));
+        _menu = MenuDoca.Abrir((UIElement)sender, _vm.Menu(botao));
         e.Handled = true;
     }
 
@@ -145,7 +151,9 @@ public partial class ConteudoDoca : UserControl
         var d = e.GetPosition(this) - inicio;
         if (Math.Abs(d.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(d.Y) < SystemParameters.MinimumVerticalDragDistance) return;
         _inicio = null;
-        DragDrop.DoDragDrop((DependencyObject)sender, botao, DragDropEffects.Move);
+        _arrastando = true;
+        try { DragDrop.DoDragDrop((DependencyObject)sender, botao, DragDropEffects.Move); }
+        finally { _arrastando = false; }
     }
 
     // Arquivo de fora (Explorer): parado sobre o botão, o app vem para a frente; solto, o app abre o arquivo

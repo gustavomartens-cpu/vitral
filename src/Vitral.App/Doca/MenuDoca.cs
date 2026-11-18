@@ -17,7 +17,8 @@ internal static partial class MenuDoca
     [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static partial bool GetCursorPos(out Ponto p);
     [StructLayout(LayoutKind.Sequential)] private struct Ponto { public int X, Y; }
 
-    public static void Abrir(UIElement alvo, IReadOnlyList<ItemMenu> itens)
+    /// Devolve o menu aberto (a doca que se esconde não some enquanto ele está aberto).
+    public static ContextMenu Abrir(UIElement alvo, IReadOnlyList<ItemMenu> itens)
     {
         var menu = new ContextMenu { PlacementTarget = alvo, Placement = PlacementMode.Top };
         Tema.ServicoAparencia.Instancia.Registrar(menu, Tema.ParteAparencia.Doca); // o menu é outra árvore: as cores da doca vão junto
@@ -32,6 +33,7 @@ internal static partial class MenuDoca
         menu.Opened += (_, _) => { TrazerParaFrente(menu); Efeitos.Assentar(menu, AssentarDe.Baixo, cascata: false); };
         menu.IsOpen = true;
         FecharAoClicarFora(menu);
+        return menu;
     }
 
     /// A doca não rouba o foco, então o Windows não avisa o menu de um clique em outro app: confere os botões do mouse
