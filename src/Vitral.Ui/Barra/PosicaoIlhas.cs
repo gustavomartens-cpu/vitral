@@ -36,6 +36,18 @@ public static class PosicaoIlhas
     /// meio (revisão final da 0.11.0). A mídia mora no notch desde a 0.19 (spec do notch fechado §2.3).
     public static bool ComFundo(bool barraUnica, bool temStatus) => barraUnica && temStatus;
 
+    /// A ilha de status fica transparente, sem vidro nem borda: sobre a faixa da barra única ou solta sobre a tela (sem
+    /// fundo, spec de 19/11/2026).
+    public static bool SemVidro(Core.Perfis.DisposicaoIlhas d) =>
+        d is Core.Perfis.DisposicaoIlhas.BarraUnica or Core.Perfis.DisposicaoIlhas.SemFundo;
+
+    /// Sem fundo: texto e ícones ganham sombra suave para ler sobre qualquer papel de parede.
+    public static bool ComSombra(Core.Perfis.DisposicaoIlhas d) => d == Core.Perfis.DisposicaoIlhas.SemFundo;
+
+    /// A sombra contrária ao texto: escura atrás de texto claro, clara atrás de texto escuro.
+    public static (byte R, byte G, byte B) CorSombra(double luminanciaTexto) =>
+        luminanciaTexto > 0.5 ? ((byte)0, (byte)0, (byte)0) : ((byte)255, (byte)255, (byte)255);
+
     /// As formas de hoje (tudo nulo).
     public static Core.Formas.ValoresFormas Padrao { get; } = Core.Formas.ResolverFormas.Resolver(null, Core.Perfis.CantosParte.Redondos);
 

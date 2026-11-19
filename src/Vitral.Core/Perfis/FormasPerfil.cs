@@ -11,7 +11,8 @@ public enum FormatoNotch { Encaixado, SemOrelhas, Ilha }
 
 public enum TamanhoNotch { Compacto, Normal, Grande }
 
-public enum DisposicaoIlhas { Separadas, BarraUnica }
+/// SemFundo (spec da ilha sem fundo, 19/11/2026): a ilha de status sem vidro e sem a faixa atrás, só as informações.
+public enum DisposicaoIlhas { Separadas, BarraUnica, SemFundo }
 
 public enum DistanciaIlhas { ComRespiro, Encostadas }
 
