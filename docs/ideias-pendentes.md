@@ -105,6 +105,13 @@ mesmos arquivos ao mesmo tempo:
   estão testadas no Core.
 - Durante um arraste, ou com o mouse nas miniaturas, o ícone fica cinza (o "mouse em cima" é só sobre o botão).
 
+## Ilha sem fundo: sobras da revisão final (19/11/2026)
+
+- Os vãos vazios da ilha sem fundo (padding e espaço entre itens) engolem o clique, como na barra única: um clique no
+  "papel de parede" ali não chega à área de trabalho. Saída: casca sem fundo (null) e fundo transparente só nos itens.
+- Cada troca de disposição chama `VidroIlha.Atualizar` duas vezes (sombra e vidro separados); juntar num `AplicarModo`.
+- A sombra é recriada a cada mudança de aparência, mesmo com a mesma cor; reaproveitar o efeito.
+
 ## Testes a fundo pendentes
 
 As opções do perfil têm testes da regra, mas nunca foram conferidas de ponta a ponta no Windows: cores e tema, barra

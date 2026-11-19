@@ -45,7 +45,7 @@ internal static partial class VidroIlha
     private static readonly DependencyProperty SemVidroProperty =
         DependencyProperty.RegisterAttached("SemVidro", typeof(bool), typeof(VidroIlha), new PropertyMetadata(false));
 
-    /// Barra única (spec das formas §5.2): a ilha fica transparente, sem vidro nem borda, sobre o fundo da barra.
+    /// Barra única (spec das formas §5.2) ou sem fundo (19/11/2026): a ilha fica transparente, sem vidro nem borda.
     public static void DefinirSemVidro(Window janela, bool semVidro) => janela.SetValue(SemVidroProperty, semVidro);
 
     public static bool SemVidro(Window janela) => (bool)janela.GetValue(SemVidroProperty);
@@ -114,7 +114,7 @@ internal static partial class VidroIlha
             return;
         }
         casca.Effect = null;
-        if (janela.GetValue(BordaAntesProperty) is Thickness antes) // saiu da barra única: a borda da casca de volta
+        if (janela.GetValue(BordaAntesProperty) is Thickness antes) // saiu da barra única ou do sem fundo: a borda da casca de volta
         {
             casca.BorderThickness = antes;
             janela.ClearValue(BordaAntesProperty);

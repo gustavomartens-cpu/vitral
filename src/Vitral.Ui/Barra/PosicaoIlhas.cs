@@ -34,7 +34,8 @@ public static class PosicaoIlhas
 
     /// Barra única: o fundo de lado a lado só aparece com a ilha de status; sem ela ficaria uma faixa vazia com o notch no
     /// meio (revisão final da 0.11.0). A mídia mora no notch desde a 0.19 (spec do notch fechado §2.3).
-    public static bool ComFundo(bool barraUnica, bool temStatus) => barraUnica && temStatus;
+    /// No "Sem fundo" nunca há faixa.
+    public static bool ComFundo(Core.Perfis.DisposicaoIlhas d, bool temStatus) => d == Core.Perfis.DisposicaoIlhas.BarraUnica && temStatus;
 
     /// A ilha de status fica transparente, sem vidro nem borda: sobre a faixa da barra única ou solta sobre a tela (sem
     /// fundo, spec de 19/11/2026).

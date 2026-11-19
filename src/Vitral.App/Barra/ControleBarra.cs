@@ -486,10 +486,9 @@ internal sealed class ControleBarra(Action<string> avisar, IFonteBandeja bandeja
             var formas = Tema.ServicoFormas.Instancia.Atual;
             _status?.AplicarCantosRetos(formas.Ilhas.CantosRetos);
             var disposicao = formas.Ilhas.Disposicao;
-            bool unica = disposicao == Core.Perfis.DisposicaoIlhas.BarraUnica;
             _status?.AplicarSombra(PosicaoIlhas.ComSombra(disposicao));
             _status?.AplicarSemVidro(PosicaoIlhas.SemVidro(disposicao));
-            AjustarFundo(PosicaoIlhas.ComFundo(unica, _status is not null), PosicaoIlhas.Barra(monitor, formas.Ilhas), formas.Ilhas.CantosRetos, p.Dpi);
+            AjustarFundo(PosicaoIlhas.ComFundo(disposicao, _status is not null), PosicaoIlhas.Barra(monitor, formas.Ilhas), formas.Ilhas.CantosRetos, p.Dpi);
             var (_, r, s) = PosicaoIlhas.Calcular(monitor, 0, _relogio?.LarguraNormal ?? 0, _status?.ActualWidth ?? 0,
                 formas.Ilhas, formas.Notch);
             _relogio?.Colocar(r, p.Dpi);
