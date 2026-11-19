@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using Vitral.App.Tema;
 using Vitral.Core.Aparencia;
 using Vitral.Core.Perfis;
@@ -44,10 +45,19 @@ internal static partial class VidroIlha
     private static readonly DependencyProperty SemVidroProperty =
         DependencyProperty.RegisterAttached("SemVidro", typeof(bool), typeof(VidroIlha), new PropertyMetadata(false));
 
-    /// Barra única (spec das formas §5.2): a ilha fica transparente, sem vidro nem borda, sobre o fundo da barra.
+    /// Barra única (spec das formas §5.2) ou sem fundo (19/11/2026): a ilha fica transparente, sem vidro nem borda.
     public static void DefinirSemVidro(Window janela, bool semVidro) => janela.SetValue(SemVidroProperty, semVidro);
 
     public static bool SemVidro(Window janela) => (bool)janela.GetValue(SemVidroProperty);
+
+    private static readonly DependencyProperty SombraProperty =
+        DependencyProperty.RegisterAttached("Sombra", typeof(bool), typeof(VidroIlha), new PropertyMetadata(false));
+
+    /// Ilha sem fundo (spec de 19/11/2026): sombra suave atrás do texto e dos ícones, contrária à cor do texto. Só vale
+    /// junto com o "sem vidro"; a partir do próximo <see cref="Atualizar"/>.
+    public static void DefinirSombra(Window janela, bool sombra) => janela.SetValue(SombraProperty, sombra);
+
+    public static bool Sombra(Window janela) => (bool)janela.GetValue(SombraProperty);
 
     // A borda da casca antes do "sem vidro", para voltar igual (nulo = nunca ficou sem vidro).
     private static readonly DependencyProperty BordaAntesProperty =
@@ -100,9 +110,11 @@ internal static partial class VidroIlha
             casca.Background = Brushes.Transparent;
             if (janela.GetValue(BordaAntesProperty) is null) janela.SetValue(BordaAntesProperty, casca.BorderThickness);
             casca.BorderThickness = new Thickness(0);
+            casca.Effect = Sombra(janela) ? SombraDoTexto(v.Texto) : null;
             return;
         }
-        if (janela.GetValue(BordaAntesProperty) is Thickness antes) // saiu da barra única: a borda da casca de volta
+        casca.Effect = null;
+        if (janela.GetValue(BordaAntesProperty) is Thickness antes) // saiu da barra única ou do sem fundo: a borda da casca de volta
         {
             casca.BorderThickness = antes;
             janela.ClearValue(BordaAntesProperty);
@@ -114,6 +126,12 @@ internal static partial class VidroIlha
         DwmExtendFrameIntoClientArea(h, ref m);
         DefinirAcento(h, vidro ? AccentAcrylicBlurBehind : AccentDisabled, v.Fundo);
         casca.Background = vidro ? Brushes.Transparent : ServicoAparencia.Pincel(v.Fundo with { A = 255 });
+    }
+
+    private static DropShadowEffect SombraDoTexto(CorArgb texto)
+    {
+        var (r, g, b) = Ui.Barra.PosicaoIlhas.CorSombra(ServicoAparencia.Luminancia(texto));
+        return new DropShadowEffect { ShadowDepth = 0, BlurRadius = 6, Opacity = 0.6, Color = Color.FromRgb(r, g, b) };
     }
 
     private static void DefinirAcento(IntPtr h, int estado, CorArgb tinta)

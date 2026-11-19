@@ -140,9 +140,10 @@ public sealed class PreviaAparencia : FrameworkElement
         var ilhaEsquerda = new Rect(margem, topoIlha, larguraIlha, alturaIlha);
         var ilhaDireita = new Rect(w - margem - larguraIlha, topoIlha, larguraIlha, alturaIlha);
         double raioIlha = fo.Ilhas.CantosRetos ? 0 : v.Ilhas.RaioPx * s;
+        bool semFundo = fo.Ilhas.Disposicao == Core.Perfis.DisposicaoIlhas.SemFundo; // sem pílula: só as informações
         if (fo.Ilhas.Disposicao == Core.Perfis.DisposicaoIlhas.BarraUnica)
             Peca(dc, v.Ilhas, Arredondado(new Rect(margem, topoIlha, w - 2 * margem, alturaIlha), raioIlha, raioIlha, raioIlha, raioIlha), fundo, cheio);
-        else
+        else if (!semFundo)
         {
             Peca(dc, v.Ilhas, Arredondado(ilhaEsquerda, raioIlha, raioIlha, raioIlha, raioIlha), fundo, cheio);
             Peca(dc, v.Ilhas, Arredondado(ilhaDireita, raioIlha, raioIlha, raioIlha, raioIlha), fundo, cheio);
@@ -179,10 +180,13 @@ public sealed class PreviaAparencia : FrameworkElement
         if (detalhe)
         {
             double tamanho = 11 * s, tamanhoNotch = tamanho * fn.EscalaTexto;
-            var musica = Texto("♪  Música tocando", tamanho, ServicoAparencia.Pincel(v.Ilhas.Texto), dip);
-            dc.DrawText(musica, new Point(ilhaEsquerda.X + 9 * s, ilhaEsquerda.Y + (alturaIlha - musica.Height) / 2));
-            var tocar = Texto("▶", tamanho, ServicoAparencia.Pincel(v.Ilhas.Destaque), dip);
-            dc.DrawText(tocar, new Point(ilhaEsquerda.Right - 9 * s - tocar.Width, ilhaEsquerda.Y + (alturaIlha - tocar.Height) / 2));
+            if (!semFundo) // no sem fundo só a ilha da direita existe
+            {
+                var musica = Texto("♪  Música tocando", tamanho, ServicoAparencia.Pincel(v.Ilhas.Texto), dip);
+                dc.DrawText(musica, new Point(ilhaEsquerda.X + 9 * s, ilhaEsquerda.Y + (alturaIlha - musica.Height) / 2));
+                var tocar = Texto("▶", tamanho, ServicoAparencia.Pincel(v.Ilhas.Destaque), dip);
+                dc.DrawText(tocar, new Point(ilhaEsquerda.Right - 9 * s - tocar.Width, ilhaEsquerda.Y + (alturaIlha - tocar.Height) / 2));
+            }
 
             var cpu = Texto("CPU 12%", tamanho, ServicoAparencia.Pincel(v.Ilhas.TextoSecundario), dip);
             var bateria = Texto("82%", tamanho, ServicoAparencia.Pincel(v.Ilhas.Texto), dip);
@@ -200,7 +204,12 @@ public sealed class PreviaAparencia : FrameworkElement
         else
         {
             dc.DrawEllipse(ServicoAparencia.Pincel(v.Notch.Destaque), null, new Point(notch.X + notch.Width / 2, notch.Y + notch.Height / 2), ponto / 2, ponto / 2);
-            dc.DrawEllipse(ServicoAparencia.Pincel(v.Ilhas.Destaque), null, new Point(ilhaEsquerda.Right - 8 * s, ilhaEsquerda.Y + alturaIlha / 2), ponto / 2, ponto / 2);
+            if (!semFundo)
+                dc.DrawEllipse(ServicoAparencia.Pincel(v.Ilhas.Destaque), null, new Point(ilhaEsquerda.Right - 8 * s, ilhaEsquerda.Y + alturaIlha / 2), ponto / 2, ponto / 2);
+            else // as informações soltas da ilha da direita: três marquinhas na cor do texto
+                for (int i = 0; i < 3; i++)
+                    dc.DrawEllipse(ServicoAparencia.Pincel(v.Ilhas.Texto), null,
+                        new Point(ilhaDireita.Right - 8 * s - i * 9 * s, ilhaDireita.Y + alturaIlha / 2), 2.5 * s, 2.5 * s);
         }
         dc.Pop();
     }

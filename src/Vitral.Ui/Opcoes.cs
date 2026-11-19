@@ -91,7 +91,8 @@ public static class Opcoes
     ];
 
     public static IReadOnlyList<Opcao<object>> DisposicoesIlhas { get; } =
-        [new("Não mexer", Nulo), new("Separadas", Core.Perfis.DisposicaoIlhas.Separadas), new("Barra única", Core.Perfis.DisposicaoIlhas.BarraUnica)];
+        [new("Não mexer", Nulo), new("Separadas", Core.Perfis.DisposicaoIlhas.Separadas), new("Barra única", Core.Perfis.DisposicaoIlhas.BarraUnica),
+            new("Sem fundo", Core.Perfis.DisposicaoIlhas.SemFundo)];
 
     public static IReadOnlyList<Opcao<object>> DistanciasIlhas { get; } =
         [new("Não mexer", Nulo), new("Com respiro", Core.Perfis.DistanciaIlhas.ComRespiro), new("Encostadas", Core.Perfis.DistanciaIlhas.Encostadas)];

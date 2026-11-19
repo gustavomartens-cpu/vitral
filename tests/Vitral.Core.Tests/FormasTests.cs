@@ -73,6 +73,18 @@ public sealed class FormasTests
     }
 
     [Fact]
+    public void Sem_fundo_mescla_e_le_do_json()
+    {
+        var mesclado = ResolverFormas.Mesclar(new FormasPerfil(Ilhas: new FormasIlhas(DisposicaoIlhas.SemFundo)),
+            new FormasPerfil(Ilhas: new FormasIlhas(Distancia: DistanciaIlhas.Encostadas)));
+        Assert.Equal(new FormasIlhas(DisposicaoIlhas.SemFundo, DistanciaIlhas.Encostadas), mesclado.Ilhas);
+        static DisposicaoIlhas? Ler(string d) =>
+            PerfilJson.Ler($$"""{ "esquema": 4, "nome": "x", "formas": { "ilhas": { "disposicao": "{{d}}" } } }""").Formas?.Ilhas?.Disposicao;
+        Assert.Equal(DisposicaoIlhas.SemFundo, Ler("semFundo"));
+        Assert.Equal(DisposicaoIlhas.BarraUnica, Ler("barraUnica"));
+    }
+
+    [Fact]
     public void Reservas_acompanham_as_formas()
     {
         var encostadas = new FormasIlhas(Distancia: DistanciaIlhas.Encostadas);

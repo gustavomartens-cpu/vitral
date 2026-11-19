@@ -67,9 +67,11 @@ public sealed class AcertosAparenciaUiTests : IDisposable
 
     // A mídia mora no notch desde a 0.19 (spec do notch fechado §2.3): só a ilha de status pede a faixa.
     [Theory]
-    [InlineData(true, true, true)]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, false)]
-    public void Barra_unica_so_tem_fundo_com_a_ilha_de_status(bool unica, bool status, bool esperado) =>
-        Assert.Equal(esperado, PosicaoIlhas.ComFundo(unica, status));
+    // Sem fundo (19/11/2026): nunca a faixa, só as informações.
+    [InlineData(Core.Perfis.DisposicaoIlhas.BarraUnica, true, true)]
+    [InlineData(Core.Perfis.DisposicaoIlhas.BarraUnica, false, false)]
+    [InlineData(Core.Perfis.DisposicaoIlhas.Separadas, true, false)]
+    [InlineData(Core.Perfis.DisposicaoIlhas.SemFundo, true, false)]
+    public void Barra_unica_so_tem_fundo_com_a_ilha_de_status(Core.Perfis.DisposicaoIlhas disposicao, bool status, bool esperado) =>
+        Assert.Equal(esperado, PosicaoIlhas.ComFundo(disposicao, status));
 }

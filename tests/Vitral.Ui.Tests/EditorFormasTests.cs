@@ -55,7 +55,7 @@ public sealed class EditorFormasTests
         Assert.All([Opcoes.FormatosDoca, Opcoes.IconesDoca, Opcoes.Ampliacoes, Opcoes.CoresIconesDoca, Opcoes.FormatosNotch, Opcoes.TamanhosNotch,
             Opcoes.DisposicoesIlhas, Opcoes.DistanciasIlhas], l => Assert.Same(Opcoes.Nulo, l[0].Valor));
         Assert.Equal(["Não mexer", "Encaixado", "Sem orelhas", "Ilha"], Opcoes.FormatosNotch.Select(o => o.Rotulo));
-        Assert.Equal(["Não mexer", "Separadas", "Barra única"], Opcoes.DisposicoesIlhas.Select(o => o.Rotulo));
+        Assert.Equal(["Não mexer", "Separadas", "Barra única", "Sem fundo"], Opcoes.DisposicoesIlhas.Select(o => o.Rotulo));
         Assert.Equal(["Não mexer", "Ligada", "Desligada"], Opcoes.Ampliacoes.Select(o => o.Rotulo));
     }
 

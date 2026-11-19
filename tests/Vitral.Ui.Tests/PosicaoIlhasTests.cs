@@ -85,6 +85,33 @@ public sealed class PosicaoIlhasTests
     }
 
     [Fact]
+    public void Sem_fundo_fica_sem_vidro_sem_faixa_e_com_sombra()
+    {
+        Assert.True(PosicaoIlhas.SemVidro(Core.Perfis.DisposicaoIlhas.SemFundo));
+        Assert.True(PosicaoIlhas.SemVidro(Core.Perfis.DisposicaoIlhas.BarraUnica));
+        Assert.False(PosicaoIlhas.SemVidro(Core.Perfis.DisposicaoIlhas.Separadas));
+        Assert.True(PosicaoIlhas.ComSombra(Core.Perfis.DisposicaoIlhas.SemFundo));
+        Assert.False(PosicaoIlhas.ComSombra(Core.Perfis.DisposicaoIlhas.BarraUnica));
+        Assert.False(PosicaoIlhas.ComSombra(Core.Perfis.DisposicaoIlhas.Separadas));
+    }
+
+    [Fact]
+    public void Sombra_contraria_ao_texto()
+    {
+        Assert.Equal(((byte)0, (byte)0, (byte)0), PosicaoIlhas.CorSombra(1.0));
+        Assert.Equal(((byte)255, (byte)255, (byte)255), PosicaoIlhas.CorSombra(0.02));
+    }
+
+    [Fact]
+    public void Sem_fundo_encostada_na_posicao_das_encostadas()
+    {
+        var v = F(new(Ilhas: new(Core.Perfis.DisposicaoIlhas.SemFundo, Core.Perfis.DistanciaIlhas.Encostadas)));
+        var (_, _, status) = PosicaoIlhas.Calcular(Tela, 300, 140, 360, v.Ilhas, v.Notch);
+        Assert.Equal(new Retangulo(1560, 0, 360, 30), status);
+        Assert.True(v.Ilhas.CantosRetos);
+    }
+
+    [Fact]
     public void Barra_unica_de_lado_a_lado()
     {
         Assert.Equal(new Retangulo(12, 8, 1896, 30), PosicaoIlhas.Barra(Tela, F(null).Ilhas));
