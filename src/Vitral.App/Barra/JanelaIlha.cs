@@ -72,6 +72,14 @@ internal sealed partial class JanelaIlha : Window
         VidroIlha.Atualizar(this, _casca);
     }
 
+    /// Ilha sem fundo: sombra suave no texto e nos ícones. Só refaz quando muda.
+    public void AplicarSombra(bool sombra)
+    {
+        if (VidroIlha.Sombra(this) == sombra) return;
+        VidroIlha.DefinirSombra(this, sombra);
+        VidroIlha.Atualizar(this, _casca);
+    }
+
     public object? Conteudo
     {
         get => _casca.Child;
